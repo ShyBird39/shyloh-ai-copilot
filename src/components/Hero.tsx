@@ -24,7 +24,7 @@ const Hero = () => {
       let query = supabase
         .from('restaurants')
         .select('*')
-        .ilike('name', `%${restaurantName}%`);
+        .ilike('restaurant_name', `%${restaurantName}%`);
 
       // Only filter by location if provided
       if (location.trim()) {
@@ -97,15 +97,15 @@ const Hero = () => {
             <div className="grid gap-4">
               {multipleResults.map((restaurant) => (
                 <button
-                  key={restaurant.id}
+                  key={restaurant.restaurant_id}
                   onClick={() => handleSelectRestaurant(restaurant)}
                   className="bg-background/10 backdrop-blur-sm border border-primary-foreground/20 rounded-lg p-6 text-left hover:bg-background/20 transition-all"
                 >
                   <h3 className="text-xl font-semibold text-primary-foreground mb-2">
-                    {restaurant.name}
+                    {restaurant.restaurant_name}
                   </h3>
                   <p className="text-primary-foreground/80">
-                    {restaurant.location} • {restaurant.category}
+                    {restaurant.location} • {restaurant.cuisine_code}
                   </p>
                 </button>
               ))}

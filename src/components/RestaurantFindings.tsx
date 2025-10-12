@@ -43,7 +43,7 @@ const RestaurantFindings = ({ data, onBack, onUpdate }: RestaurantFindingsProps)
       const { error } = await supabase
         .from('restaurants')
         .update({ [fieldName]: editValue.trim() })
-        .eq('id', data.id);
+        .eq('restaurant_id', data.restaurant_id);
 
       if (error) throw error;
 
@@ -109,7 +109,7 @@ const RestaurantFindings = ({ data, onBack, onUpdate }: RestaurantFindingsProps)
           {/* Header */}
           <div className="text-center space-y-4 animate-fade-in">
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-primary-foreground">
-              {data.name}
+              {data.restaurant_name}
             </h1>
             <div className="flex items-center justify-center gap-6 text-primary-foreground/80">
               <div className="flex items-center gap-2">
@@ -118,7 +118,7 @@ const RestaurantFindings = ({ data, onBack, onUpdate }: RestaurantFindingsProps)
               </div>
               <div className="flex items-center gap-2">
                 <Tag className="w-5 h-5" />
-                <span>{data.category}</span>
+                <span>{data.cuisine_code}</span>
               </div>
             </div>
           </div>
@@ -127,11 +127,11 @@ const RestaurantFindings = ({ data, onBack, onUpdate }: RestaurantFindingsProps)
           <div className="grid md:grid-cols-2 gap-6 animate-fade-in">
             <Card className="bg-background/10 backdrop-blur-sm border-primary-foreground/20 p-6 space-y-2">
               <h3 className="text-lg font-semibold text-primary-foreground">Hex Code</h3>
-              <p className="text-2xl font-mono text-accent">{data.hex_code}</p>
+              <p className="text-2xl font-mono text-accent">{data.hex_code_core}</p>
             </Card>
             <Card className="bg-background/10 backdrop-blur-sm border-primary-foreground/20 p-6 space-y-2">
               <h3 className="text-lg font-semibold text-primary-foreground">Augmented Hex Code</h3>
-              <p className="text-2xl font-mono text-accent">{data.augmented_hex_code}</p>
+              <p className="text-2xl font-mono text-accent">{data.hex_code_full}</p>
             </Card>
           </div>
 
