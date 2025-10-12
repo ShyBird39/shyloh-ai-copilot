@@ -1,1 +1,7 @@
 project_id = "mihkqpovzubwcvurfrbb"
+
+[functions.toast-auth]
+verify_jwt = false
+
+[functions.toast-get-data]
+verify_jwt = false
