@@ -64,6 +64,9 @@ serve(async (req) => {
     const menus = menusResponse.ok ? await menusResponse.json() : null;
     const orders = ordersResponse.ok ? await ordersResponse.json() : null;
 
+    console.log('Orders response status:', ordersResponse.status);
+    console.log('Orders response data:', JSON.stringify(orders).substring(0, 500));
+    console.log('Config data:', JSON.stringify(config).substring(0, 200));
     console.log('Toast data fetched successfully');
 
     // Calculate metrics from orders
