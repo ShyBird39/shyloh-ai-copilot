@@ -78,7 +78,7 @@ serve(async (req) => {
     const businessDate = todayDate.toISOString().slice(0, 10).replace(/-/g, '');
     console.log('Fetching orders for businessDate:', businessDate);
     const ordersResponse = await fetch(
-      `${TOAST_API_BASE}/orders/v2/orders?businessDate=${businessDate}`,
+      `${TOAST_API_BASE}/orders/v2/ordersBulk?businessDate=${businessDate}`,
       { headers }
     );
     if (!ordersResponse.ok) {
@@ -104,7 +104,10 @@ serve(async (req) => {
       
       // Toast returns an array of order GUIDs; fetch details to compute net sales
       console.log('Fetching individual order details for revenue calculation...');
-      const orderDetailsPromises = orders.map(async (orderGuid: string) => {
+      const orderDetailsPromises = (orders as any[]).map(async (o: any) => {
+        // If already an order object (from ordersBulk), return as-is
+        if (o && typeof o === 'object') return o;
+        const orderGuid = String(o);
         try {
           const orderResponse = await fetch(
             `${TOAST_API_BASE}/orders/v2/orders/${orderGuid}`,
@@ -155,6 +158,31 @@ serve(async (req) => {
         }, 0);
 
       console.log(`Processed ${orderDetails.filter((o: any) => o).length} orders, computed net sales: ${totalRevenue}`);
+
+      // Fallback: if computed net sales is 0, try using check.amount or derive from totals
+      if (!totalRevenue || totalRevenue === 0) {
+        const fallbackTotal = orderDetails
+          .filter((order: any) => order && !order.voided && !order.deleted)
+          .reduce((orderSum: number, order: any) => {
+            const checks = Array.isArray(order.checks) ? order.checks : [];
+            const checksTotal = checks
+              .filter((check: any) => !check?.voided && !check?.deleted)
+              .reduce((checkSum: number, check: any) => {
+                const gratuityCharges = (check.serviceCharges || []).reduce((s: number, sc: any) => s + (sc?.gratuity ? Number(sc?.chargeAmount ?? 0) : 0), 0);
+                const paymentsTips = (order.payments || []).reduce((t: number, p: any) => t + Number(p?.tipAmount ?? 0), 0);
+                const byAmount = Number(check?.amount ?? 0);
+                const byTotals = Math.max(0, Number(check?.totalAmount ?? 0) - Number(check?.taxAmount ?? 0) - gratuityCharges - paymentsTips);
+                return checkSum + (byAmount > 0 ? byAmount : byTotals);
+              }, 0);
+            return orderSum + checksTotal;
+          }, 0);
+        if (fallbackTotal > 0) {
+          console.log('Fallback net sales calculation used. Value:', fallbackTotal);
+          totalRevenue = fallbackTotal;
+        } else {
+          console.log('Fallback net sales calculation also 0; check scopes and response shape');
+        }
+      }
     }
 
     // Extract menu highlights
