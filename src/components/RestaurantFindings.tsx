@@ -1,11 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, MapPin, Tag, Pencil, Loader2, MessageCircle } from "lucide-react";
+import { ArrowLeft, MapPin, Tag, Pencil, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import SocraticQA from "./SocraticQA";
 
 interface RestaurantFindingsProps {
   data: any;
@@ -17,7 +16,6 @@ const RestaurantFindings = ({ data, onBack, onUpdate }: RestaurantFindingsProps)
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [saving, setSaving] = useState(false);
-  const [showQA, setShowQA] = useState(false);
 
   const handleEdit = (fieldName: string, currentValue: string) => {
     setEditingField(fieldName);
@@ -94,10 +92,6 @@ const RestaurantFindings = ({ data, onBack, onUpdate }: RestaurantFindingsProps)
     },
   ];
 
-  if (showQA) {
-    return <SocraticQA restaurantName={data.name} onBack={() => setShowQA(false)} />;
-  }
-
   return (
     <section className="relative min-h-screen overflow-hidden bg-gradient-hero py-12">
       <div className="container relative z-10 mx-auto px-4 sm:px-6 lg:px-8">
@@ -126,27 +120,6 @@ const RestaurantFindings = ({ data, onBack, onUpdate }: RestaurantFindingsProps)
                 <Tag className="w-5 h-5" />
                 <span>{data.category}</span>
               </div>
-            </div>
-          </div>
-
-          {/* Q&A CTA Button */}
-          <div className="backdrop-blur-sm bg-accent/20 rounded-lg p-6 border border-accent/40 animate-fade-in">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div>
-                <h3 className="font-bold text-xl text-primary-foreground mb-2">
-                  Deepen Your Profile
-                </h3>
-                <p className="text-primary-foreground/80">
-                  Have a guided conversation with our AI to uncover deeper insights about your restaurant
-                </p>
-              </div>
-              <Button
-                onClick={() => setShowQA(true)}
-                className="bg-accent hover:bg-accent/80 text-accent-foreground flex items-center gap-2 whitespace-nowrap"
-              >
-                <MessageCircle className="w-4 h-4" />
-                Start Q&A Session
-              </Button>
             </div>
           </div>
 
