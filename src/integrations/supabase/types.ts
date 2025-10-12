@@ -16,70 +16,58 @@ export type Database = {
     Tables: {
       restaurants: {
         Row: {
-          augmented_hex_code: string
-          category: string
           created_at: string | null
-          culinary_beverage_code: string
-          culinary_beverage_description: string
-          hex_code: string
-          hospitality_approach_code: string
-          hospitality_approach_description: string
-          id: string
+          cuisine_code: string
+          culinary_beverage: string
+          hex_code_core: string
+          hex_code_full: string
+          hospitality_approach: string
           location: string
-          name: string
-          operational_execution_code: string
-          operational_execution_description: string
-          social_context_code: string
-          social_context_description: string
-          time_occasion_code: string
-          time_occasion_description: string
+          operational_execution: string
+          price_band: string | null
+          restaurant_id: string
+          restaurant_name: string
+          social_context: string
+          time_occasion: string
           updated_at: string | null
-          vibe_energy_code: string
-          vibe_energy_description: string
+          vibe_energy: string
+          zip_code: string | null
         }
         Insert: {
-          augmented_hex_code: string
-          category: string
           created_at?: string | null
-          culinary_beverage_code: string
-          culinary_beverage_description: string
-          hex_code: string
-          hospitality_approach_code: string
-          hospitality_approach_description: string
-          id: string
+          cuisine_code: string
+          culinary_beverage: string
+          hex_code_core: string
+          hex_code_full: string
+          hospitality_approach: string
           location: string
-          name: string
-          operational_execution_code: string
-          operational_execution_description: string
-          social_context_code: string
-          social_context_description: string
-          time_occasion_code: string
-          time_occasion_description: string
+          operational_execution: string
+          price_band?: string | null
+          restaurant_id: string
+          restaurant_name: string
+          social_context: string
+          time_occasion: string
           updated_at?: string | null
-          vibe_energy_code: string
-          vibe_energy_description: string
+          vibe_energy: string
+          zip_code?: string | null
         }
         Update: {
-          augmented_hex_code?: string
-          category?: string
           created_at?: string | null
-          culinary_beverage_code?: string
-          culinary_beverage_description?: string
-          hex_code?: string
-          hospitality_approach_code?: string
-          hospitality_approach_description?: string
-          id?: string
+          cuisine_code?: string
+          culinary_beverage?: string
+          hex_code_core?: string
+          hex_code_full?: string
+          hospitality_approach?: string
           location?: string
-          name?: string
-          operational_execution_code?: string
-          operational_execution_description?: string
-          social_context_code?: string
-          social_context_description?: string
-          time_occasion_code?: string
-          time_occasion_description?: string
+          operational_execution?: string
+          price_band?: string | null
+          restaurant_id?: string
+          restaurant_name?: string
+          social_context?: string
+          time_occasion?: string
           updated_at?: string | null
-          vibe_energy_code?: string
-          vibe_energy_description?: string
+          vibe_energy?: string
+          zip_code?: string | null
         }
         Relationships: []
       }
