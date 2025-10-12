@@ -14,6 +14,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      restaurant_kpis: {
+        Row: {
+          avg_weekly_sales: number | null
+          created_at: string
+          food_cost_goal: number | null
+          id: string
+          labor_cost_goal: number | null
+          restaurant_id: string
+          sales_mix_beer: number | null
+          sales_mix_food: number | null
+          sales_mix_liquor: number | null
+          sales_mix_na_bev: number | null
+          sales_mix_wine: number | null
+          updated_at: string
+        }
+        Insert: {
+          avg_weekly_sales?: number | null
+          created_at?: string
+          food_cost_goal?: number | null
+          id?: string
+          labor_cost_goal?: number | null
+          restaurant_id: string
+          sales_mix_beer?: number | null
+          sales_mix_food?: number | null
+          sales_mix_liquor?: number | null
+          sales_mix_na_bev?: number | null
+          sales_mix_wine?: number | null
+          updated_at?: string
+        }
+        Update: {
+          avg_weekly_sales?: number | null
+          created_at?: string
+          food_cost_goal?: number | null
+          id?: string
+          labor_cost_goal?: number | null
+          restaurant_id?: string
+          sales_mix_beer?: number | null
+          sales_mix_food?: number | null
+          sales_mix_liquor?: number | null
+          sales_mix_na_bev?: number | null
+          sales_mix_wine?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_kpis_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: true
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       restaurants: {
         Row: {
           augmented_hex_code: string
