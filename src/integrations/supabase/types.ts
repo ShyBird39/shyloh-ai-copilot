@@ -16,20 +16,20 @@ export type Database = {
     Tables: {
       restaurants: {
         Row: {
+          augmented_hex_code: string
+          category: string
           created_at: string | null
-          cuisine_code: string
           culinary_beverage_code: string | null
           culinary_beverage_description: string | null
-          hex_code_core: string
-          hex_code_full: string
+          hex_code: string
           hospitality_approach_code: string | null
           hospitality_approach_description: string | null
+          id: string
           location: string
+          name: string
           operational_execution_code: string | null
           operational_execution_description: string | null
           price_band: string | null
-          restaurant_id: string
-          restaurant_name: string
           social_context_code: string | null
           social_context_description: string | null
           time_occasion_code: string | null
@@ -40,20 +40,20 @@ export type Database = {
           zip_code: string | null
         }
         Insert: {
+          augmented_hex_code: string
+          category: string
           created_at?: string | null
-          cuisine_code: string
           culinary_beverage_code?: string | null
           culinary_beverage_description?: string | null
-          hex_code_core: string
-          hex_code_full: string
+          hex_code: string
           hospitality_approach_code?: string | null
           hospitality_approach_description?: string | null
+          id: string
           location: string
+          name: string
           operational_execution_code?: string | null
           operational_execution_description?: string | null
           price_band?: string | null
-          restaurant_id: string
-          restaurant_name: string
           social_context_code?: string | null
           social_context_description?: string | null
           time_occasion_code?: string | null
@@ -64,20 +64,20 @@ export type Database = {
           zip_code?: string | null
         }
         Update: {
+          augmented_hex_code?: string
+          category?: string
           created_at?: string | null
-          cuisine_code?: string
           culinary_beverage_code?: string | null
           culinary_beverage_description?: string | null
-          hex_code_core?: string
-          hex_code_full?: string
+          hex_code?: string
           hospitality_approach_code?: string | null
           hospitality_approach_description?: string | null
+          id?: string
           location?: string
+          name?: string
           operational_execution_code?: string | null
           operational_execution_description?: string | null
           price_band?: string | null
-          restaurant_id?: string
-          restaurant_name?: string
           social_context_code?: string | null
           social_context_description?: string | null
           time_occasion_code?: string | null
