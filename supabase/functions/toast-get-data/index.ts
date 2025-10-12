@@ -73,10 +73,12 @@ serve(async (req) => {
     }
 
     // Fetch today's orders
-    const today = new Date().toISOString().split('T')[0];
-    console.log('Fetching orders for:', today);
+    // Fetch today's orders (Toast expects yyyyMMdd)
+    const todayDate = new Date();
+    const businessDate = todayDate.toISOString().slice(0, 10).replace(/-/g, '');
+    console.log('Fetching orders for businessDate:', businessDate);
     const ordersResponse = await fetch(
-      `${TOAST_API_BASE}/orders/v2/orders?businessDate=${today}`,
+      `${TOAST_API_BASE}/orders/v2/orders?businessDate=${businessDate}`,
       { headers }
     );
     if (!ordersResponse.ok) {
@@ -126,7 +128,7 @@ serve(async (req) => {
       metrics: {
         orderCount,
         revenue: (totalRevenue / 100).toFixed(2),
-        date: today,
+        date: businessDate,
       },
       menuHighlights,
       lastSync: new Date().toISOString(),
