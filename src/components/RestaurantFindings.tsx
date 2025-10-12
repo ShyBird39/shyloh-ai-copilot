@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, MapPin, Tag, Pencil, Loader2, MessageCircle, RefreshCw, DollarSign, ShoppingBag } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ArrowLeft, MapPin, Tag, Pencil, Loader2, MessageCircle } from "lucide-react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import SocraticQA from "./SocraticQA";
@@ -18,8 +18,6 @@ const RestaurantFindings = ({ data, onBack, onUpdate }: RestaurantFindingsProps)
   const [editValue, setEditValue] = useState("");
   const [saving, setSaving] = useState(false);
   const [showQA, setShowQA] = useState(false);
-  const [toastData, setToastData] = useState<any>(null);
-  const [loadingToast, setLoadingToast] = useState(false);
 
   const handleEdit = (fieldName: string, currentValue: string) => {
     setEditingField(fieldName);
@@ -63,28 +61,6 @@ const RestaurantFindings = ({ data, onBack, onUpdate }: RestaurantFindingsProps)
     }
   };
 
-  const fetchToastData = async () => {
-    setLoadingToast(true);
-    try {
-      const { data: responseData, error } = await supabase.functions.invoke('toast-get-data');
-      
-      if (error) throw error;
-      
-      setToastData(responseData);
-      toast.success("Toast POS data refreshed");
-    } catch (error) {
-      console.error('Error fetching Toast data:', error);
-      toast.error("Failed to fetch Toast POS data");
-    } finally {
-      setLoadingToast(false);
-    }
-  }; 
-
-  // Auto-fetch Toast data on mount
-  useEffect(() => {
-    fetchToastData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
   const dimensions = [
     {
       title: "Culinary & Beverage",
@@ -173,73 +149,6 @@ const RestaurantFindings = ({ data, onBack, onUpdate }: RestaurantFindingsProps)
               </Button>
             </div>
           </div>
-
-          {/* Toast POS Data Card */}
-          <Card className="bg-background/10 backdrop-blur-sm border-primary-foreground/20 p-6 animate-fade-in">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-primary-foreground">Toast POS Data</h3>
-              <Button
-                onClick={fetchToastData}
-                disabled={loadingToast}
-                size="sm"
-                className="bg-accent hover:bg-accent/90"
-              >
-                {loadingToast ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="w-4 h-4" />
-                )}
-              </Button>
-            </div>
-
-            {!toastData && !loadingToast && (
-              <p className="text-primary-foreground/60 text-center py-8">
-                Click refresh to load live Toast POS data
-              </p>
-            )}
-
-            {toastData && (
-              <div className="space-y-6">
-                {/* Metrics Grid */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-accent/10 rounded-lg p-4 border border-accent/30">
-                    <div className="flex items-center gap-2 mb-2">
-                      <ShoppingBag className="w-5 h-5 text-accent" />
-                      <span className="text-sm text-primary-foreground/70">Today's Orders</span>
-                    </div>
-                    <p className="text-3xl font-bold text-primary-foreground">{toastData.metrics?.orderCount || 0}</p>
-                  </div>
-                  <div className="bg-accent/10 rounded-lg p-4 border border-accent/30">
-                    <div className="flex items-center gap-2 mb-2">
-                      <DollarSign className="w-5 h-5 text-accent" />
-                      <span className="text-sm text-primary-foreground/70">Revenue</span>
-                    </div>
-                    <p className="text-3xl font-bold text-primary-foreground">${toastData.metrics?.revenue || '0.00'}</p>
-                  </div>
-                </div>
-
-                {/* Menu Highlights */}
-                {toastData.menuHighlights && toastData.menuHighlights.length > 0 && (
-                  <div>
-                    <h4 className="text-lg font-semibold text-primary-foreground mb-3">Menu Highlights</h4>
-                    <div className="space-y-2">
-                      {toastData.menuHighlights.map((item: any, idx: number) => (
-                        <div key={idx} className="flex items-center justify-between bg-background/20 rounded-lg p-3">
-                          <span className="text-primary-foreground">{item.name}</span>
-                          <span className="text-accent font-mono">${item.price}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Sync Info */}
-                <div className="text-xs text-primary-foreground/50 text-right">
-                  Last synced: {new Date(toastData.lastSync).toLocaleString()}
-                </div>
-              </div>
-            )}
-          </Card>
 
           {/* REGGI Codes */}
           <div className="grid md:grid-cols-2 gap-6 animate-fade-in">
