@@ -66,8 +66,12 @@ const Hero = () => {
     setMultipleResults([]);
   };
 
+  const handleUpdate = (updatedData: any) => {
+    setRestaurantData(updatedData);
+  };
+
   if (restaurantData) {
-    return <RestaurantFindings data={restaurantData} onBack={handleBack} />;
+    return <RestaurantFindings data={restaurantData} onBack={handleBack} onUpdate={handleUpdate} />;
   }
 
   // Show selection UI if multiple results

@@ -1,13 +1,64 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, MapPin, Tag } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { ArrowLeft, MapPin, Tag, Pencil, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface RestaurantFindingsProps {
   data: any;
   onBack: () => void;
+  onUpdate: (updatedData: any) => void;
 }
 
-const RestaurantFindings = ({ data, onBack }: RestaurantFindingsProps) => {
+const RestaurantFindings = ({ data, onBack, onUpdate }: RestaurantFindingsProps) => {
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const handleEdit = (fieldName: string, currentValue: string) => {
+    setEditingField(fieldName);
+    setEditValue(currentValue);
+  };
+
+  const handleCancel = () => {
+    setEditingField(null);
+    setEditValue("");
+  };
+
+  const handleSave = async (fieldName: string) => {
+    if (!editValue.trim()) {
+      toast.error("Description cannot be empty");
+      return;
+    }
+
+    if (editValue.length > 2000) {
+      toast.error("Description must be less than 2000 characters");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('restaurants')
+        .update({ [fieldName]: editValue.trim() })
+        .eq('id', data.id);
+
+      if (error) throw error;
+
+      toast.success("Changes saved successfully");
+      onUpdate({ ...data, [fieldName]: editValue.trim() });
+      setEditingField(null);
+      setEditValue("");
+    } catch (error) {
+      console.error('Error saving:', error);
+      toast.error("Failed to save changes");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const dimensions = [
     {
       title: "Culinary & Beverage",
@@ -90,25 +141,78 @@ const RestaurantFindings = ({ data, onBack }: RestaurantFindingsProps) => {
               REGGI Dimensions
             </h2>
             <div className="grid md:grid-cols-2 gap-6">
-              {dimensions.map((dimension, index) => (
-                <Card
-                  key={index}
-                  className="bg-background/10 backdrop-blur-sm border-primary-foreground/20 p-6 space-y-3 animate-fade-in hover-scale"
-                  style={{ animationDelay: `${index * 0.1}s` }}
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <h3 className="text-lg font-semibold text-primary-foreground">
-                      {dimension.title}
-                    </h3>
-                    <span className="text-accent font-mono text-sm">
-                      {dimension.code}
-                    </span>
-                  </div>
-                  <p className="text-primary-foreground/80 leading-relaxed">
-                    {dimension.description}
-                  </p>
-                </Card>
-              ))}
+              {dimensions.map((dimension, index) => {
+                const descriptionFieldName = `${dimension.title.toLowerCase().replace(/ & /g, '_').replace(/ /g, '_')}_description`;
+                const isEditing = editingField === descriptionFieldName;
+                
+                return (
+                  <Card
+                    key={index}
+                    className="bg-background/10 backdrop-blur-sm border-primary-foreground/20 p-6 space-y-3 animate-fade-in hover-scale"
+                    style={{ animationDelay: `${index * 0.1}s` }}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <h3 className="text-lg font-semibold text-primary-foreground">
+                        {dimension.title}
+                      </h3>
+                      <span className="text-accent font-mono text-sm">
+                        {dimension.code}
+                      </span>
+                    </div>
+                    
+                    {isEditing ? (
+                      <div className="space-y-2">
+                        <Textarea
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          className="bg-background/20 border-primary-foreground/30 text-primary-foreground min-h-[100px]"
+                          autoFocus
+                          disabled={saving}
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => handleSave(descriptionFieldName)}
+                            disabled={saving}
+                            className="bg-accent hover:bg-accent/90"
+                          >
+                            {saving ? (
+                              <>
+                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                Saving...
+                              </>
+                            ) : (
+                              "Save"
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={handleCancel}
+                            disabled={saving}
+                            className="bg-background/10 border-primary-foreground/20"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="group relative">
+                        <p className="text-primary-foreground/80 leading-relaxed pr-8">
+                          {dimension.description}
+                        </p>
+                        <button
+                          onClick={() => handleEdit(descriptionFieldName, dimension.description)}
+                          disabled={editingField !== null}
+                          className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-30"
+                        >
+                          <Pencil className="w-4 h-4 text-primary-foreground/60 hover:text-accent" />
+                        </button>
+                      </div>
+                    )}
+                  </Card>
+                );
+              })}
             </div>
           </div>
         </div>
