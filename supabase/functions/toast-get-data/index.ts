@@ -44,6 +44,10 @@ serve(async (req) => {
       `${TOAST_API_BASE}/config/v2/restaurants/${RESTAURANT_GUID}`,
       { headers }
     );
+    if (!configResponse.ok) {
+      const errorText = await configResponse.text();
+      console.error('Config error:', configResponse.status, errorText);
+    }
 
     // Fetch menus
     console.log('Fetching menus...');
@@ -51,6 +55,10 @@ serve(async (req) => {
       `${TOAST_API_BASE}/config/v2/menus`,
       { headers }
     );
+    if (!menusResponse.ok) {
+      const errorText = await menusResponse.text();
+      console.error('Menus error:', menusResponse.status, errorText);
+    }
 
     // Fetch today's orders
     const today = new Date().toISOString().split('T')[0];
@@ -59,6 +67,10 @@ serve(async (req) => {
       `${TOAST_API_BASE}/orders/v2/orders?businessDate=${today}`,
       { headers }
     );
+    if (!ordersResponse.ok) {
+      const errorText = await ordersResponse.text();
+      console.error('Orders error:', ordersResponse.status, errorText);
+    }
 
     const config = configResponse.ok ? await configResponse.json() : null;
     const menus = menusResponse.ok ? await menusResponse.json() : null;
