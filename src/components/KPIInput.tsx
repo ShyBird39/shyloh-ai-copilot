@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft, Send, PanelLeftClose, PanelLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -54,6 +54,7 @@ const KPIInput = ({ restaurantId, restaurantName, onBack }: KPIInputProps) => {
     sales_mix_na_bev: null,
   });
   const [saving, setSaving] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -191,52 +192,54 @@ const KPIInput = ({ restaurantId, restaurantName, onBack }: KPIInputProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-hero flex flex-col">
-      {/* Header */}
-      <div className="p-4 border-b border-accent/20 backdrop-blur-sm bg-background/95">
-        <div className="max-w-4xl mx-auto flex items-center gap-4">
+    <div className="min-h-screen bg-gradient-hero flex w-full">
+      {/* Left Sidebar - Chat */}
+      <div
+        className={`${
+          sidebarOpen ? "w-96" : "w-0"
+        } transition-all duration-300 border-r border-accent/20 bg-background/95 backdrop-blur-sm flex flex-col overflow-hidden`}
+      >
+        {/* Sidebar Header */}
+        <div className="p-4 border-b border-accent/20 flex items-center justify-between">
+          <div className="flex-1">
+            <h2 className="text-lg font-semibold text-foreground">KPI Setup Chat</h2>
+            <p className="text-xs text-muted-foreground">Chat with Shyloh</p>
+          </div>
           <Button
             variant="ghost"
-            onClick={onBack}
-            size="sm"
-            className="text-primary-foreground/80 hover:text-primary-foreground"
+            size="icon"
+            onClick={() => setSidebarOpen(false)}
+            className="h-8 w-8"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
+            <PanelLeftClose className="h-4 w-4" />
           </Button>
-          <div className="flex-1">
-            <h2 className="text-lg font-semibold text-foreground">Set Your KPI Targets</h2>
-            <p className="text-sm text-muted-foreground">Chat with Shyloh to set up your operational goals</p>
+        </div>
+
+        {/* Chat Messages */}
+        <div className="flex-1 overflow-y-auto p-4">
+          <div className="space-y-4">
+            {messages.map((message, idx) => (
+              <div
+                key={idx}
+                className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+              >
+                <div
+                  className={`max-w-[85%] rounded-lg p-3 ${
+                    message.role === "user"
+                      ? "bg-accent text-accent-foreground"
+                      : "bg-muted/50 border border-accent/20"
+                  }`}
+                >
+                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                </div>
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
           </div>
         </div>
-      </div>
 
-      {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto p-4">
-        <div className="max-w-4xl mx-auto space-y-4">
-          {messages.map((message, idx) => (
-            <div
-              key={idx}
-              className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-            >
-              <div
-                className={`max-w-[80%] rounded-lg p-4 ${
-                  message.role === "user"
-                    ? "bg-accent text-accent-foreground"
-                    : "backdrop-blur-sm bg-background/80 border border-accent/20"
-                }`}
-              >
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-              </div>
-            </div>
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
-      </div>
-
-      {/* Input Area */}
-      <div className="p-4 border-t border-accent/20 backdrop-blur-sm bg-background/95">
-        <div className="max-w-4xl mx-auto">
+        {/* Input Area */}
+        <div className="p-4 border-t border-accent/20">
           <div className="flex gap-2">
             <Input
               ref={inputRef}
@@ -255,6 +258,68 @@ const KPIInput = ({ restaurantId, restaurantName, onBack }: KPIInputProps) => {
             >
               <Send className="w-4 h-4" />
             </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <div className="p-4 border-b border-accent/20 backdrop-blur-sm bg-background/95 flex items-center gap-4">
+          {!sidebarOpen && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSidebarOpen(true)}
+              className="h-8 w-8"
+            >
+              <PanelLeft className="h-4 w-4" />
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            onClick={onBack}
+            size="sm"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back
+          </Button>
+          <div className="flex-1">
+            <h1 className="text-xl font-semibold text-foreground">{restaurantName}</h1>
+            <p className="text-sm text-muted-foreground">Set Your KPI Targets</p>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 overflow-y-auto p-8">
+          <div className="max-w-4xl mx-auto">
+            <div className="space-y-6">
+              <div className="text-center py-12">
+                <h2 className="text-2xl font-bold mb-4">Setting Up Your KPIs</h2>
+                <p className="text-muted-foreground mb-8">
+                  Use the chat on the left to provide your restaurant's key performance indicators.
+                  This will help us provide personalized insights and recommendations.
+                </p>
+                <div className="grid grid-cols-2 gap-4 max-w-2xl mx-auto">
+                  <div className="p-6 rounded-lg border border-accent/20 bg-muted/50">
+                    <h3 className="font-semibold mb-2">Average Weekly Sales</h3>
+                    <p className="text-sm text-muted-foreground">Your typical weekly revenue</p>
+                  </div>
+                  <div className="p-6 rounded-lg border border-accent/20 bg-muted/50">
+                    <h3 className="font-semibold mb-2">Food Cost Target</h3>
+                    <p className="text-sm text-muted-foreground">Your goal food cost percentage</p>
+                  </div>
+                  <div className="p-6 rounded-lg border border-accent/20 bg-muted/50">
+                    <h3 className="font-semibold mb-2">Labor Cost Target</h3>
+                    <p className="text-sm text-muted-foreground">Your goal labor cost percentage</p>
+                  </div>
+                  <div className="p-6 rounded-lg border border-accent/20 bg-muted/50">
+                    <h3 className="font-semibold mb-2">Sales Mix</h3>
+                    <p className="text-sm text-muted-foreground">Distribution across categories</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
