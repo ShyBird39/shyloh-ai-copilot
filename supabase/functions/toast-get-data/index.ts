@@ -122,11 +122,18 @@ serve(async (req) => {
       });
 
       const orderDetails = await Promise.all(orderDetailsPromises);
+      
+      // Calculate net sales from checks (amount = subtotal before tax, closer to net sales)
       totalRevenue = orderDetails
-        .filter(order => order !== null)
+        .filter(order => order !== null && !order.voided && !order.deleted)
         .reduce((sum, order) => {
-          // Toast uses cents, totalAmount includes tax and tip
-          return sum + (order.totalAmount || 0);
+          const checksTotal = (order.checks || [])
+            .filter((check: any) => !check.voided && !check.deleted)
+            .reduce((checkSum: number, check: any) => {
+              // Use 'amount' which is subtotal (items + service charges - discounts, before tax)
+              return checkSum + (check.amount || 0);
+            }, 0);
+          return sum + checksTotal;
         }, 0);
       
       console.log(`Processed ${orderDetails.filter(o => o).length} orders, total revenue: ${totalRevenue}`);
