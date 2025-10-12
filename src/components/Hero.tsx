@@ -130,7 +130,7 @@ const Hero = () => {
 
           {/* Tagline */}
           <p className="text-xl sm:text-2xl text-primary-foreground/90 max-w-2xl mx-auto leading-relaxed">
-            We know a lot about restaurants, you know everything about yours.
+            We know a lot about restaurants.  You know everything about yours.
           </p>
 
           {/* CTA Button or Form */}
