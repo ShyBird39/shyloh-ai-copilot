@@ -26,9 +26,9 @@ const Hero = () => {
         .select('*')
         .ilike('name', `%${restaurantName}%`);
 
-      // Only filter by location if provided
+      // Only filter by location/zip code if provided
       if (location.trim()) {
-        query = query.ilike('location', `%${location}%`);
+        query = query.or(`zip_code.ilike.%${location}%,location.ilike.%${location}%`);
       }
 
       const { data, error } = await query.limit(10);
@@ -105,7 +105,7 @@ const Hero = () => {
                     {restaurant.name}
                   </h3>
                   <p className="text-primary-foreground/80">
-                    {restaurant.location} • {restaurant.category}
+                    {restaurant.location}{restaurant.zip_code ? ` (${restaurant.zip_code})` : ''} • {restaurant.category}
                   </p>
                 </button>
               ))}
@@ -159,7 +159,7 @@ const Hero = () => {
                 />
                 <Input
                   type="text"
-                  placeholder="Location/Neighborhood (optional, e.g., South End)"
+                  placeholder="Zip Code or Location (optional, e.g., 02127 or South End)"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   className="bg-background/10 backdrop-blur-sm border-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/60 text-lg py-6"

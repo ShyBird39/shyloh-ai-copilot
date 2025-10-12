@@ -114,7 +114,7 @@ const RestaurantFindings = ({ data, onBack, onUpdate }: RestaurantFindingsProps)
             <div className="flex items-center justify-center gap-6 text-primary-foreground/80">
               <div className="flex items-center gap-2">
                 <MapPin className="w-5 h-5" />
-                <span>{data.location}</span>
+                <span>{data.location}{data.zip_code ? ` (${data.zip_code})` : ''}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Tag className="w-5 h-5" />
