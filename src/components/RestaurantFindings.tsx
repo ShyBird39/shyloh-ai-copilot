@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, MapPin, Tag, Pencil, Loader2, MessageCircle, RefreshCw, DollarSign, ShoppingBag } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import SocraticQA from "./SocraticQA";
@@ -78,8 +78,13 @@ const RestaurantFindings = ({ data, onBack, onUpdate }: RestaurantFindingsProps)
     } finally {
       setLoadingToast(false);
     }
-  };
+  }; 
 
+  // Auto-fetch Toast data on mount
+  useEffect(() => {
+    fetchToastData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const dimensions = [
     {
       title: "Culinary & Beverage",
