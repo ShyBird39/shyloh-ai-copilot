@@ -102,9 +102,9 @@ serve(async (req) => {
     if (orders && Array.isArray(orders)) {
       orderCount = orders.length;
       
-      // Toast returns array of order GUIDs, fetch details for each
+      // Toast returns an array of order GUIDs; fetch details to compute net sales
       console.log('Fetching individual order details for revenue calculation...');
-      const orderDetailsPromises = orders.slice(0, 50).map(async (orderGuid: string) => {
+      const orderDetailsPromises = orders.map(async (orderGuid: string) => {
         try {
           const orderResponse = await fetch(
             `${TOAST_API_BASE}/orders/v2/orders/${orderGuid}`,
@@ -123,20 +123,38 @@ serve(async (req) => {
 
       const orderDetails = await Promise.all(orderDetailsPromises);
       
-      // Calculate net sales from checks (amount = subtotal before tax, closer to net sales)
+      // Net Sales (per Toast docs): items preDiscountPrice - item discounts + non-gratuity service charges - check-level discounts
       totalRevenue = orderDetails
-        .filter(order => order !== null && !order.voided && !order.deleted)
-        .reduce((sum, order) => {
-          const checksTotal = (order.checks || [])
-            .filter((check: any) => !check.voided && !check.deleted)
+        .filter((order: any) => order && !order.voided && !order.deleted)
+        .reduce((orderSum: number, order: any) => {
+          const checks = Array.isArray(order.checks) ? order.checks : [];
+          const checksTotal = checks
+            .filter((check: any) => !check?.voided && !check?.deleted)
             .reduce((checkSum: number, check: any) => {
-              // Use 'amount' which is subtotal (items + service charges - discounts, before tax)
-              return checkSum + (check.amount || 0);
+              const selections = (check.menuItemSelections || check.selections || []);
+              const itemsNet = selections
+                .filter((sel: any) => !sel?.voided && !sel?.deleted && sel?.displayName !== 'Gift Card')
+                .reduce((selSum: number, sel: any) => {
+                  const prePrice = Number(sel?.preDiscountPrice ?? 0);
+                  const itemDiscounts = (sel?.discounts || []).reduce((dSum: number, d: any) => dSum + Number(d?.nonTaxableDiscountAmount ?? 0), 0);
+                  return selSum + (prePrice - itemDiscounts);
+                }, 0);
+
+              const serviceCharges = (check.serviceCharges || []).reduce((scSum: number, sc: any) => {
+                const isGratuity = Boolean(sc?.gratuity);
+                return scSum + (isGratuity ? 0 : Number(sc?.chargeAmount ?? 0));
+              }, 0);
+
+              const checkLevelDiscounts = (check.discounts || []).reduce((dSum: number, d: any) => dSum + Number(d?.nonTaxableDiscountAmount ?? 0), 0);
+
+              const checkNet = itemsNet + serviceCharges - checkLevelDiscounts;
+              return checkSum + checkNet;
             }, 0);
-          return sum + checksTotal;
+
+          return orderSum + checksTotal;
         }, 0);
-      
-      console.log(`Processed ${orderDetails.filter(o => o).length} orders, total revenue: ${totalRevenue}`);
+
+      console.log(`Processed ${orderDetails.filter((o: any) => o).length} orders, computed net sales: ${totalRevenue}`);
     }
 
     // Extract menu highlights
@@ -160,7 +178,7 @@ serve(async (req) => {
       },
       metrics: {
         orderCount,
-        revenue: (totalRevenue / 100).toFixed(2),
+        revenue: totalRevenue.toFixed(2),
         date: businessDate,
       },
       menuHighlights,
