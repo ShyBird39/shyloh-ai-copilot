@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 const TOAST_API_BASE = 'https://ws-api.toasttab.com';
-const RESTAURANT_GUID = '867A85A77688-SHY001-AME-$$';
+const DEFAULT_RESTAURANT_GUID = Deno.env.get('TOAST_RESTAURANT_GUID') || '';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -32,16 +32,28 @@ serve(async (req) => {
     const { accessToken } = await authResponse.json();
     console.log('Got Toast access token');
 
+    let restaurantGuid = '';
+    try {
+      const body = await req.json();
+      restaurantGuid = body?.restaurantGuid || DEFAULT_RESTAURANT_GUID;
+    } catch (_) {
+      restaurantGuid = DEFAULT_RESTAURANT_GUID;
+    }
+
+    if (!restaurantGuid) {
+      throw new Error('Missing TOAST_RESTAURANT_GUID. Set the secret or pass {"restaurantGuid":"<uuid>"} in request body.');
+    }
+
     const headers = {
       'Authorization': `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
-      'Toast-Restaurant-External-ID': RESTAURANT_GUID,
+      'Toast-Restaurant-External-ID': restaurantGuid,
     };
 
     // Fetch restaurant config
     console.log('Fetching restaurant config...');
     const configResponse = await fetch(
-      `${TOAST_API_BASE}/config/v2/restaurants/${RESTAURANT_GUID}`,
+      `${TOAST_API_BASE}/config/v2/restaurants/${restaurantGuid}`,
       { headers }
     );
     if (!configResponse.ok) {
