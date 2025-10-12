@@ -1,9 +1,53 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import RestaurantFindings from "./RestaurantFindings";
 
 const Hero = () => {
   const [showForm, setShowForm] = useState(false);
+  const [restaurantName, setRestaurantName] = useState("");
+  const [zipCode, setZipCode] = useState("");
+  const [restaurantData, setRestaurantData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!restaurantName.trim() || !zipCode.trim()) {
+      toast.error("Please enter both restaurant name and zip code");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('restaurants')
+        .select('*')
+        .ilike('name', `%${restaurantName}%`)
+        .ilike('location', `%${zipCode}%`)
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (!data) {
+        toast.error("Restaurant not found in our database");
+        setLoading(false);
+        return;
+      }
+
+      setRestaurantData(data);
+    } catch (error) {
+      console.error('Error fetching restaurant:', error);
+      toast.error("Failed to fetch restaurant data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (restaurantData) {
+    return <RestaurantFindings data={restaurantData} onBack={() => setRestaurantData(null)} />;
+  }
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -39,15 +83,25 @@ const Hero = () => {
                 <Input
                   type="text"
                   placeholder="Restaurant Name"
+                  value={restaurantName}
+                  onChange={(e) => setRestaurantName(e.target.value)}
                   className="bg-background/10 backdrop-blur-sm border-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/60 text-lg py-6"
                 />
                 <Input
                   type="text"
                   placeholder="Zip Code"
+                  value={zipCode}
+                  onChange={(e) => setZipCode(e.target.value)}
                   className="bg-background/10 backdrop-blur-sm border-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/60 text-lg py-6"
                 />
-                <Button variant="hero" size="lg" className="w-full">
-                  Continue
+                <Button 
+                  variant="hero" 
+                  size="lg" 
+                  className="w-full"
+                  onClick={handleSubmit}
+                  disabled={loading}
+                >
+                  {loading ? "Searching..." : "Continue"}
                 </Button>
               </div>
             )}
