@@ -15,6 +15,12 @@ serve(async (req) => {
     const clientId = Deno.env.get('TOAST_CLIENT_ID');
     const clientSecret = Deno.env.get('TOAST_CLIENT_SECRET');
 
+    console.log('Checking credentials...');
+    console.log('TOAST_CLIENT_ID exists:', !!clientId);
+    console.log('TOAST_CLIENT_ID length:', clientId?.length || 0);
+    console.log('TOAST_CLIENT_SECRET exists:', !!clientSecret);
+    console.log('TOAST_CLIENT_SECRET length:', clientSecret?.length || 0);
+
     if (!clientId || !clientSecret) {
       throw new Error('Toast credentials not configured');
     }
