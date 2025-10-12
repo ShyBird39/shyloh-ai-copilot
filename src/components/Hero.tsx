@@ -1,6 +1,10 @@
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useState } from "react";
 
 const Hero = () => {
+  const [showForm, setShowForm] = useState(false);
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background with gradient */}
@@ -19,11 +23,34 @@ const Hero = () => {
             We know a lot about restaurants, you know everything about yours.
           </p>
 
-          {/* CTA Button */}
+          {/* CTA Button or Form */}
           <div className="pt-4">
-            <Button variant="hero" size="lg">
-              Start Here
-            </Button>
+            {!showForm ? (
+              <Button 
+                variant="hero" 
+                size="lg"
+                onClick={() => setShowForm(true)}
+                className="animate-fade-in"
+              >
+                Start Here
+              </Button>
+            ) : (
+              <div className="max-w-md mx-auto space-y-4 animate-fade-in">
+                <Input
+                  type="text"
+                  placeholder="Restaurant Name"
+                  className="bg-background/10 backdrop-blur-sm border-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/60 text-lg py-6"
+                />
+                <Input
+                  type="text"
+                  placeholder="Zip Code"
+                  className="bg-background/10 backdrop-blur-sm border-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/60 text-lg py-6"
+                />
+                <Button variant="hero" size="lg" className="w-full">
+                  Continue
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>
