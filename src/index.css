@@ -8,80 +8,80 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 200 25% 15%;
+    --background: 18 68% 95%;
+    --foreground: 354 80% 21%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 200 25% 15%;
+    --card: 18 68% 97%;
+    --card-foreground: 354 80% 21%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 200 25% 15%;
+    --popover: 18 68% 97%;
+    --popover-foreground: 354 80% 21%;
 
-    --primary: 185 65% 38%;
-    --primary-foreground: 0 0% 100%;
-    --primary-glow: 185 75% 55%;
+    --primary: 354 80% 21%;
+    --primary-foreground: 18 68% 95%;
+    --primary-glow: 354 70% 35%;
 
-    --secondary: 200 15% 96%;
-    --secondary-foreground: 200 25% 15%;
+    --secondary: 18 50% 90%;
+    --secondary-foreground: 354 80% 21%;
 
-    --muted: 200 15% 96%;
-    --muted-foreground: 200 15% 45%;
+    --muted: 18 50% 90%;
+    --muted-foreground: 354 40% 45%;
 
-    --accent: 18 80% 60%;
-    --accent-foreground: 0 0% 100%;
-    --accent-glow: 18 90% 70%;
+    --accent: 137 52% 21%;
+    --accent-foreground: 18 68% 95%;
+    --accent-glow: 137 52% 35%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive-foreground: 18 68% 95%;
 
-    --border: 200 15% 90%;
-    --input: 200 15% 90%;
-    --ring: 185 65% 38%;
+    --border: 354 30% 85%;
+    --input: 354 30% 85%;
+    --ring: 354 80% 21%;
 
     --radius: 0.75rem;
 
-    --gradient-hero: linear-gradient(135deg, hsl(185 65% 38%), hsl(195 70% 45%));
-    --gradient-feature: linear-gradient(180deg, hsl(0 0% 100%), hsl(200 15% 98%));
-    --shadow-glow: 0 0 40px hsl(185 75% 55% / 0.2);
-    --shadow-card: 0 4px 20px hsl(200 15% 15% / 0.08);
+    --gradient-hero: linear-gradient(135deg, hsl(354 80% 21%), hsl(354 70% 30%));
+    --gradient-feature: linear-gradient(180deg, hsl(18 68% 95%), hsl(18 68% 97%));
+    --shadow-glow: 0 0 40px hsl(354 70% 35% / 0.2);
+    --shadow-card: 0 4px 20px hsl(354 80% 21% / 0.08);
     
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .dark {
-    --background: 200 30% 8%;
-    --foreground: 0 0% 98%;
+    --background: 354 40% 12%;
+    --foreground: 18 68% 95%;
 
-    --card: 200 25% 12%;
-    --card-foreground: 0 0% 98%;
+    --card: 354 35% 16%;
+    --card-foreground: 18 68% 95%;
 
-    --popover: 200 25% 12%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 354 35% 16%;
+    --popover-foreground: 18 68% 95%;
 
-    --primary: 185 75% 55%;
-    --primary-foreground: 200 30% 8%;
-    --primary-glow: 185 85% 65%;
+    --primary: 354 70% 35%;
+    --primary-foreground: 18 68% 95%;
+    --primary-glow: 354 60% 45%;
 
-    --secondary: 200 20% 18%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 354 30% 20%;
+    --secondary-foreground: 18 68% 95%;
 
-    --muted: 200 20% 18%;
-    --muted-foreground: 200 10% 65%;
+    --muted: 354 30% 20%;
+    --muted-foreground: 18 40% 70%;
 
-    --accent: 18 85% 65%;
-    --accent-foreground: 200 30% 8%;
-    --accent-glow: 18 95% 75%;
+    --accent: 137 52% 35%;
+    --accent-foreground: 18 68% 95%;
+    --accent-glow: 137 52% 45%;
 
     --destructive: 0 70% 50%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive-foreground: 18 68% 95%;
 
-    --border: 200 20% 20%;
-    --input: 200 20% 20%;
-    --ring: 185 75% 55%;
+    --border: 354 25% 25%;
+    --input: 354 25% 25%;
+    --ring: 354 70% 35%;
 
-    --gradient-hero: linear-gradient(135deg, hsl(185 75% 55%), hsl(195 80% 60%));
-    --gradient-feature: linear-gradient(180deg, hsl(200 30% 8%), hsl(200 25% 12%));
-    --shadow-glow: 0 0 50px hsl(185 85% 65% / 0.3);
+    --gradient-hero: linear-gradient(135deg, hsl(354 70% 35%), hsl(354 60% 40%));
+    --gradient-feature: linear-gradient(180deg, hsl(354 40% 12%), hsl(354 35% 16%));
+    --shadow-glow: 0 0 50px hsl(354 60% 45% / 0.3);
     --shadow-card: 0 4px 24px hsl(0 0% 0% / 0.4);
   }
 }
@@ -92,6 +92,10 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-poppins;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-oswald;
   }
 }
