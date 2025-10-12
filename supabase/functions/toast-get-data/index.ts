@@ -101,9 +101,35 @@ serve(async (req) => {
 
     if (orders && Array.isArray(orders)) {
       orderCount = orders.length;
-      totalRevenue = orders.reduce((sum, order) => {
-        return sum + (order.totalAmount || 0);
-      }, 0);
+      
+      // Toast returns array of order GUIDs, fetch details for each
+      console.log('Fetching individual order details for revenue calculation...');
+      const orderDetailsPromises = orders.slice(0, 50).map(async (orderGuid: string) => {
+        try {
+          const orderResponse = await fetch(
+            `${TOAST_API_BASE}/orders/v2/orders/${orderGuid}`,
+            { headers }
+          );
+          if (orderResponse.ok) {
+            const orderDetail = await orderResponse.json();
+            return orderDetail;
+          }
+          return null;
+        } catch (error) {
+          console.error(`Error fetching order ${orderGuid}:`, error);
+          return null;
+        }
+      });
+
+      const orderDetails = await Promise.all(orderDetailsPromises);
+      totalRevenue = orderDetails
+        .filter(order => order !== null)
+        .reduce((sum, order) => {
+          // Toast uses cents, totalAmount includes tax and tip
+          return sum + (order.totalAmount || 0);
+        }, 0);
+      
+      console.log(`Processed ${orderDetails.filter(o => o).length} orders, total revenue: ${totalRevenue}`);
     }
 
     // Extract menu highlights
