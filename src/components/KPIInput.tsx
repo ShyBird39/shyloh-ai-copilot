@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -22,7 +22,26 @@ interface KPIData {
   sales_mix_na_bev: number | null;
 }
 
+interface ChatMessage {
+  role: "assistant" | "user";
+  content: string;
+  type?: "question" | "confirmation" | "input";
+}
+
 const KPIInput = ({ restaurantId, restaurantName, onBack }: KPIInputProps) => {
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      role: "assistant",
+      content: "Hey! 👋 I need a few quick ops numbers to personalize your analysis and make real recommendations. Just give me your best guesses if you're not 100% sure.",
+      type: "question",
+    },
+    {
+      role: "assistant",
+      content: "What are your average weekly sales $? (Feel free to round)",
+      type: "question",
+    },
+  ]);
+  const [currentInput, setCurrentInput] = useState("");
   const [currentStep, setCurrentStep] = useState(0);
   const [kpiData, setKPIData] = useState<KPIData>({
     avg_weekly_sales: null,
@@ -34,70 +53,105 @@ const KPIInput = ({ restaurantId, restaurantName, onBack }: KPIInputProps) => {
     sales_mix_beer: null,
     sales_mix_na_bev: null,
   });
-  const [currentInput, setCurrentInput] = useState("");
   const [saving, setSaving] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const steps = [
     {
-      question: "What are your average weekly sales $ ?",
-      subtext: "(Feel free to round)",
+      question: "What are your average weekly sales $? (Feel free to round)",
       field: "avg_weekly_sales",
       type: "currency",
       confirmation: (value: number) => `💰 Noted—$${(value / 1000).toFixed(0)}K/week. Strong volume.`,
     },
     {
-      question: "What's your target food cost %?",
-      subtext: "(Normally lands ~25–32% depending on concept. Where do you aim?)",
+      question: "What's your target food cost %? (Normally lands ~25–32% depending on concept. Where do you aim?)",
       field: "food_cost_goal",
       type: "percentage",
       confirmation: (value: number) => `✅ Got it—${value}% food cost target. Dialed in.`,
     },
     {
-      question: "What's your target labor cost %?",
-      subtext: "(Typically 28–32% for total wages + salaries. Where do you aim?)",
+      question: "What's your target labor cost %? (Typically 28–32% for total wages + salaries. Where do you aim?)",
       field: "labor_cost_goal",
       type: "percentage",
       confirmation: (value: number) => `✓ Logged—${value}% labor cost goal. Tight but doable at your volume.`,
     },
     {
-      question: "Out of every $100 in sales, roughly how much is:",
-      subtext: "(Helps me understand your revenue mix. Just rough %s are fine.)",
-      field: "sales_mix",
-      type: "mix",
-      items: [
-        { label: "Food", field: "sales_mix_food" },
-        { label: "Liquor", field: "sales_mix_liquor" },
-        { label: "Wine", field: "sales_mix_wine" },
-        { label: "Beer", field: "sales_mix_beer" },
-        { label: "N/A Bev", field: "sales_mix_na_bev" },
-      ],
-      confirmation: () => "📊 Perfect! Revenue mix captured.",
+      question: "Out of every $100 in sales, roughly how much is Food?",
+      field: "sales_mix_food",
+      type: "percentage",
+      confirmation: (value: number) => `Got it, ${value}% food.`,
+    },
+    {
+      question: "And how much is Liquor?",
+      field: "sales_mix_liquor",
+      type: "percentage",
+      confirmation: (value: number) => `${value}% liquor, nice.`,
+    },
+    {
+      question: "Wine?",
+      field: "sales_mix_wine",
+      type: "percentage",
+      confirmation: (value: number) => `${value}% wine.`,
+    },
+    {
+      question: "Beer?",
+      field: "sales_mix_beer",
+      type: "percentage",
+      confirmation: (value: number) => `${value}% beer.`,
+    },
+    {
+      question: "And finally, N/A Beverages?",
+      field: "sales_mix_na_bev",
+      type: "percentage",
+      confirmation: (value: number) => `📊 Perfect! ${value}% N/A beverages. Revenue mix captured—you're all set!`,
     },
   ];
 
-  const currentStepData = steps[currentStep];
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
-  const handleNext = async () => {
-    if (currentStepData.type === "mix") {
-      // Validate all mix fields are filled
-      const mixFields = currentStepData.items || [];
-      const allFilled = mixFields.every((item) => kpiData[item.field as keyof KPIData] !== null);
-      if (!allFilled) {
-        toast.error("Please fill in all fields");
-        return;
-      }
-    } else {
-      const value = parseFloat(currentInput);
-      if (isNaN(value) || value <= 0) {
-        toast.error("Please enter a valid number");
-        return;
-      }
-      setKPIData((prev) => ({ ...prev, [currentStepData.field]: value }));
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, [messages]);
+
+  const handleSend = async () => {
+    if (!currentInput.trim()) return;
+
+    const value = parseFloat(currentInput);
+    if (isNaN(value) || value <= 0) {
+      toast.error("Please enter a valid number");
+      return;
     }
 
+    // Add user message
+    setMessages((prev) => [
+      ...prev,
+      { role: "user", content: currentInput, type: "input" },
+    ]);
+
+    const currentStepData = steps[currentStep];
+    const updatedKPIData = { ...kpiData, [currentStepData.field]: value };
+    setKPIData(updatedKPIData);
+
+    // Add confirmation message
+    setMessages((prev) => [
+      ...prev,
+      { role: "assistant", content: currentStepData.confirmation(value), type: "confirmation" },
+    ]);
+
+    setCurrentInput("");
+
+    // Move to next step or save
     if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
-      setCurrentInput("");
+      setTimeout(() => {
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: steps[currentStep + 1].question, type: "question" },
+        ]);
+        setCurrentStep(currentStep + 1);
+      }, 500);
     } else {
       await saveKPIs();
     }
@@ -105,6 +159,11 @@ const KPIInput = ({ restaurantId, restaurantName, onBack }: KPIInputProps) => {
 
   const saveKPIs = async () => {
     setSaving(true);
+    setMessages((prev) => [
+      ...prev,
+      { role: "assistant", content: "Saving your KPIs...", type: "confirmation" },
+    ]);
+
     try {
       const { error } = await supabase
         .from("restaurant_kpis")
@@ -115,8 +174,14 @@ const KPIInput = ({ restaurantId, restaurantName, onBack }: KPIInputProps) => {
 
       if (error) throw error;
 
-      toast.success("KPIs saved successfully! 🎉");
-      onBack();
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: "All set! 🎉 Your KPIs are saved and ready to power your insights.", type: "confirmation" },
+      ]);
+
+      setTimeout(() => {
+        onBack();
+      }, 2000);
     } catch (error) {
       console.error("Error saving KPIs:", error);
       toast.error("Failed to save KPIs");
@@ -125,122 +190,71 @@ const KPIInput = ({ restaurantId, restaurantName, onBack }: KPIInputProps) => {
     }
   };
 
-  const handleMixInput = (field: string, value: string) => {
-    const numValue = parseFloat(value) || null;
-    setKPIData((prev) => ({ ...prev, [field]: numValue }));
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-hero py-12 px-4">
-      <div className="max-w-3xl mx-auto">
-        <Button
-          variant="ghost"
-          onClick={onBack}
-          className="mb-8 text-primary-foreground/80 hover:text-primary-foreground"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
-        </Button>
-
-        <div className="backdrop-blur-sm bg-background/95 rounded-lg p-8 border border-accent/20">
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-foreground mb-2">
-              Next up: I need a few quick ops numbers to personalize analysis + make real recs.
-            </h2>
-            <p className="text-muted-foreground">
-              These help me benchmark against industry targets. Just give me best guesses if you're not 100% sure.
-            </p>
+    <div className="min-h-screen bg-gradient-hero flex flex-col">
+      {/* Header */}
+      <div className="p-4 border-b border-accent/20 backdrop-blur-sm bg-background/95">
+        <div className="max-w-4xl mx-auto flex items-center gap-4">
+          <Button
+            variant="ghost"
+            onClick={onBack}
+            size="sm"
+            className="text-primary-foreground/80 hover:text-primary-foreground"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back
+          </Button>
+          <div className="flex-1">
+            <h2 className="text-lg font-semibold text-foreground">Set Your KPI Targets</h2>
+            <p className="text-sm text-muted-foreground">Chat with Shyloh to set up your operational goals</p>
           </div>
+        </div>
+      </div>
 
-          {/* Progress indicator */}
-          <div className="flex gap-2 mb-8">
-            {steps.map((_, idx) => (
+      {/* Chat Messages */}
+      <div className="flex-1 overflow-y-auto p-4">
+        <div className="max-w-4xl mx-auto space-y-4">
+          {messages.map((message, idx) => (
+            <div
+              key={idx}
+              className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+            >
               <div
-                key={idx}
-                className={`h-2 flex-1 rounded-full transition-colors ${
-                  idx <= currentStep ? "bg-accent" : "bg-muted"
+                className={`max-w-[80%] rounded-lg p-4 ${
+                  message.role === "user"
+                    ? "bg-accent text-accent-foreground"
+                    : "backdrop-blur-sm bg-background/80 border border-accent/20"
                 }`}
-              />
-            ))}
-          </div>
-
-          {/* Question */}
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-xl font-semibold text-foreground mb-2">
-                {currentStep + 1}. {currentStepData.question}
-              </h3>
-              <p className="text-muted-foreground text-sm">{currentStepData.subtext}</p>
-            </div>
-
-            {/* Input based on type */}
-            {currentStepData.type === "mix" ? (
-              <div className="space-y-4">
-                {currentStepData.items?.map((item) => (
-                  <div key={item.field} className="flex items-center gap-4">
-                    <label className="w-24 text-foreground font-medium">{item.label}</label>
-                    <Input
-                      type="number"
-                      placeholder="0"
-                      value={kpiData[item.field as keyof KPIData] || ""}
-                      onChange={(e) => handleMixInput(item.field, e.target.value)}
-                      className="max-w-xs"
-                    />
-                    <span className="text-muted-foreground">%</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex items-center gap-4">
-                {currentStepData.type === "currency" && (
-                  <span className="text-2xl text-muted-foreground">$</span>
-                )}
-                <Input
-                  type="number"
-                  value={currentInput}
-                  onChange={(e) => setCurrentInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleNext()}
-                  placeholder="0"
-                  className="text-2xl h-14 max-w-xs"
-                  autoFocus
-                />
-                {currentStepData.type === "percentage" && (
-                  <span className="text-2xl text-muted-foreground">%</span>
-                )}
-              </div>
-            )}
-
-            {/* Confirmation message for completed steps */}
-            {currentStep > 0 && steps[currentStep - 1] && (
-              <div className="flex items-start gap-2 p-4 bg-accent/10 rounded-lg border border-accent/20">
-                <CheckCircle2 className="w-5 h-5 text-accent mt-0.5 flex-shrink-0" />
-                <p className="text-sm text-foreground">
-                  {steps[currentStep - 1].confirmation(
-                    kpiData[steps[currentStep - 1].field as keyof KPIData] as number
-                  )}
-                </p>
-              </div>
-            )}
-
-            {/* Action buttons */}
-            <div className="flex gap-4 pt-4">
-              <Button
-                onClick={handleNext}
-                disabled={saving}
-                className="min-w-32"
               >
-                {saving ? "Saving..." : currentStep === steps.length - 1 ? "Save KPIs" : "Next"}
-              </Button>
-              {currentStep > 0 && (
-                <Button
-                  variant="outline"
-                  onClick={() => setCurrentStep(currentStep - 1)}
-                  disabled={saving}
-                >
-                  Previous
-                </Button>
-              )}
+                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+              </div>
             </div>
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
+      </div>
+
+      {/* Input Area */}
+      <div className="p-4 border-t border-accent/20 backdrop-blur-sm bg-background/95">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex gap-2">
+            <Input
+              ref={inputRef}
+              type="number"
+              value={currentInput}
+              onChange={(e) => setCurrentInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && !saving && handleSend()}
+              placeholder="Type your answer..."
+              disabled={saving}
+              className="flex-1"
+            />
+            <Button
+              onClick={handleSend}
+              disabled={saving || !currentInput.trim()}
+              size="icon"
+            >
+              <Send className="w-4 h-4" />
+            </Button>
           </div>
         </div>
       </div>
