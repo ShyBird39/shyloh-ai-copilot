@@ -46,6 +46,7 @@ const RestaurantFindings = () => {
   const [hasCompletedKPIs, setHasCompletedKPIs] = useState<boolean | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentInput, setCurrentInput] = useState("");
+  const [showObjectives, setShowObjectives] = useState(false);
   const [kpiData, setKPIData] = useState<KPIData>({
     avg_weekly_sales: null,
     food_cost_goal: null,
@@ -66,7 +67,23 @@ const RestaurantFindings = () => {
     "Tips for using Shyloh"
   ];
 
+  const objectives = [
+    { id: 'sales', label: 'Increase my sales', icon: '📈' },
+    { id: 'costs', label: 'Lower my costs', icon: '💰' },
+    { id: 'guest', label: 'Improve the guest experience', icon: '✨' },
+    { id: 'team', label: 'Improve the team experience', icon: '👥' }
+  ];
+
+  const handleObjectiveClick = (objective: typeof objectives[0]) => {
+    setShowObjectives(false);
+    handleSendMessage(`I want to ${objective.label.toLowerCase()}`);
+  };
+
   const handlePromptClick = (promptText: string) => {
+    if (promptText === "I am here to...") {
+      setShowObjectives(true);
+      return;
+    }
     setCurrentInput(promptText);
     // Auto-send the prompt
     setTimeout(() => {
@@ -175,6 +192,9 @@ const RestaurantFindings = () => {
   const handleSendMessage = async (messageOverride?: string) => {
     const messageText = messageOverride || currentInput;
     if (!messageText.trim()) return;
+
+    // Hide objectives when sending a message
+    setShowObjectives(false);
 
     const userMessage: ChatMessage = { role: "user", content: messageText };
     setMessages((prev) => [...prev, userMessage]);
@@ -460,6 +480,28 @@ const RestaurantFindings = () => {
                   </div>
                 </div>
               )}
+              
+              {/* Objective Selection Cards */}
+              {showObjectives && (
+                <div className="flex justify-start animate-fade-in">
+                  <div className="bg-background/50 backdrop-blur-sm border border-accent/20 rounded-2xl p-4 max-w-md">
+                    <p className="text-sm text-primary-foreground/80 mb-3">Got it! What's the priority today?</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {objectives.map((objective) => (
+                        <button
+                          key={objective.id}
+                          onClick={() => handleObjectiveClick(objective)}
+                          className="flex items-center gap-2 px-4 py-3 bg-accent/10 hover:bg-accent/20 text-accent-foreground rounded-lg text-sm transition-all hover:scale-105 text-left"
+                        >
+                          <span className="text-lg">{objective.icon}</span>
+                          <span className="flex-1">{objective.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               <div ref={messagesEndRef} />
             </div>
           </div>
