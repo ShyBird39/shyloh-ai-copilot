@@ -677,175 +677,175 @@ const RestaurantFindings = () => {
 
         <ResizableHandle withHandle className="bg-border hover:bg-primary/20 transition-colors" />
 
-        <ResizablePanel defaultSize={80}>
-
         {/* Main Chat Interface */}
-        <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <div className="border-b border-accent/20 bg-background/80 backdrop-blur-sm">
-          <div className="container mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <SidebarTrigger className="text-primary-foreground hover:bg-background/20" />
-                <div>
-                  <h1 className="text-lg font-bold text-primary-foreground">{data.name}</h1>
-                  <p className="text-xs text-primary-foreground/60">{data.location}</p>
+        <ResizablePanel defaultSize={sidebarOpen ? 55 : 80} minSize={40}>
+          <div className="h-full flex flex-col">
+            {/* Header */}
+            <div className="border-b border-accent/20 bg-background/80 backdrop-blur-sm">
+              <div className="container mx-auto px-4 py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <SidebarTrigger className="text-primary-foreground hover:bg-background/20" />
+                    <div>
+                      <h1 className="text-lg font-bold text-primary-foreground">{data.name}</h1>
+                      <p className="text-xs text-primary-foreground/60">{data.location}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleRefreshChat}
+                      className="text-primary-foreground hover:bg-background/20"
+                      title="Refresh chat"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => navigate('/')}
+                      className="text-primary-foreground hover:bg-background/20"
+                    >
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Sign Out
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSidebarOpen(!sidebarOpen)}
+                      className="bg-background/10 backdrop-blur-sm border-primary-foreground/20 text-primary-foreground hover:bg-background/20"
+                    >
+                      {sidebarOpen ? <PanelLeftClose className="w-4 h-4 mr-2" /> : <PanelLeft className="w-4 h-4 mr-2" />}
+                      Vitals
+                    </Button>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleRefreshChat}
-                  className="text-primary-foreground hover:bg-background/20"
-                  title="Refresh chat"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate('/')}
-                  className="text-primary-foreground hover:bg-background/20"
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Sign Out
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="bg-background/10 backdrop-blur-sm border-primary-foreground/20 text-primary-foreground hover:bg-background/20"
-                >
-                  {sidebarOpen ? <PanelLeftClose className="w-4 h-4 mr-2" /> : <PanelLeft className="w-4 h-4 mr-2" />}
-                  Vitals
-                </Button>
+            </div>
+
+            {/* Collapsible Quick Start Prompts */}
+            <Collapsible 
+              open={promptsVisible} 
+              onOpenChange={setPromptsVisible}
+              className="border-b border-accent/20 bg-background/50 backdrop-blur-sm"
+            >
+              <div className="container mx-auto px-4 py-3 max-w-4xl">
+                <CollapsibleTrigger className="flex items-center gap-2 text-sm text-primary-foreground/70 hover:text-primary-foreground transition-colors mb-3">
+                  {promptsVisible ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  Quick Start Prompts
+                </CollapsibleTrigger>
+                
+                <CollapsibleContent>
+                  <div className="flex flex-wrap gap-2">
+                    {samplePrompts.map((prompt, idx) => (
+                      <Button
+                        key={idx}
+                        variant="outline"
+                        size="sm"
+                        className="rounded-full px-4 py-2 h-auto bg-background/80 border-accent/20 text-primary-foreground/80 hover:bg-background hover:text-primary-foreground hover:border-accent/40 transition-all"
+                        onClick={() => handlePromptClick(prompt)}
+                      >
+                        {prompt}
+                      </Button>
+                    ))}
+                  </div>
+                </CollapsibleContent>
+              </div>
+            </Collapsible>
+
+            {/* Chat Area */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="container mx-auto px-4 py-8 max-w-4xl">
+                <div className="space-y-6">
+                  {messages.map((message, idx) => (
+                    <div
+                      key={idx}
+                      className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} animate-fade-in`}
+                    >
+                      <div
+                        className={`max-w-[75%] rounded-2xl p-4 ${
+                          message.role === "user"
+                            ? "bg-accent text-accent-foreground"
+                            : "bg-background/50 backdrop-blur-sm border border-accent/20 text-primary-foreground"
+                        }`}
+                      >
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {isTyping && (
+                    <div className="flex justify-start animate-fade-in">
+                      <div className="bg-background/50 backdrop-blur-sm border border-accent/20 rounded-2xl p-4">
+                        <div className="flex items-center gap-1">
+                          <div className="w-2 h-2 rounded-full bg-primary-foreground/60 animate-bounce [animation-delay:-0.3s]"></div>
+                          <div className="w-2 h-2 rounded-full bg-primary-foreground/60 animate-bounce [animation-delay:-0.15s]"></div>
+                          <div className="w-2 h-2 rounded-full bg-primary-foreground/60 animate-bounce"></div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Objective Selection Cards */}
+                  {showObjectives && (
+                    <div className="flex justify-start animate-fade-in">
+                      <div className="bg-background/50 backdrop-blur-sm border border-accent/20 rounded-2xl p-4 max-w-md">
+                        <p className="text-sm text-primary-foreground/80 mb-3">Got it! What's the priority today?</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {objectives.map((objective) => (
+                            <button
+                              key={objective.id}
+                              onClick={() => handleObjectiveClick(objective)}
+                              className="flex items-center gap-2 px-4 py-3 bg-accent/10 hover:bg-accent/20 text-accent-foreground rounded-lg text-sm transition-all hover:scale-105 text-left"
+                            >
+                              <span className="text-lg">{objective.icon}</span>
+                              <span className="flex-1">{objective.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div ref={messagesEndRef} />
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Collapsible Quick Start Prompts */}
-        <Collapsible 
-          open={promptsVisible} 
-          onOpenChange={setPromptsVisible}
-          className="border-b border-accent/20 bg-background/50 backdrop-blur-sm"
-        >
-          <div className="container mx-auto px-4 py-3 max-w-4xl">
-            <CollapsibleTrigger className="flex items-center gap-2 text-sm text-primary-foreground/70 hover:text-primary-foreground transition-colors mb-3">
-              {promptsVisible ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              Quick Start Prompts
-            </CollapsibleTrigger>
-            
-            <CollapsibleContent>
-              <div className="flex flex-wrap gap-2">
-                {samplePrompts.map((prompt, idx) => (
+            {/* Input Area - Sticky at bottom */}
+            <div className="sticky bottom-0 z-10 border-t border-accent/20 bg-background/95 backdrop-blur-sm">
+              <div className="container mx-auto px-4 py-4 max-w-4xl">
+                <div className="flex gap-3">
+                  <Input
+                    ref={inputRef}
+                    type="text"
+                    value={currentInput}
+                    onChange={(e) => setCurrentInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && !isTyping && handleSendMessage()}
+                    placeholder="Ask me anything about your restaurant..."
+                    disabled={isTyping}
+                    className="flex-1 bg-background/50 border-accent/30 text-foreground placeholder:text-muted-foreground"
+                  />
                   <Button
-                    key={idx}
-                    variant="outline"
-                    size="sm"
-                    className="rounded-full px-4 py-2 h-auto bg-background/80 border-accent/20 text-primary-foreground/80 hover:bg-background hover:text-primary-foreground hover:border-accent/40 transition-all"
-                    onClick={() => handlePromptClick(prompt)}
+                    onClick={() => handleSendMessage()}
+                    disabled={isTyping || !currentInput.trim()}
+                    size="icon"
+                    className="h-10 w-10"
                   >
-                    {prompt}
+                    {isTyping ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                   </Button>
-                ))}
+                </div>
               </div>
-            </CollapsibleContent>
-          </div>
-        </Collapsible>
-
-        {/* Chat Area */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="container mx-auto px-4 py-8 max-w-4xl">
-            <div className="space-y-6">
-              {messages.map((message, idx) => (
-                <div
-                  key={idx}
-                  className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} animate-fade-in`}
-                >
-                  <div
-                    className={`max-w-[75%] rounded-2xl p-4 ${
-                      message.role === "user"
-                        ? "bg-accent text-accent-foreground"
-                        : "bg-background/50 backdrop-blur-sm border border-accent/20 text-primary-foreground"
-                    }`}
-                  >
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                  </div>
-                </div>
-              ))}
-              {isTyping && (
-                <div className="flex justify-start animate-fade-in">
-                  <div className="bg-background/50 backdrop-blur-sm border border-accent/20 rounded-2xl p-4">
-                    <div className="flex items-center gap-1">
-                      <div className="w-2 h-2 rounded-full bg-primary-foreground/60 animate-bounce [animation-delay:-0.3s]"></div>
-                      <div className="w-2 h-2 rounded-full bg-primary-foreground/60 animate-bounce [animation-delay:-0.15s]"></div>
-                      <div className="w-2 h-2 rounded-full bg-primary-foreground/60 animate-bounce"></div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              {/* Objective Selection Cards */}
-              {showObjectives && (
-                <div className="flex justify-start animate-fade-in">
-                  <div className="bg-background/50 backdrop-blur-sm border border-accent/20 rounded-2xl p-4 max-w-md">
-                    <p className="text-sm text-primary-foreground/80 mb-3">Got it! What's the priority today?</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {objectives.map((objective) => (
-                        <button
-                          key={objective.id}
-                          onClick={() => handleObjectiveClick(objective)}
-                          className="flex items-center gap-2 px-4 py-3 bg-accent/10 hover:bg-accent/20 text-accent-foreground rounded-lg text-sm transition-all hover:scale-105 text-left"
-                        >
-                          <span className="text-lg">{objective.icon}</span>
-                          <span className="flex-1">{objective.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              <div ref={messagesEndRef} />
             </div>
           </div>
-        </div>
+        </ResizablePanel>
 
-        {/* Input Area - Sticky at bottom */}
-        <div className="sticky bottom-0 z-10 border-t border-accent/20 bg-background/95 backdrop-blur-sm">
-          <div className="container mx-auto px-4 py-4 max-w-4xl">
-            <div className="flex gap-3">
-              <Input
-                ref={inputRef}
-                type="text"
-                value={currentInput}
-                onChange={(e) => setCurrentInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && !isTyping && handleSendMessage()}
-                placeholder="Ask me anything about your restaurant..."
-                disabled={isTyping}
-                className="flex-1 bg-background/50 border-accent/30 text-foreground placeholder:text-muted-foreground"
-              />
-              <Button
-                onClick={() => handleSendMessage()}
-                disabled={isTyping || !currentInput.trim()}
-                size="icon"
-                className="h-10 w-10"
-              >
-                {isTyping ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Right Sidebar - Restaurant Details */}
-      <div
-        className={`${
-          sidebarOpen ? "w-96" : "w-0"
-        } transition-all duration-300 border-l border-accent/20 bg-background/95 backdrop-blur-sm overflow-hidden`}
-      >
+        {/* Right Sidebar - Restaurant Details - Resizable */}
+        {sidebarOpen && (
+          <>
+            <ResizableHandle withHandle className="bg-border hover:bg-primary/20 transition-colors" />
+            <ResizablePanel defaultSize={25} minSize={20} maxSize={35}>
+              <div className="h-full border-l border-accent/20 bg-background/95 backdrop-blur-sm overflow-hidden">
         <div className="h-full overflow-y-auto">
           <div className="p-6 space-y-6">
             {/* KPIs Section */}
@@ -1159,8 +1159,10 @@ const RestaurantFindings = () => {
             </Collapsible>
           </div>
         </div>
-      </div>
-        </ResizablePanel>
+              </div>
+            </ResizablePanel>
+          </>
+        )}
       </ResizablePanelGroup>
     </SidebarProvider>
   );
