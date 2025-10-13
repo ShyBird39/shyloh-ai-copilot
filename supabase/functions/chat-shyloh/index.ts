@@ -1,8 +1,11 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.0';
-import { default as pdfParse } from 'https://esm.sh/pdf-parse@1.1.1';
-import { default as mammoth } from 'https://esm.sh/mammoth@1.8.0';
+import { getDocument, GlobalWorkerOptions } from 'https://esm.sh/pdfjs-dist@4.0.379/legacy/build/pdf.mjs';
+import mammoth from 'https://esm.sh/mammoth@1.8.0/mammoth.browser?bundle';
+
+// Configure PDF.js worker for Deno runtime
+GlobalWorkerOptions.workerSrc = 'https://esm.sh/pdfjs-dist@4.0.379/legacy/build/pdf.worker.mjs';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -59,16 +62,29 @@ serve(async (req) => {
               try {
                 if (file.file_type === 'application/pdf') {
                   const arrayBuffer = await blob.arrayBuffer();
-                  const uint8Array = new Uint8Array(arrayBuffer);
-                  const pdfData = await pdfParse(uint8Array);
-                  extractedText = pdfData.text;
-                  console.log(`Extracted ${extractedText.length} chars from PDF ${file.file_name}`);
-                } else if (file.file_type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
-                           file.file_type === 'application/msword') {
+                  const typedArray = new Uint8Array(arrayBuffer);
+                  const loadingTask = getDocument({ data: typedArray });
+                  const pdfDoc = await loadingTask.promise;
+
+                  const textParts: string[] = [];
+                  const numPages = Math.min(pdfDoc.numPages, 50);
+                  for (let i = 1; i <= numPages; i++) {
+                    const page = await pdfDoc.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageText = (textContent.items as any[]).map((it: any) => it.str).join(' ');
+                    textParts.push(pageText);
+                  }
+                  extractedText = textParts.join('\n\n');
+                  console.log(`Successfully parsed PDF ${file.file_name} - ${numPages} pages`);
+                } else if (file.file_type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
                   const arrayBuffer = await blob.arrayBuffer();
                   const result = await mammoth.extractRawText({ arrayBuffer });
-                  extractedText = result.value;
-                  console.log(`Extracted ${extractedText.length} chars from Word doc ${file.file_name}`);
+                  extractedText = result.value || '';
+                  console.log(`Extracted ${extractedText.length} chars from Word docx ${file.file_name}`);
+                } else if (file.file_type === 'application/msword') {
+                  // .doc (binary) not supported by mammoth; skipping text extraction
+                  console.warn(`.doc format not supported for text extraction: ${file.file_name}`);
+                  extractedText = '';
                 } else if (file.file_type === 'text/csv' || 
                            file.file_type === 'text/plain' || 
                            file.file_type === 'text/markdown') {
