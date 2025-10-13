@@ -119,7 +119,7 @@ export function ChatSidebar({
                       className={`group relative p-3 rounded-lg border cursor-pointer transition-colors ${
                         currentConversationId === conv.id
                           ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-card hover:bg-accent border-border"
+                          : "bg-card text-card-foreground hover:bg-accent hover:text-accent-foreground border-border"
                       }`}
                       onClick={() => onLoadConversation(conv.id)}
                     >
