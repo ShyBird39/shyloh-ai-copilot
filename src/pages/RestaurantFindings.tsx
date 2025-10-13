@@ -402,7 +402,7 @@ const RestaurantFindings = () => {
             <div className="flex gap-3">
               <Input
                 ref={inputRef}
-                type="number"
+                type="text"
                 value={currentInput}
                 onChange={(e) => setCurrentInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && !savingKPIs && handleSendKPI()}
