@@ -1,7 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.0';
-import { getDocument } from 'https://esm.sh/pdfjs-dist@4.0.379/legacy/build/pdf.mjs';
+import pdf from "https://esm.sh/pdf-parse@1.1.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -56,40 +56,19 @@ serve(async (req) => {
 
               // Extract text based on file type
               if (file.file_type === 'application/pdf') {
-                // Use pdfjs-dist for robust PDF text extraction
+                // Use pdf-parse for robust PDF text extraction
                 try {
                   const arrayBuffer = await blob.arrayBuffer();
-                  const typedArray = new Uint8Array(arrayBuffer);
                   
-                  const loadingTask = getDocument({ data: typedArray });
-                  const pdfDoc = await loadingTask.promise;
+                  const pdfData = await pdf(arrayBuffer, {
+                    max: 50 // Limit to 50 pages for performance
+                  });
                   
-                  const textParts: string[] = [];
-                  const numPages = Math.min(pdfDoc.numPages, 50); // Limit to 50 pages for performance
-                  
-                  for (let i = 1; i <= numPages; i++) {
-                    const page = await pdfDoc.getPage(i);
-                    const textContent = await page.getTextContent();
-                    const pageText = textContent.items
-                      .map((item: any) => item.str)
-                      .join(' ');
-                    textParts.push(pageText);
-                  }
-                  
-                  extractedText = textParts.join('\n\n');
-                  console.log(`Successfully parsed PDF ${file.file_name} - ${numPages} pages`);
+                  extractedText = pdfData.text;
+                  console.log(`Successfully parsed PDF ${file.file_name} - ${pdfData.numpages} pages`);
                 } catch (pdfError) {
                   console.error(`Failed to parse PDF ${file.file_name}:`, pdfError);
-                  // Fallback to basic text extraction
-                  try {
-                    extractedText = await blob.text();
-                    if (extractedText.includes('\u0000')) {
-                      console.log(`PDF ${file.file_name} contains binary data - skipping`);
-                      extractedText = '';
-                    }
-                  } catch {
-                    console.log(`Could not extract text from PDF ${file.file_name}`);
-                  }
+                  extractedText = '';
                 }
               } else if (file.file_type === 'text/csv' || file.file_type === 'text/plain') {
                 extractedText = await blob.text();
