@@ -416,18 +416,19 @@ const RestaurantFindings = () => {
           className="border-b border-accent/20 bg-background/50 backdrop-blur-sm"
         >
           <div className="container mx-auto px-4 py-3 max-w-4xl">
-            <CollapsibleTrigger className="flex items-center gap-2 text-sm text-primary-foreground/70 hover:text-primary-foreground transition-colors">
+            <CollapsibleTrigger className="flex items-center gap-2 text-sm text-primary-foreground/70 hover:text-primary-foreground transition-colors mb-3">
               {promptsVisible ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               Quick Start Prompts
             </CollapsibleTrigger>
             
-            <CollapsibleContent className="pt-3">
-              <div className="flex flex-col gap-2">
+            <CollapsibleContent>
+              <div className="flex flex-wrap gap-2">
                 {samplePrompts.map((prompt, idx) => (
                   <Button
                     key={idx}
                     variant="outline"
-                    className="w-full justify-start rounded-full py-3 px-4 text-left border-accent/30 text-primary-foreground hover:bg-background/30"
+                    size="sm"
+                    className="rounded-full px-4 py-2 h-auto bg-background/80 border-accent/20 text-primary-foreground/80 hover:bg-background hover:text-primary-foreground hover:border-accent/40 transition-all"
                     onClick={() => handlePromptClick(prompt)}
                   >
                     {prompt}
