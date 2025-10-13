@@ -396,32 +396,6 @@ const RestaurantFindings = () => {
           </div>
         </div>
 
-        {/* Input Area - Sticky at top */}
-        <div className="sticky top-0 z-10 border-b border-accent/20 bg-background/95 backdrop-blur-sm">
-          <div className="container mx-auto px-4 py-4 max-w-4xl">
-            <div className="flex gap-3">
-              <Input
-                ref={inputRef}
-                type="text"
-                value={currentInput}
-                onChange={(e) => setCurrentInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && !savingKPIs && handleSendKPI()}
-                placeholder="Type your answer..."
-                disabled={savingKPIs}
-                className="flex-1 bg-background/50 border-accent/30 text-foreground placeholder:text-muted-foreground"
-              />
-              <Button
-                onClick={handleSendKPI}
-                disabled={savingKPIs || !currentInput.trim()}
-                size="icon"
-                className="h-10 w-10"
-              >
-                <Send className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-
         {/* Chat Area */}
         <div className="flex-1 overflow-y-auto">
           <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -443,6 +417,32 @@ const RestaurantFindings = () => {
                 </div>
               ))}
               <div ref={messagesEndRef} />
+            </div>
+          </div>
+        </div>
+
+        {/* Input Area - Sticky at bottom */}
+        <div className="sticky bottom-0 z-10 border-t border-accent/20 bg-background/95 backdrop-blur-sm">
+          <div className="container mx-auto px-4 py-4 max-w-4xl">
+            <div className="flex gap-3">
+              <Input
+                ref={inputRef}
+                type="text"
+                value={currentInput}
+                onChange={(e) => setCurrentInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && !savingKPIs && handleSendKPI()}
+                placeholder="Type your answer..."
+                disabled={savingKPIs}
+                className="flex-1 bg-background/50 border-accent/30 text-foreground placeholder:text-muted-foreground"
+              />
+              <Button
+                onClick={handleSendKPI}
+                disabled={savingKPIs || !currentInput.trim()}
+                size="icon"
+                className="h-10 w-10"
+              >
+                <Send className="w-4 h-4" />
+              </Button>
             </div>
           </div>
         </div>
