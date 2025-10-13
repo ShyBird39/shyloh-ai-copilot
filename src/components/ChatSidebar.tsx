@@ -201,7 +201,7 @@ export function ChatSidebar({
                   {files.map((file) => (
                     <div
                       key={file.id}
-                      className="p-3 rounded-lg border border-border bg-card hover:bg-accent transition-colors"
+                      className="p-3 rounded-lg border border-border bg-card text-card-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                     >
                       <div className="space-y-2">
                         <div className="flex items-start gap-2">
