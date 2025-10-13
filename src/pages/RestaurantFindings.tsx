@@ -449,6 +449,17 @@ const RestaurantFindings = () => {
                   </div>
                 </div>
               ))}
+              {isTyping && (
+                <div className="flex justify-start animate-fade-in">
+                  <div className="bg-background/50 backdrop-blur-sm border border-accent/20 rounded-2xl p-4">
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 rounded-full bg-primary-foreground/60 animate-bounce [animation-delay:-0.3s]"></div>
+                      <div className="w-2 h-2 rounded-full bg-primary-foreground/60 animate-bounce [animation-delay:-0.15s]"></div>
+                      <div className="w-2 h-2 rounded-full bg-primary-foreground/60 animate-bounce"></div>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div ref={messagesEndRef} />
             </div>
           </div>
