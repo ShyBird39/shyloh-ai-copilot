@@ -43,7 +43,7 @@ const RestaurantFindings = () => {
   const [kpiEditValue, setKpiEditValue] = useState("");
   
   // Chat state
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [promptsVisible, setPromptsVisible] = useState(true);
   const [hasCompletedKPIs, setHasCompletedKPIs] = useState<boolean | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -642,12 +642,14 @@ const RestaurantFindings = () => {
         <div className="border-b border-accent/20 bg-background/80 backdrop-blur-sm">
           <div className="container mx-auto px-4 py-4">
             <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-lg font-bold text-primary-foreground">{data.name}</h1>
-                <p className="text-xs text-primary-foreground/60">{data.location} • {data.category}</p>
+              <div className="flex items-center gap-3">
+                <SidebarTrigger className="text-primary-foreground hover:bg-background/20" />
+                <div>
+                  <h1 className="text-lg font-bold text-primary-foreground">{data.name}</h1>
+                  <p className="text-xs text-primary-foreground/60">{data.location}</p>
+                </div>
               </div>
               <div className="flex items-center gap-2">
-                <SidebarTrigger className="text-primary-foreground hover:bg-background/20" />
                 <Button
                   variant="ghost"
                   size="icon"

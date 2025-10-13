@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { MessageSquare, Upload, Trash2, FileText, Plus, X } from "lucide-react";
+import { MessageSquare, Upload, Trash2, FileText, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sidebar, SidebarContent, SidebarHeader, SidebarTrigger } from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarHeader } from "@/components/ui/sidebar";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -80,10 +80,9 @@ export function ChatSidebar({
   };
 
   return (
-    <Sidebar className="border-r border-border">
+    <Sidebar className="border-r border-border" collapsible="offcanvas">
       <SidebarHeader className="border-b border-border p-4 flex flex-row items-center justify-between">
         <h2 className="text-lg font-semibold">Chat & Files</h2>
-        <SidebarTrigger />
       </SidebarHeader>
 
       <SidebarContent>
