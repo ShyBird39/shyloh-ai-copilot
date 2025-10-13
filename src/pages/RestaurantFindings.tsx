@@ -329,20 +329,9 @@ const RestaurantFindings = () => {
         <div className="border-b border-accent/20 bg-background/80 backdrop-blur-sm">
           <div className="container mx-auto px-4 py-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Button
-                  variant="ghost"
-                  onClick={() => navigate('/')}
-                  className="text-primary-foreground hover:bg-background/20"
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Home
-                </Button>
-                <div className="h-6 w-px bg-accent/20" />
-                <div>
-                  <h1 className="text-lg font-bold text-primary-foreground">{data.name}</h1>
-                  <p className="text-xs text-primary-foreground/60">{data.location} • {data.category}</p>
-                </div>
+              <div>
+                <h1 className="text-lg font-bold text-primary-foreground">{data.name}</h1>
+                <p className="text-xs text-primary-foreground/60">{data.location} • {data.category}</p>
               </div>
               <Button
                 variant="outline"
