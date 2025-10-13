@@ -3,10 +3,8 @@ import { MessageSquare, Upload, Trash2, FileText, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sidebar, SidebarContent, SidebarHeader } from "@/components/ui/sidebar";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 
 interface Conversation {
   id: string;
@@ -80,13 +78,13 @@ export function ChatSidebar({
   };
 
   return (
-    <Sidebar className="border-r border-border" collapsible="offcanvas">
-      <SidebarHeader className="border-b border-border p-4 flex flex-row items-center justify-between">
+    <div className="h-full flex flex-col border-r border-border bg-background">
+      <div className="border-b border-border p-4 flex flex-row items-center justify-between">
         <h2 className="text-lg font-semibold">Chat & Files</h2>
-      </SidebarHeader>
+      </div>
 
-      <SidebarContent>
-        <Tabs defaultValue="conversations" className="w-full">
+      <div className="flex-1 overflow-hidden">
+        <Tabs defaultValue="conversations" className="w-full h-full flex flex-col">
           <TabsList className="w-full grid grid-cols-2 mx-4 mt-2" style={{ width: 'calc(100% - 2rem)' }}>
             <TabsTrigger value="conversations">
               <MessageSquare className="w-4 h-4 mr-2" />
@@ -249,7 +247,7 @@ export function ChatSidebar({
             </ScrollArea>
           </TabsContent>
         </Tabs>
-      </SidebarContent>
-    </Sidebar>
+      </div>
+    </div>
   );
 }
