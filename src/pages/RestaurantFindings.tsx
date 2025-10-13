@@ -216,9 +216,35 @@ const RestaurantFindings = () => {
   const handleSendKPI = async () => {
     if (!currentInput.trim()) return;
 
-    const value = parseFloat(currentInput);
-    if (isNaN(value) || value <= 0) {
-      toast.error("Please enter a valid number");
+    // Extract numbers from natural language input
+    const extractNumber = (input: string): number | null => {
+      // Remove common words and extract numbers
+      const cleaned = input.toLowerCase()
+        .replace(/\$/g, '')
+        .replace(/k/gi, '000')
+        .replace(/percent|%/gi, '')
+        .trim();
+      
+      // Try to find a number in the string
+      const matches = cleaned.match(/[\d,]+\.?\d*/);
+      if (matches) {
+        const numStr = matches[0].replace(/,/g, '');
+        const num = parseFloat(numStr);
+        return isNaN(num) ? null : num;
+      }
+      
+      return null;
+    };
+
+    const value = extractNumber(currentInput);
+    
+    if (value === null || value <= 0) {
+      setMessages((prev) => [
+        ...prev,
+        { role: "user", content: currentInput, type: "input" },
+        { role: "assistant", content: "I didn't catch a number in that response. Could you try again? For example: '50000' or '50k' or 'about 25%'", type: "question" },
+      ]);
+      setCurrentInput("");
       return;
     }
 
