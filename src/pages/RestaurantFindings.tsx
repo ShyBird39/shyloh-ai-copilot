@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft } from "lucide-react";
+import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -333,15 +333,26 @@ const RestaurantFindings = () => {
                 <h1 className="text-lg font-bold text-primary-foreground">{data.name}</h1>
                 <p className="text-xs text-primary-foreground/60">{data.location} • {data.category}</p>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="bg-background/10 backdrop-blur-sm border-primary-foreground/20 text-primary-foreground hover:bg-background/20"
-              >
-                {sidebarOpen ? <PanelLeftClose className="w-4 h-4 mr-2" /> : <PanelLeft className="w-4 h-4 mr-2" />}
-                Vitals
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate('/')}
+                  className="text-primary-foreground hover:bg-background/20"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign Out
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  className="bg-background/10 backdrop-blur-sm border-primary-foreground/20 text-primary-foreground hover:bg-background/20"
+                >
+                  {sidebarOpen ? <PanelLeftClose className="w-4 h-4 mr-2" /> : <PanelLeft className="w-4 h-4 mr-2" />}
+                  Vitals
+                </Button>
+              </div>
             </div>
           </div>
         </div>
