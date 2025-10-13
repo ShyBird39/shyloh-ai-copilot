@@ -1,6 +1,8 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.0';
+import { default as pdfParse } from 'https://esm.sh/pdf-parse@1.1.1';
+import { default as mammoth } from 'https://esm.sh/mammoth@1.8.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -54,8 +56,32 @@ serve(async (req) => {
               let extractedText = '';
 
               // Extract text based on file type
-              if (file.file_type === 'text/csv' || file.file_type === 'text/plain') {
-                extractedText = await blob.text();
+              try {
+                if (file.file_type === 'application/pdf') {
+                  const arrayBuffer = await blob.arrayBuffer();
+                  const uint8Array = new Uint8Array(arrayBuffer);
+                  const pdfData = await pdfParse(uint8Array);
+                  extractedText = pdfData.text;
+                  console.log(`Extracted ${extractedText.length} chars from PDF ${file.file_name}`);
+                } else if (file.file_type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
+                           file.file_type === 'application/msword') {
+                  const arrayBuffer = await blob.arrayBuffer();
+                  const result = await mammoth.extractRawText({ arrayBuffer });
+                  extractedText = result.value;
+                  console.log(`Extracted ${extractedText.length} chars from Word doc ${file.file_name}`);
+                } else if (file.file_type === 'text/csv' || 
+                           file.file_type === 'text/plain' || 
+                           file.file_type === 'text/markdown') {
+                  extractedText = await blob.text();
+                  console.log(`Extracted ${extractedText.length} chars from text file ${file.file_name}`);
+                } else if (file.file_type?.startsWith('image/')) {
+                  // Images are uploaded but text extraction would require OCR
+                  console.log(`Image file ${file.file_name} uploaded (OCR not implemented)`);
+                  extractedText = `[Image file: ${file.file_name}]`;
+                }
+              } catch (parseError) {
+                console.error(`Error parsing ${file.file_name} (${file.file_type}):`, parseError);
+                extractedText = '';
               }
 
               if (extractedText) {
