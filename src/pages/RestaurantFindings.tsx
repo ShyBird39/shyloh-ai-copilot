@@ -323,133 +323,119 @@ const RestaurantFindings = () => {
 
   return (
     <div className="min-h-screen bg-gradient-hero flex w-full">
-      {/* Left Sidebar - KPI Chat */}
-      <div
-        className={`${
-          sidebarOpen ? "w-96" : "w-0"
-        } transition-all duration-300 border-r border-accent/20 bg-background/95 backdrop-blur-sm flex flex-col overflow-hidden`}
-      >
-        <div className="p-4 border-b border-accent/20 flex items-center justify-between">
-          <div className="flex-1">
-            <h2 className="text-lg font-semibold text-foreground">KPI Setup</h2>
-            <p className="text-xs text-muted-foreground">Chat with Shyloh</p>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setSidebarOpen(false)}
-            className="h-8 w-8"
-          >
-            <PanelLeftClose className="h-4 w-4" />
-          </Button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-4">
-          <div className="space-y-4">
-            {messages.map((message, idx) => (
-              <div
-                key={idx}
-                className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-              >
-                <div
-                  className={`max-w-[85%] rounded-lg p-3 ${
-                    message.role === "user"
-                      ? "bg-accent text-accent-foreground"
-                      : "bg-muted/50 border border-accent/20"
-                  }`}
+      {/* Main Chat Interface */}
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <div className="border-b border-accent/20 bg-background/80 backdrop-blur-sm">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate('/')}
+                  className="text-primary-foreground hover:bg-background/20"
                 >
-                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Home
+                </Button>
+                <div className="h-6 w-px bg-accent/20" />
+                <div>
+                  <h1 className="text-lg font-bold text-primary-foreground">{data.name}</h1>
+                  <p className="text-xs text-primary-foreground/60">{data.location} • {data.category}</p>
                 </div>
               </div>
-            ))}
-            <div ref={messagesEndRef} />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="bg-background/10 backdrop-blur-sm border-primary-foreground/20 text-primary-foreground hover:bg-background/20"
+              >
+                {sidebarOpen ? <PanelLeftClose className="w-4 h-4 mr-2" /> : <PanelLeft className="w-4 h-4 mr-2" />}
+                Details
+              </Button>
+            </div>
           </div>
         </div>
 
-        <div className="p-4 border-t border-accent/20">
-          <div className="flex gap-2">
-            <Input
-              ref={inputRef}
-              type="number"
-              value={currentInput}
-              onChange={(e) => setCurrentInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && !savingKPIs && handleSendKPI()}
-              placeholder="Type your answer..."
-              disabled={savingKPIs}
-              className="flex-1"
-            />
-            <Button
-              onClick={handleSendKPI}
-              disabled={savingKPIs || !currentInput.trim()}
-              size="icon"
-            >
-              <Send className="w-4 h-4" />
-            </Button>
+        {/* Chat Area */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="container mx-auto px-4 py-8 max-w-4xl">
+            <div className="space-y-6">
+              {messages.map((message, idx) => (
+                <div
+                  key={idx}
+                  className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} animate-fade-in`}
+                >
+                  <div
+                    className={`max-w-[75%] rounded-2xl p-4 ${
+                      message.role === "user"
+                        ? "bg-accent text-accent-foreground"
+                        : "bg-background/50 backdrop-blur-sm border border-accent/20 text-primary-foreground"
+                    }`}
+                  >
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                  </div>
+                </div>
+              ))}
+              <div ref={messagesEndRef} />
+            </div>
+          </div>
+        </div>
+
+        {/* Input Area */}
+        <div className="border-t border-accent/20 bg-background/80 backdrop-blur-sm">
+          <div className="container mx-auto px-4 py-4 max-w-4xl">
+            <div className="flex gap-3">
+              <Input
+                ref={inputRef}
+                type="number"
+                value={currentInput}
+                onChange={(e) => setCurrentInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && !savingKPIs && handleSendKPI()}
+                placeholder="Type your answer..."
+                disabled={savingKPIs}
+                className="flex-1 bg-background/50 border-accent/30 text-foreground placeholder:text-muted-foreground"
+              />
+              <Button
+                onClick={handleSendKPI}
+                disabled={savingKPIs || !currentInput.trim()}
+                size="icon"
+                className="h-10 w-10"
+              >
+                <Send className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <section className="flex-1 relative overflow-hidden">
-        <div className="container relative z-10 mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="max-w-6xl mx-auto space-y-8">
-            {/* Back Button and Toggle */}
-            <div className="flex items-center gap-2">
-              {!sidebarOpen && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setSidebarOpen(true)}
-                  className="h-9 w-9"
-                >
-                  <PanelLeft className="h-4 w-4" />
-                </Button>
-              )}
-              <Button
-                variant="outline"
-                onClick={() => navigate('/')}
-                className="bg-background/10 backdrop-blur-sm border-primary-foreground/20 text-primary-foreground hover:bg-background/20"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back
-              </Button>
-            </div>
-
-            {/* Header */}
-            <div className="text-center space-y-4 animate-fade-in">
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-primary-foreground">
-                {data.name}
-              </h1>
-              <div className="flex items-center justify-center gap-6 text-primary-foreground/80">
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-5 h-5" />
-                  <span>{data.location}{data.zip_code ? ` (${data.zip_code})` : ''}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Tag className="w-5 h-5" />
-                  <span>{data.category}</span>
-                </div>
-              </div>
-            </div>
-
+      {/* Right Sidebar - Restaurant Details */}
+      <div
+        className={`${
+          sidebarOpen ? "w-96" : "w-0"
+        } transition-all duration-300 border-l border-accent/20 bg-background/95 backdrop-blur-sm overflow-hidden`}
+      >
+        <div className="h-full overflow-y-auto">
+          <div className="p-6 space-y-6">
             {/* REGGI Codes */}
-            <div className="grid md:grid-cols-2 gap-6 animate-fade-in">
-              <Card className="bg-background/10 backdrop-blur-sm border-primary-foreground/20 p-6 space-y-2">
-                <h3 className="text-lg font-semibold text-primary-foreground">Hex Code</h3>
-                <p className="text-2xl font-mono text-accent">{data.hex_code}</p>
-              </Card>
-              <Card className="bg-background/10 backdrop-blur-sm border-primary-foreground/20 p-6 space-y-2">
-                <h3 className="text-lg font-semibold text-primary-foreground">Augmented Hex Code</h3>
-                <p className="text-2xl font-mono text-accent">{data.augmented_hex_code}</p>
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-primary-foreground uppercase tracking-wide">REGGI Codes</h3>
+              <Card className="bg-background/50 border-accent/20 p-4 space-y-2">
+                <div>
+                  <p className="text-xs text-muted-foreground">Hex Code</p>
+                  <p className="text-lg font-mono text-accent">{data.hex_code}</p>
+                </div>
+                <div className="pt-2 border-t border-accent/10">
+                  <p className="text-xs text-muted-foreground">Augmented</p>
+                  <p className="text-lg font-mono text-accent">{data.augmented_hex_code}</p>
+                </div>
               </Card>
             </div>
 
             {/* Dimensions */}
-            <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-primary-foreground text-center">
-                REGGI Dimensions
-              </h2>
-              <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-primary-foreground uppercase tracking-wide">Dimensions</h3>
+              <div className="space-y-3">
                 {dimensions.map((dimension, index) => {
                   const descriptionFieldName = `${dimension.title.toLowerCase().replace(/ & /g, '_').replace(/ /g, '_')}_description`;
                   const isEditing = editingField === descriptionFieldName;
@@ -457,14 +443,13 @@ const RestaurantFindings = () => {
                   return (
                     <Card
                       key={index}
-                      className="bg-background/10 backdrop-blur-sm border-primary-foreground/20 p-6 space-y-3 animate-fade-in hover-scale"
-                      style={{ animationDelay: `${index * 0.1}s` }}
+                      className="bg-background/50 border-accent/20 p-4 space-y-2"
                     >
-                      <div className="flex items-start justify-between gap-4">
-                        <h3 className="text-lg font-semibold text-primary-foreground">
+                      <div className="flex items-start justify-between gap-2">
+                        <h4 className="text-sm font-semibold text-primary-foreground">
                           {dimension.title}
-                        </h3>
-                        <span className="text-accent font-mono text-sm">
+                        </h4>
+                        <span className="text-accent font-mono text-xs">
                           {dimension.code}
                         </span>
                       </div>
@@ -474,7 +459,7 @@ const RestaurantFindings = () => {
                           <Textarea
                             value={editValue}
                             onChange={(e) => setEditValue(e.target.value)}
-                            className="bg-background/20 border-primary-foreground/30 text-primary-foreground min-h-[100px]"
+                            className="bg-background/20 border-accent/30 text-primary-foreground min-h-[80px] text-sm"
                             autoFocus
                             disabled={saving}
                           />
@@ -483,7 +468,7 @@ const RestaurantFindings = () => {
                               size="sm"
                               onClick={() => handleSave(descriptionFieldName)}
                               disabled={saving}
-                              className="bg-accent hover:bg-accent/90"
+                              className="bg-accent hover:bg-accent/90 text-xs h-7"
                             >
                               {saving ? (
                                 <>
@@ -499,25 +484,27 @@ const RestaurantFindings = () => {
                               variant="outline"
                               onClick={handleCancel}
                               disabled={saving}
-                              className="bg-background/10 border-primary-foreground/20"
+                              className="text-xs h-7 bg-background/10 border-primary-foreground/20"
                             >
                               Cancel
                             </Button>
                           </div>
                         </div>
                       ) : (
-                        <div className="group relative">
-                          <p className="text-primary-foreground/80 leading-relaxed pr-8">
-                            {dimension.description}
+                        <>
+                          <p className="text-primary-foreground/70 text-xs leading-relaxed">
+                            {dimension.description || "No description provided"}
                           </p>
-                          <button
-                            onClick={() => handleEdit(descriptionFieldName, dimension.description)}
-                            disabled={editingField !== null}
-                            className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-30"
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleEdit(descriptionFieldName, dimension.description || "")}
+                            className="text-accent hover:text-accent-foreground hover:bg-accent/20 -ml-2 text-xs h-7"
                           >
-                            <Pencil className="w-4 h-4 text-primary-foreground/60 hover:text-accent" />
-                          </button>
-                        </div>
+                            <Pencil className="w-3 h-3 mr-1" />
+                            Edit
+                          </Button>
+                        </>
                       )}
                     </Card>
                   );
@@ -526,11 +513,7 @@ const RestaurantFindings = () => {
             </div>
           </div>
         </div>
-
-        {/* Decorative Elements */}
-        <div className="absolute top-20 left-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/20 rounded-full blur-3xl"></div>
-      </section>
+      </div>
     </div>
   );
 };
