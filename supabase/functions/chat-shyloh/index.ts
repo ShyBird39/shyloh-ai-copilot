@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.0';
+import { getDocument } from 'https://esm.sh/pdfjs-dist@4.0.379/legacy/build/pdf.mjs';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -34,7 +35,7 @@ serve(async (req) => {
           .select('*')
           .eq('restaurant_id', restaurantId)
           .order('uploaded_at', { ascending: false })
-          .limit(3);
+          .limit(10);
 
         if (!filesError && files && files.length > 0) {
           console.log(`Found ${files.length} files for restaurant ${restaurantId}`);
@@ -55,24 +56,48 @@ serve(async (req) => {
 
               // Extract text based on file type
               if (file.file_type === 'application/pdf') {
-                // For PDFs, attempt basic text extraction with native methods
+                // Use pdfjs-dist for robust PDF text extraction
                 try {
-                  extractedText = await blob.text();
-                  // If text extraction fails or returns binary, skip this file
-                  if (!extractedText || extractedText.includes('\u0000')) {
-                    console.log(`Skipping binary PDF ${file.file_name} - requires advanced parsing`);
-                    extractedText = '';
+                  const arrayBuffer = await blob.arrayBuffer();
+                  const typedArray = new Uint8Array(arrayBuffer);
+                  
+                  const loadingTask = getDocument({ data: typedArray });
+                  const pdfDoc = await loadingTask.promise;
+                  
+                  const textParts: string[] = [];
+                  const numPages = Math.min(pdfDoc.numPages, 50); // Limit to 50 pages for performance
+                  
+                  for (let i = 1; i <= numPages; i++) {
+                    const page = await pdfDoc.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items
+                      .map((item: any) => item.str)
+                      .join(' ');
+                    textParts.push(pageText);
                   }
-                } catch {
-                  console.log(`Could not extract text from PDF ${file.file_name}`);
+                  
+                  extractedText = textParts.join('\n\n');
+                  console.log(`Successfully parsed PDF ${file.file_name} - ${numPages} pages`);
+                } catch (pdfError) {
+                  console.error(`Failed to parse PDF ${file.file_name}:`, pdfError);
+                  // Fallback to basic text extraction
+                  try {
+                    extractedText = await blob.text();
+                    if (extractedText.includes('\u0000')) {
+                      console.log(`PDF ${file.file_name} contains binary data - skipping`);
+                      extractedText = '';
+                    }
+                  } catch {
+                    console.log(`Could not extract text from PDF ${file.file_name}`);
+                  }
                 }
               } else if (file.file_type === 'text/csv' || file.file_type === 'text/plain') {
                 extractedText = await blob.text();
               }
 
               if (extractedText) {
-                // Trim to avoid token overflow (max ~5k chars per file)
-                const trimmed = extractedText.slice(0, 5000).trim();
+                // Expanded limit: 50k chars per file for comprehensive context
+                const trimmed = extractedText.slice(0, 50000).trim();
                 fileTexts.push(`--- ${file.file_name} ---\n${trimmed}`);
                 console.log(`Extracted ${trimmed.length} chars from ${file.file_name}`);
               }
@@ -82,7 +107,7 @@ serve(async (req) => {
           }
 
           if (fileTexts.length > 0) {
-            docsContext = `\n\nRESTAURANT DOCUMENTS CONTEXT\nThe following documents have been uploaded for this restaurant. Use them to provide more informed answers:\n\n${fileTexts.join('\n\n')}`;
+            docsContext = `\n\nRESTAURANT DOCUMENTS CONTEXT\nThe following documents have been uploaded for this restaurant. When referencing information from these documents, cite the specific document name. Use this context to provide deeply informed, specific answers:\n\n${fileTexts.join('\n\n')}`;
             console.log(`Added ${fileTexts.length} documents to context (${docsContext.length} total chars)`);
           }
         }
@@ -196,9 +221,20 @@ WHAT TO AVOID
 - Overusing emojis (1-2 max, only when it lands)
 - Long paragraphs—layer depth, don't front-load it
 
-Remember: You're building their operational intuition, not just answering questions. Ask before you tell. Assume competence. Keep it tight.${docsContext}`;
+Remember: You're building their operational intuition, not just answering questions. Ask before you tell. Assume competence. Keep it tight.
 
+**DOCUMENT CITATION PROTOCOL**
+When uploaded documents are available in the context above:
+- Reference specific documents by name when using their information
+- Synthesize insights across multiple documents when relevant
+- Quote or paraphrase key sections to ground your advice in their specific context
+- If a question can be answered more accurately with document context, prioritize that over general knowledge${docsContext}`;
+
+    // Log total context size for monitoring
+    const totalContextChars = docsContext.length + systemPrompt.length;
+    const estimatedTokens = Math.ceil(totalContextChars / 4); // Rough estimate: 1 token ≈ 4 chars
     console.log(`Using model: ${model} for query complexity: ${isComplex ? 'high' : 'normal'}`);
+    console.log(`Total context size: ~${estimatedTokens} tokens (${totalContextChars} chars)`);
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -209,7 +245,7 @@ Remember: You're building their operational intuition, not just answering questi
       },
       body: JSON.stringify({
         model,
-        max_tokens: 2048,
+        max_tokens: 16384,
         system: systemPrompt,
         messages: messages.map((msg: any) => ({
           role: msg.role === 'assistant' ? 'assistant' : 'user',
