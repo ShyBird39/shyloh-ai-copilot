@@ -81,6 +81,39 @@ export type Database = {
           },
         ]
       }
+      restaurant_custom_knowledge: {
+        Row: {
+          category: string | null
+          content: string
+          created_at: string
+          id: string
+          is_active: boolean | null
+          restaurant_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          restaurant_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          restaurant_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       restaurant_files: {
         Row: {
           embeddings: Json | null

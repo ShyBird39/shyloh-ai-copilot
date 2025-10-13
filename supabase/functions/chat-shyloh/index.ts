@@ -30,6 +30,30 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Fetch custom knowledge/rules
+    let customKnowledgeContext = '';
+    if (restaurantId) {
+      try {
+        const { data: knowledge, error: knowledgeError } = await supabase
+          .from('restaurant_custom_knowledge')
+          .select('*')
+          .eq('restaurant_id', restaurantId)
+          .eq('is_active', true)
+          .order('created_at', { ascending: true });
+
+        if (!knowledgeError && knowledge && knowledge.length > 0) {
+          const knowledgeTexts = knowledge.map(k => 
+            `**${k.title}**${k.category ? ` (${k.category})` : ''}\n${k.content}`
+          ).join('\n\n');
+          
+          customKnowledgeContext = `\n\nRESTAURANT-SPECIFIC RULES & KNOWLEDGE\nThe operator has provided the following custom rules, concepts, and knowledge specific to their restaurant. Always prioritize and reference these when relevant to the conversation:\n\n${knowledgeTexts}`;
+          console.log(`Added ${knowledge.length} custom knowledge entries to context`);
+        }
+      } catch (error) {
+        console.error('Error fetching custom knowledge:', error);
+      }
+    }
+
     // Fetch and parse uploaded documents
     let docsContext = '';
     if (restaurantId) {
@@ -233,7 +257,7 @@ When uploaded documents are available in the context above:
 - Reference specific documents by name when using their information
 - Synthesize insights across multiple documents when relevant
 - Quote or paraphrase key sections to ground your advice in their specific context
-- If a question can be answered more accurately with document context, prioritize that over general knowledge${docsContext}`;
+- If a question can be answered more accurately with document context, prioritize that over general knowledge${customKnowledgeContext}${docsContext}`;
 
     // Log total context size for monitoring
     const totalContextChars = docsContext.length + systemPrompt.length;

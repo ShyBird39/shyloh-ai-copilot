@@ -40,8 +40,19 @@ const RestaurantFindings = () => {
   const [kpisOpen, setKpisOpen] = useState(false);
   const [dimensionsOpen, setDimensionsOpen] = useState(false);
   const [reggiOpen, setReggiOpen] = useState(false);
+  const [knowledgeOpen, setKnowledgeOpen] = useState(false);
   const [editingKPI, setEditingKPI] = useState<string | null>(null);
   const [kpiEditValue, setKpiEditValue] = useState("");
+  
+  // Custom knowledge state
+  const [customKnowledge, setCustomKnowledge] = useState<any[]>([]);
+  const [showAddKnowledge, setShowAddKnowledge] = useState(false);
+  const [editingKnowledge, setEditingKnowledge] = useState<string | null>(null);
+  const [knowledgeForm, setKnowledgeForm] = useState({
+    title: "",
+    content: "",
+    category: "",
+  });
   
   // Chat state
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -305,10 +316,28 @@ const RestaurantFindings = () => {
   };
 
 
-  // Load conversations and files on mount
+  const loadCustomKnowledge = async () => {
+    if (!id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from("restaurant_custom_knowledge")
+        .select("*")
+        .eq("restaurant_id", id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setCustomKnowledge(data || []);
+    } catch (error) {
+      console.error("Error loading custom knowledge:", error);
+    }
+  };
+
+  // Load conversations, files, and custom knowledge on mount
   useEffect(() => {
     loadConversations();
     loadFiles();
+    loadCustomKnowledge();
   }, [id]);
 
   // One-time: auto-remove any stuck unprocessed upload for this restaurant
@@ -609,6 +638,107 @@ const RestaurantFindings = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleSaveKnowledge = async () => {
+    if (!id) return;
+
+    if (!knowledgeForm.title.trim() || !knowledgeForm.content.trim()) {
+      toast.error("Title and content are required");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      if (editingKnowledge) {
+        // Update existing
+        const { error } = await supabase
+          .from("restaurant_custom_knowledge")
+          .update({
+            title: knowledgeForm.title.trim(),
+            content: knowledgeForm.content.trim(),
+            category: knowledgeForm.category.trim() || null,
+          })
+          .eq("id", editingKnowledge);
+
+        if (error) throw error;
+        toast.success("Rule updated successfully");
+      } else {
+        // Create new
+        const { error } = await supabase
+          .from("restaurant_custom_knowledge")
+          .insert({
+            restaurant_id: id,
+            title: knowledgeForm.title.trim(),
+            content: knowledgeForm.content.trim(),
+            category: knowledgeForm.category.trim() || null,
+            is_active: true,
+          });
+
+        if (error) throw error;
+        toast.success("Rule added successfully");
+      }
+
+      setKnowledgeForm({ title: "", content: "", category: "" });
+      setShowAddKnowledge(false);
+      setEditingKnowledge(null);
+      loadCustomKnowledge();
+    } catch (error) {
+      console.error("Error saving knowledge:", error);
+      toast.error("Failed to save rule");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleEditKnowledge = (knowledge: any) => {
+    setKnowledgeForm({
+      title: knowledge.title,
+      content: knowledge.content,
+      category: knowledge.category || "",
+    });
+    setEditingKnowledge(knowledge.id);
+    setShowAddKnowledge(true);
+  };
+
+  const handleDeleteKnowledge = async (knowledgeId: string) => {
+    try {
+      const { error } = await supabase
+        .from("restaurant_custom_knowledge")
+        .delete()
+        .eq("id", knowledgeId);
+
+      if (error) throw error;
+
+      toast.success("Rule deleted");
+      loadCustomKnowledge();
+    } catch (error) {
+      console.error("Error deleting knowledge:", error);
+      toast.error("Failed to delete rule");
+    }
+  };
+
+  const handleToggleKnowledge = async (knowledgeId: string, currentState: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("restaurant_custom_knowledge")
+        .update({ is_active: !currentState })
+        .eq("id", knowledgeId);
+
+      if (error) throw error;
+
+      toast.success(currentState ? "Rule deactivated" : "Rule activated");
+      loadCustomKnowledge();
+    } catch (error) {
+      console.error("Error toggling knowledge:", error);
+      toast.error("Failed to update rule");
+    }
+  };
+
+  const handleCancelKnowledge = () => {
+    setShowAddKnowledge(false);
+    setEditingKnowledge(null);
+    setKnowledgeForm({ title: "", content: "", category: "" });
   };
 
   if (loading) {
@@ -1155,6 +1285,135 @@ const RestaurantFindings = () => {
                       <p className="text-lg font-mono text-accent">{data.augmented_hex_code}</p>
                     </div>
                   </Card>
+                </CollapsibleContent>
+              </div>
+            </Collapsible>
+
+            {/* Custom Knowledge Section */}
+            <Collapsible open={knowledgeOpen} onOpenChange={setKnowledgeOpen}>
+              <div className="space-y-3">
+                <CollapsibleTrigger className="flex items-center justify-between w-full group">
+                  <h3 className="text-sm font-semibold text-primary-foreground uppercase tracking-wide">Custom Rules</h3>
+                  {knowledgeOpen ? <ChevronUp className="w-4 h-4 text-primary-foreground/60 group-hover:text-primary-foreground transition-colors" /> : <ChevronDown className="w-4 h-4 text-primary-foreground/60 group-hover:text-primary-foreground transition-colors" />}
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="space-y-3">
+                    {!showAddKnowledge && (
+                      <Button
+                        onClick={() => setShowAddKnowledge(true)}
+                        size="sm"
+                        className="w-full bg-accent hover:bg-accent/90 text-xs h-8"
+                      >
+                        + Add New Rule
+                      </Button>
+                    )}
+
+                    {showAddKnowledge && (
+                      <Card className="bg-background/50 border-accent/20 p-4 space-y-3">
+                        <Input
+                          placeholder="Rule title (e.g., 'Friday Night Protocol')"
+                          value={knowledgeForm.title}
+                          onChange={(e) => setKnowledgeForm({ ...knowledgeForm, title: e.target.value })}
+                          className="bg-background/20 border-accent/30 text-primary-foreground h-8 text-sm"
+                          disabled={saving}
+                        />
+                        <Input
+                          placeholder="Category (optional, e.g., 'Operations')"
+                          value={knowledgeForm.category}
+                          onChange={(e) => setKnowledgeForm({ ...knowledgeForm, category: e.target.value })}
+                          className="bg-background/20 border-accent/30 text-primary-foreground h-8 text-sm"
+                          disabled={saving}
+                        />
+                        <Textarea
+                          placeholder="Enter the rule or concept details..."
+                          value={knowledgeForm.content}
+                          onChange={(e) => setKnowledgeForm({ ...knowledgeForm, content: e.target.value })}
+                          className="bg-background/20 border-accent/30 text-primary-foreground min-h-[100px] text-sm"
+                          disabled={saving}
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={handleSaveKnowledge}
+                            disabled={saving || !knowledgeForm.title.trim() || !knowledgeForm.content.trim()}
+                            size="sm"
+                            className="bg-accent hover:bg-accent/90 text-xs h-7"
+                          >
+                            {saving ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : null}
+                            {editingKnowledge ? "Update" : "Save"}
+                          </Button>
+                          <Button
+                            onClick={handleCancelKnowledge}
+                            disabled={saving}
+                            size="sm"
+                            variant="outline"
+                            className="text-xs h-7 bg-background/10 border-primary-foreground/20"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </Card>
+                    )}
+
+                    {customKnowledge.length === 0 && !showAddKnowledge && (
+                      <Card className="bg-background/50 border-accent/20 p-4">
+                        <p className="text-xs text-primary-foreground/60 text-center">
+                          No custom rules yet. Add rules that Shyloh should remember about your restaurant.
+                        </p>
+                      </Card>
+                    )}
+
+                    {customKnowledge.map((knowledge) => (
+                      <Card
+                        key={knowledge.id}
+                        className={`bg-background/50 border-accent/20 p-4 space-y-2 ${!knowledge.is_active ? 'opacity-50' : ''}`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-sm font-semibold text-primary-foreground">
+                                {knowledge.title}
+                              </h4>
+                              {knowledge.category && (
+                                <span className="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded">
+                                  {knowledge.category}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-primary-foreground/70 text-xs leading-relaxed mt-1">
+                              {knowledge.content}
+                            </p>
+                          </div>
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleToggleKnowledge(knowledge.id, knowledge.is_active)}
+                              className="text-primary-foreground/60 hover:text-primary-foreground hover:bg-accent/20 h-6 w-6 p-0"
+                              title={knowledge.is_active ? "Deactivate" : "Activate"}
+                            >
+                              {knowledge.is_active ? "✓" : "○"}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleEditKnowledge(knowledge)}
+                              className="text-accent hover:text-accent-foreground hover:bg-accent/20 h-6 w-6 p-0"
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleDeleteKnowledge(knowledge.id)}
+                              className="text-destructive hover:text-destructive-foreground hover:bg-destructive/20 h-6 w-6 p-0"
+                            >
+                              ×
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
                 </CollapsibleContent>
               </div>
             </Collapsible>
