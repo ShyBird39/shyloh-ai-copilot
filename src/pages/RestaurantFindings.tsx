@@ -8,7 +8,7 @@ import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ChatSidebar } from "@/components/ChatSidebar";
 
 interface KPIData {
@@ -647,6 +647,7 @@ const RestaurantFindings = () => {
                 <p className="text-xs text-primary-foreground/60">{data.location} • {data.category}</p>
               </div>
               <div className="flex items-center gap-2">
+                <SidebarTrigger className="text-primary-foreground hover:bg-background/20" />
                 <Button
                   variant="ghost"
                   size="icon"
