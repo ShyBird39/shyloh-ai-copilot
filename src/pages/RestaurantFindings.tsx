@@ -351,7 +351,7 @@ const RestaurantFindings = () => {
                 className="bg-background/10 backdrop-blur-sm border-primary-foreground/20 text-primary-foreground hover:bg-background/20"
               >
                 {sidebarOpen ? <PanelLeftClose className="w-4 h-4 mr-2" /> : <PanelLeft className="w-4 h-4 mr-2" />}
-                Details
+                Vitals
               </Button>
             </div>
           </div>
