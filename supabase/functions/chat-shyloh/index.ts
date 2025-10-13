@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,11 +13,83 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, restaurantData, kpiData } = await req.json();
+    const { messages, restaurantData, kpiData, restaurantId } = await req.json();
     
     const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
     if (!ANTHROPIC_API_KEY) {
       throw new Error('ANTHROPIC_API_KEY is not configured');
+    }
+
+    // Create Supabase client with service role for file access
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Fetch and parse uploaded documents
+    let docsContext = '';
+    if (restaurantId) {
+      try {
+        const { data: files, error: filesError } = await supabase
+          .from('restaurant_files')
+          .select('*')
+          .eq('restaurant_id', restaurantId)
+          .order('uploaded_at', { ascending: false })
+          .limit(3);
+
+        if (!filesError && files && files.length > 0) {
+          console.log(`Found ${files.length} files for restaurant ${restaurantId}`);
+          const fileTexts: string[] = [];
+
+          for (const file of files) {
+            try {
+              const { data: blob, error: downloadError } = await supabase.storage
+                .from('restaurant-documents')
+                .download(file.file_path);
+
+              if (downloadError || !blob) {
+                console.error(`Failed to download ${file.file_name}:`, downloadError);
+                continue;
+              }
+
+              let extractedText = '';
+
+              // Extract text based on file type
+              if (file.file_type === 'application/pdf') {
+                // For PDFs, attempt basic text extraction with native methods
+                try {
+                  extractedText = await blob.text();
+                  // If text extraction fails or returns binary, skip this file
+                  if (!extractedText || extractedText.includes('\u0000')) {
+                    console.log(`Skipping binary PDF ${file.file_name} - requires advanced parsing`);
+                    extractedText = '';
+                  }
+                } catch {
+                  console.log(`Could not extract text from PDF ${file.file_name}`);
+                }
+              } else if (file.file_type === 'text/csv' || file.file_type === 'text/plain') {
+                extractedText = await blob.text();
+              }
+
+              if (extractedText) {
+                // Trim to avoid token overflow (max ~5k chars per file)
+                const trimmed = extractedText.slice(0, 5000).trim();
+                fileTexts.push(`--- ${file.file_name} ---\n${trimmed}`);
+                console.log(`Extracted ${trimmed.length} chars from ${file.file_name}`);
+              }
+            } catch (parseError) {
+              console.error(`Error parsing ${file.file_name}:`, parseError);
+            }
+          }
+
+          if (fileTexts.length > 0) {
+            docsContext = `\n\nRESTAURANT DOCUMENTS CONTEXT\nThe following documents have been uploaded for this restaurant. Use them to provide more informed answers:\n\n${fileTexts.join('\n\n')}`;
+            console.log(`Added ${fileTexts.length} documents to context (${docsContext.length} total chars)`);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching restaurant files:', error);
+        // Continue without docs context
+      }
     }
 
     // Detect if query requires complex reasoning
@@ -123,7 +196,7 @@ WHAT TO AVOID
 - Overusing emojis (1-2 max, only when it lands)
 - Long paragraphs—layer depth, don't front-load it
 
-Remember: You're building their operational intuition, not just answering questions. Ask before you tell. Assume competence. Keep it tight.`;
+Remember: You're building their operational intuition, not just answering questions. Ask before you tell. Assume competence. Keep it tight.${docsContext}`;
 
     console.log(`Using model: ${model} for query complexity: ${isComplex ? 'high' : 'normal'}`);
 

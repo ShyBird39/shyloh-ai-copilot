@@ -466,6 +466,7 @@ const RestaurantFindings = () => {
             messages: [...messages, userMessage],
             restaurantData: data,
             kpiData: kpiData,
+            restaurantId: id,
           }),
         }
       );
