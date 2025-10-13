@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Send, PanelLeftClose, PanelLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -56,7 +56,7 @@ const KPIInput = ({ restaurantId, restaurantName, onBack }: KPIInputProps) => {
   const [saving, setSaving] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const steps = [
     {
@@ -114,7 +114,7 @@ const KPIInput = ({ restaurantId, restaurantName, onBack }: KPIInputProps) => {
   }, [messages]);
 
   useEffect(() => {
-    inputRef.current?.focus();
+    textareaRef.current?.focus();
   }, [messages]);
 
   const handleSend = async () => {
@@ -241,20 +241,24 @@ const KPIInput = ({ restaurantId, restaurantName, onBack }: KPIInputProps) => {
         {/* Input Area */}
         <div className="p-4 border-t border-accent/20">
           <div className="flex gap-2">
-            <Input
-              ref={inputRef}
-              type="number"
+            <Textarea
+              ref={textareaRef}
               value={currentInput}
               onChange={(e) => setCurrentInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && !saving && handleSend()}
-              placeholder="Type your answer..."
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey && !saving) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              placeholder="Type your answer... (Shift+Enter for new line)"
               disabled={saving}
-              className="flex-1"
+              className="flex-1 min-h-[60px] max-h-[120px] resize-none"
             />
             <Button
               onClick={handleSend}
               disabled={saving || !currentInput.trim()}
-              size="icon"
+              className="h-[60px]"
             >
               <Send className="w-4 h-4" />
             </Button>
