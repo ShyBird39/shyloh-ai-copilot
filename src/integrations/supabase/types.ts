@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       chat_conversations: {
         Row: {
+          conversation_type: string | null
           created_at: string | null
           id: string
           message_count: number | null
@@ -24,6 +25,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          conversation_type?: string | null
           created_at?: string | null
           id?: string
           message_count?: number | null
@@ -32,6 +34,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          conversation_type?: string | null
           created_at?: string | null
           id?: string
           message_count?: number | null

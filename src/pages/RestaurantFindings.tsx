@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { ChatSidebar } from "@/components/ChatSidebar";
+import { OnboardingProgress } from "@/components/OnboardingProgress";
 
 interface KPIData {
   avg_weekly_sales: number | null;
@@ -83,6 +84,27 @@ const RestaurantFindings = () => {
   const [files, setFiles] = useState<any[]>([]);
   const [cleanupAttempted, setCleanupAttempted] = useState(false);
 
+  // Onboarding state
+  const [isOnboarding, setIsOnboarding] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(1);
+  const [reggiDimensionsReviewed, setReggiDimensionsReviewed] = useState({
+    culinary: false,
+    vibe: false,
+    social: false,
+    time: false,
+    operational: false,
+    hospitality: false,
+  });
+  const [currentReggiDimension, setCurrentReggiDimension] = useState(0);
+  const [onboardingSteps, setOnboardingSteps] = useState([
+    { id: 'welcome', label: 'Welcome', completed: false, active: true },
+    { id: 'reggi', label: 'Profile', completed: false, active: false },
+    { id: 'kpis', label: 'KPIs', completed: false, active: false },
+    { id: 'files', label: 'Files', completed: false, active: false },
+    { id: 'rules', label: 'Rules', completed: false, active: false },
+    { id: 'complete', label: 'Complete', completed: false, active: false },
+  ]);
+
   const samplePrompts = [
     "I am here to...",
     "Check my vitals...",
@@ -98,6 +120,28 @@ const RestaurantFindings = () => {
 
   const handleRefreshChat = () => {
     handleNewConversation();
+  };
+
+  const startOnboarding = () => {
+    setIsOnboarding(true);
+    setOnboardingStep(1);
+    setCurrentConversationId(null);
+    setMessages([
+      {
+        role: "assistant",
+        content: `Hey! 👋 I'm Shyloh—think of me as your ops thought partner. I'm here to help you run a tighter, more profitable operation. Before we dive in, I need to learn about your restaurant. This'll take about 5 minutes. Sound good?`,
+        type: "question",
+      },
+    ]);
+    updateOnboardingProgress(1, true);
+  };
+
+  const updateOnboardingProgress = (step: number, makeActive: boolean = false) => {
+    setOnboardingSteps(prev => prev.map((s, idx) => ({
+      ...s,
+      completed: idx < step - 1,
+      active: makeActive ? idx === step - 1 : s.active,
+    })));
   };
 
   const handleNewConversation = () => {
@@ -276,6 +320,15 @@ const RestaurantFindings = () => {
 
       if (error) throw error;
       setConversations(data || []);
+      
+      // Check for onboarding completion - only on first load
+      if (!isOnboarding && messages.length === 0) {
+        const hasOnboarding = data?.some(conv => conv.conversation_type === 'onboarding');
+        if (!hasOnboarding && data?.length === 0) {
+          // First time user - start onboarding
+          startOnboarding();
+        }
+      }
     } catch (error) {
       console.error("Error loading conversations:", error);
     }
@@ -445,9 +498,229 @@ const RestaurantFindings = () => {
     }
   }, [messages, sidebarOpen]);
 
+  const handleOnboardingMessage = async (messageText: string) => {
+    if (!id || !data) return;
+
+    const userMessage: ChatMessage = { role: "user", content: messageText };
+    setMessages((prev) => [...prev, userMessage]);
+    setCurrentInput("");
+    setIsTyping(true);
+
+    // Step 1: Welcome - just confirm and move to REGGI
+    if (onboardingStep === 1) {
+      setTimeout(() => {
+        setMessages((prev) => [...prev, {
+          role: "assistant",
+          content: `Perfect! Let's take 5 minutes to make sure I've got your profile dialed in correctly. I've broken your restaurant down into 6 dimensions—the DNA of your concept. For each one, tell me if I'm on track or if we need to adjust. Ready?`,
+        }]);
+        setIsTyping(false);
+        
+        // Move to step 2 and start REGGI review
+        setOnboardingStep(2);
+        updateOnboardingProgress(2, true);
+        
+        // Show first REGGI dimension after short delay
+        setTimeout(() => {
+          showNextReggiDimension();
+        }, 1000);
+      }, 800);
+      return;
+    }
+
+    // Step 2: REGGI Review
+    if (onboardingStep === 2) {
+      const dimensionKeys = ['culinary', 'vibe', 'social', 'time', 'operational', 'hospitality'] as const;
+      const currentKey = dimensionKeys[currentReggiDimension];
+      
+      // If user wants to edit, save the edit
+      if (messageText.toLowerCase() !== 'looks good' && messageText.toLowerCase() !== 'correct' && messageText.toLowerCase() !== 'yes') {
+        const fieldMap = {
+          culinary: 'culinary_beverage_description',
+          vibe: 'vibe_energy_description',
+          social: 'social_context_description',
+          time: 'time_occasion_description',
+          operational: 'operational_execution_description',
+          hospitality: 'hospitality_approach_description',
+        };
+
+        try {
+          await supabase
+            .from('restaurants')
+            .update({ [fieldMap[currentKey]]: messageText })
+            .eq('id', id);
+          
+          setData({ ...data, [fieldMap[currentKey]]: messageText });
+        } catch (error) {
+          console.error('Error updating dimension:', error);
+        }
+      }
+
+      // Mark this dimension as reviewed
+      setReggiDimensionsReviewed(prev => ({ ...prev, [currentKey]: true }));
+      
+      setIsTyping(false);
+
+      // Check if all dimensions reviewed
+      const allReviewed = currentReggiDimension >= 5;
+      
+      if (allReviewed) {
+        // REGGI complete, move to KPIs
+        setTimeout(() => {
+          setMessages((prev) => [...prev, {
+            role: "assistant",
+            content: `Perfect! ✅ Your concept profile is locked in. Now let's get into the numbers—this is where I can really help you operationally.`,
+          }]);
+          
+          setTimeout(() => {
+            setMessages((prev) => [...prev, {
+              role: "assistant",
+              content: `I need a few quick ops numbers. Let's start with your **average weekly sales** in dollars. Feel free to round!`,
+            }]);
+          }, 1000);
+          
+          setOnboardingStep(3);
+          updateOnboardingProgress(3, true);
+        }, 800);
+      } else {
+        // Show next dimension
+        setCurrentReggiDimension(prev => prev + 1);
+        setTimeout(() => {
+          showNextReggiDimension();
+        }, 800);
+      }
+      return;
+    }
+
+    // Step 3: KPI Collection - simplified version
+    if (onboardingStep === 3) {
+      // This is a simplified flow - in production you'd want the full KPIInput flow
+      // For now, just acknowledge and move to files
+      setIsTyping(false);
+      setTimeout(() => {
+        setMessages((prev) => [...prev, {
+          role: "assistant",
+          content: `Got it! For the full KPI setup, you can use the "Vitals" section in the sidebar anytime. Let's move on to getting you set up with data files.`,
+        }]);
+        
+        setTimeout(() => {
+          setMessages((prev) => [...prev, {
+            role: "assistant",
+            content: `You're dialed in! 🎉 One more thing to unlock my full potential—**real data**.\n\nI work way better when I have your actual numbers. Got any of these?\n- 📊 Sales reports (weekly/monthly)\n- ⏰ Labor/time entry reports\n- 🧾 Invoices or order guides\n- 📋 Menu pricing sheets\n- 📈 P&L statements\n\nYou can upload them now using the 📎 **paperclip icon** below, or just type "skip" to add them later. What works?`,
+          }]);
+        }, 1200);
+        
+        setOnboardingStep(4);
+        updateOnboardingProgress(4, true);
+      }, 800);
+      return;
+    }
+
+    // Step 4: File upload prompt
+    if (onboardingStep === 4) {
+      setIsTyping(false);
+      setTimeout(() => {
+        setMessages((prev) => [...prev, {
+          role: "assistant",
+          content: `No problem—you can upload files anytime using the 📎 icon. The more data I have, the sharper I get!`,
+        }]);
+        
+        setTimeout(() => {
+          setMessages((prev) => [...prev, {
+            role: "assistant",
+            content: `Last thing—got any house rules, policies, or quirks I should know about? Stuff like:\n- 'VIP guests get complimentary champagne'\n- 'Happy hour is 3-6pm Tuesday-Friday'\n- 'Our signature dish is the rotisserie chicken'\n\nYou can add these in **Custom Rules** on the right sidebar, or just type "skip" to add them later.`,
+          }]);
+        }, 1200);
+        
+        setOnboardingStep(5);
+        updateOnboardingProgress(5, true);
+      }, 800);
+      return;
+    }
+
+    // Step 5: Custom knowledge intro
+    if (onboardingStep === 5) {
+      setIsTyping(false);
+      
+      // Complete onboarding
+      setTimeout(async () => {
+        setMessages((prev) => [...prev, {
+          role: "assistant",
+          content: `Alright, **${data.name}**—you're all set! ✅\n\nNow—what do you want to tackle first? I can help you:\n- 📊 **Check your vitals** (KPIs vs. benchmarks)\n- 📈 **Increase sales**\n- 💰 **Lower costs**\n- ✨ **Improve guest experience**\n- 👥 **Improve team experience**\n\nOr just ask me anything—I'm here.`,
+        }]);
+        
+        setOnboardingStep(6);
+        updateOnboardingProgress(6, true);
+        setShowObjectives(true);
+        
+        // Create onboarding conversation record
+        try {
+          const { data: newConv, error } = await supabase
+            .from("chat_conversations")
+            .insert({
+              restaurant_id: id,
+              title: "Onboarding",
+              message_count: messages.length + 2,
+              conversation_type: 'onboarding',
+            })
+            .select()
+            .single();
+
+          if (error) throw error;
+
+          // Save all messages to this conversation
+          const messagesToSave = [...messages, userMessage].map((msg, idx) => ({
+            conversation_id: newConv.id,
+            role: msg.role,
+            content: msg.content,
+            created_at: new Date(Date.now() + idx * 1000).toISOString(),
+          }));
+
+          await supabase.from("chat_messages").insert(messagesToSave);
+          
+          setCurrentConversationId(newConv.id);
+          loadConversations();
+          
+          // End onboarding
+          setIsOnboarding(false);
+        } catch (error) {
+          console.error('Error saving onboarding conversation:', error);
+        }
+      }, 800);
+      return;
+    }
+
+    setIsTyping(false);
+  };
+
+  const showNextReggiDimension = () => {
+    if (!data) return;
+    
+    const dimensions = [
+      { key: 'culinary', label: 'Culinary & Beverage', field: 'culinary_beverage_description' },
+      { key: 'vibe', label: 'Vibe & Energy', field: 'vibe_energy_description' },
+      { key: 'social', label: 'Social Context', field: 'social_context_description' },
+      { key: 'time', label: 'Time & Occasion', field: 'time_occasion_description' },
+      { key: 'operational', label: 'Operational Execution', field: 'operational_execution_description' },
+      { key: 'hospitality', label: 'Hospitality Approach', field: 'hospitality_approach_description' },
+    ];
+
+    const dimension = dimensions[currentReggiDimension];
+    const description = data[dimension.field] || 'Not yet defined';
+
+    setMessages((prev) => [...prev, {
+      role: "assistant",
+      content: `Here's how I understand your **${dimension.label}**:\n\n*"${description}"*\n\nDoes that capture it? Type "looks good" to confirm, or tell me what to adjust.`,
+    }]);
+  };
+
   const handleSendMessage = async (messageOverride?: string) => {
     const messageText = messageOverride || currentInput;
     if (!messageText.trim() || !id) return;
+
+    // Route to onboarding handler if in onboarding mode
+    if (isOnboarding) {
+      return handleOnboardingMessage(messageText);
+    }
 
     // Hide objectives when sending a message
     setShowObjectives(false);
@@ -869,9 +1142,14 @@ const RestaurantFindings = () => {
               </div>
             </div>
 
+            {/* Onboarding Progress */}
+            {isOnboarding && (
+              <OnboardingProgress steps={onboardingSteps} currentStep={onboardingStep} />
+            )}
+
             {/* Collapsible Quick Start Prompts */}
             <Collapsible 
-              open={promptsVisible} 
+              open={promptsVisible && !isOnboarding} 
               onOpenChange={setPromptsVisible}
               className="border-b border-accent/20 bg-background/50 backdrop-blur-sm"
             >
