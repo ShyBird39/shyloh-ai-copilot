@@ -34,6 +34,11 @@ const RestaurantFindings = () => {
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [saving, setSaving] = useState(false);
+  const [kpisOpen, setKpisOpen] = useState(false);
+  const [dimensionsOpen, setDimensionsOpen] = useState(false);
+  const [reggiOpen, setReggiOpen] = useState(false);
+  const [editingKPI, setEditingKPI] = useState<string | null>(null);
+  const [kpiEditValue, setKpiEditValue] = useState("");
   
   // Chat state
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -273,6 +278,46 @@ const RestaurantFindings = () => {
     }
   };
 
+  const handleEditKPI = (kpiName: string, currentValue: number | null) => {
+    setEditingKPI(kpiName);
+    setKpiEditValue(currentValue?.toString() || "");
+  };
+
+  const handleCancelKPI = () => {
+    setEditingKPI(null);
+    setKpiEditValue("");
+  };
+
+  const handleSaveKPI = async (kpiName: string) => {
+    if (!data) return;
+
+    const numValue = parseFloat(kpiEditValue);
+    if (isNaN(numValue)) {
+      toast.error("Please enter a valid number");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('restaurant_kpis')
+        .update({ [kpiName]: numValue })
+        .eq('restaurant_id', data.id);
+
+      if (error) throw error;
+
+      toast.success("KPI updated successfully");
+      setKPIData({ ...kpiData, [kpiName]: numValue });
+      setEditingKPI(null);
+      setKpiEditValue("");
+    } catch (error) {
+      console.error('Error saving KPI:', error);
+      toast.error("Failed to save KPI");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-hero flex items-center justify-center">
@@ -444,100 +489,315 @@ const RestaurantFindings = () => {
       >
         <div className="h-full overflow-y-auto">
           <div className="p-6 space-y-6">
-            {/* REGGI Codes */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-primary-foreground uppercase tracking-wide">REGGI Codes</h3>
-              <Card className="bg-background/50 border-accent/20 p-4 space-y-2">
-                <div>
-                  <p className="text-xs text-muted-foreground">Hex Code</p>
-                  <p className="text-lg font-mono text-accent">{data.hex_code}</p>
-                </div>
-                <div className="pt-2 border-t border-accent/10">
-                  <p className="text-xs text-muted-foreground">Augmented</p>
-                  <p className="text-lg font-mono text-accent">{data.augmented_hex_code}</p>
-                </div>
-              </Card>
-            </div>
-
-            {/* Dimensions */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-primary-foreground uppercase tracking-wide">Dimensions</h3>
+            {/* KPIs Section */}
+            <Collapsible open={kpisOpen} onOpenChange={setKpisOpen}>
               <div className="space-y-3">
-                {dimensions.map((dimension, index) => {
-                  const descriptionFieldName = `${dimension.title.toLowerCase().replace(/ & /g, '_').replace(/ /g, '_')}_description`;
-                  const isEditing = editingField === descriptionFieldName;
-                  
-                  return (
-                    <Card
-                      key={index}
-                      className="bg-background/50 border-accent/20 p-4 space-y-2"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <h4 className="text-sm font-semibold text-primary-foreground">
-                          {dimension.title}
-                        </h4>
-                        <span className="text-accent font-mono text-xs">
-                          {dimension.code}
-                        </span>
-                      </div>
-                      
-                      {isEditing ? (
-                        <div className="space-y-2">
-                          <Textarea
-                            value={editValue}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            className="bg-background/20 border-accent/30 text-primary-foreground min-h-[80px] text-sm"
-                            autoFocus
-                            disabled={saving}
-                          />
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              onClick={() => handleSave(descriptionFieldName)}
-                              disabled={saving}
-                              className="bg-accent hover:bg-accent/90 text-xs h-7"
-                            >
-                              {saving ? (
-                                <>
-                                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                                  Saving...
-                                </>
-                              ) : (
-                                "Save"
+                <CollapsibleTrigger className="flex items-center justify-between w-full group">
+                  <h3 className="text-sm font-semibold text-primary-foreground uppercase tracking-wide">KPIs</h3>
+                  {kpisOpen ? <ChevronUp className="w-4 h-4 text-primary-foreground/60 group-hover:text-primary-foreground transition-colors" /> : <ChevronDown className="w-4 h-4 text-primary-foreground/60 group-hover:text-primary-foreground transition-colors" />}
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="space-y-3">
+                    {hasCompletedKPIs && (
+                      <>
+                        <Card className="bg-background/50 border-accent/20 p-4 space-y-3">
+                          {/* Average Weekly Sales */}
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <p className="text-xs font-medium text-primary-foreground">Avg Weekly Sales</p>
+                              {editingKPI !== "avg_weekly_sales" && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleEditKPI("avg_weekly_sales", kpiData.avg_weekly_sales)}
+                                  className="text-accent hover:text-accent-foreground hover:bg-accent/20 h-6 text-xs p-1"
+                                >
+                                  <Pencil className="w-3 h-3" />
+                                </Button>
                               )}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={handleCancel}
-                              disabled={saving}
-                              className="text-xs h-7 bg-background/10 border-primary-foreground/20"
-                            >
-                              Cancel
-                            </Button>
+                            </div>
+                            {editingKPI === "avg_weekly_sales" ? (
+                              <div className="space-y-2">
+                                <Input
+                                  type="number"
+                                  value={kpiEditValue}
+                                  onChange={(e) => setKpiEditValue(e.target.value)}
+                                  className="bg-background/20 border-accent/30 text-primary-foreground h-8 text-sm"
+                                  autoFocus
+                                  disabled={saving}
+                                />
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleSaveKPI("avg_weekly_sales")}
+                                    disabled={saving}
+                                    className="bg-accent hover:bg-accent/90 text-xs h-6"
+                                  >
+                                    {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save"}
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={handleCancelKPI}
+                                    disabled={saving}
+                                    className="text-xs h-6 bg-background/10 border-primary-foreground/20"
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-primary-foreground/90 text-sm">${kpiData.avg_weekly_sales?.toLocaleString() || "N/A"}</p>
+                            )}
                           </div>
-                        </div>
-                      ) : (
-                        <>
-                          <p className="text-primary-foreground/70 text-xs leading-relaxed">
-                            {dimension.description || "No description provided"}
-                          </p>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleEdit(descriptionFieldName, dimension.description || "")}
-                            className="text-accent hover:text-accent-foreground hover:bg-accent/20 -ml-2 text-xs h-7"
-                          >
-                            <Pencil className="w-3 h-3 mr-1" />
-                            Edit
-                          </Button>
-                        </>
-                      )}
-                    </Card>
-                  );
-                })}
+
+                          {/* Food Cost Goal */}
+                          <div className="space-y-1 pt-2 border-t border-accent/10">
+                            <div className="flex items-center justify-between">
+                              <p className="text-xs font-medium text-primary-foreground">Food Cost Goal</p>
+                              {editingKPI !== "food_cost_goal" && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleEditKPI("food_cost_goal", kpiData.food_cost_goal)}
+                                  className="text-accent hover:text-accent-foreground hover:bg-accent/20 h-6 text-xs p-1"
+                                >
+                                  <Pencil className="w-3 h-3" />
+                                </Button>
+                              )}
+                            </div>
+                            {editingKPI === "food_cost_goal" ? (
+                              <div className="space-y-2">
+                                <Input
+                                  type="number"
+                                  value={kpiEditValue}
+                                  onChange={(e) => setKpiEditValue(e.target.value)}
+                                  className="bg-background/20 border-accent/30 text-primary-foreground h-8 text-sm"
+                                  autoFocus
+                                  disabled={saving}
+                                />
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleSaveKPI("food_cost_goal")}
+                                    disabled={saving}
+                                    className="bg-accent hover:bg-accent/90 text-xs h-6"
+                                  >
+                                    {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save"}
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={handleCancelKPI}
+                                    disabled={saving}
+                                    className="text-xs h-6 bg-background/10 border-primary-foreground/20"
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-primary-foreground/90 text-sm">{kpiData.food_cost_goal}%</p>
+                            )}
+                          </div>
+
+                          {/* Labor Cost Goal */}
+                          <div className="space-y-1 pt-2 border-t border-accent/10">
+                            <div className="flex items-center justify-between">
+                              <p className="text-xs font-medium text-primary-foreground">Labor Cost Goal</p>
+                              {editingKPI !== "labor_cost_goal" && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleEditKPI("labor_cost_goal", kpiData.labor_cost_goal)}
+                                  className="text-accent hover:text-accent-foreground hover:bg-accent/20 h-6 text-xs p-1"
+                                >
+                                  <Pencil className="w-3 h-3" />
+                                </Button>
+                              )}
+                            </div>
+                            {editingKPI === "labor_cost_goal" ? (
+                              <div className="space-y-2">
+                                <Input
+                                  type="number"
+                                  value={kpiEditValue}
+                                  onChange={(e) => setKpiEditValue(e.target.value)}
+                                  className="bg-background/20 border-accent/30 text-primary-foreground h-8 text-sm"
+                                  autoFocus
+                                  disabled={saving}
+                                />
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleSaveKPI("labor_cost_goal")}
+                                    disabled={saving}
+                                    className="bg-accent hover:bg-accent/90 text-xs h-6"
+                                  >
+                                    {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save"}
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={handleCancelKPI}
+                                    disabled={saving}
+                                    className="text-xs h-6 bg-background/10 border-primary-foreground/20"
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-primary-foreground/90 text-sm">{kpiData.labor_cost_goal}%</p>
+                            )}
+                          </div>
+
+                          {/* Sales Mix */}
+                          <div className="space-y-2 pt-2 border-t border-accent/10">
+                            <p className="text-xs font-medium text-primary-foreground">Sales Mix</p>
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div className="flex justify-between">
+                                <span className="text-primary-foreground/70">Food:</span>
+                                <span className="text-primary-foreground">{kpiData.sales_mix_food}%</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-primary-foreground/70">Liquor:</span>
+                                <span className="text-primary-foreground">{kpiData.sales_mix_liquor}%</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-primary-foreground/70">Wine:</span>
+                                <span className="text-primary-foreground">{kpiData.sales_mix_wine}%</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-primary-foreground/70">Beer:</span>
+                                <span className="text-primary-foreground">{kpiData.sales_mix_beer}%</span>
+                              </div>
+                              <div className="flex justify-between col-span-2">
+                                <span className="text-primary-foreground/70">NA Beverages:</span>
+                                <span className="text-primary-foreground">{kpiData.sales_mix_na_bev}%</span>
+                              </div>
+                            </div>
+                          </div>
+                        </Card>
+                      </>
+                    )}
+                    {!hasCompletedKPIs && (
+                      <Card className="bg-background/50 border-accent/20 p-4">
+                        <p className="text-xs text-primary-foreground/60">Complete the initial conversation to set your KPIs</p>
+                      </Card>
+                    )}
+                  </div>
+                </CollapsibleContent>
               </div>
-            </div>
+            </Collapsible>
+
+            {/* Dimensions Section */}
+            <Collapsible open={dimensionsOpen} onOpenChange={setDimensionsOpen}>
+              <div className="space-y-3">
+                <CollapsibleTrigger className="flex items-center justify-between w-full group">
+                  <h3 className="text-sm font-semibold text-primary-foreground uppercase tracking-wide">Dimensions</h3>
+                  {dimensionsOpen ? <ChevronUp className="w-4 h-4 text-primary-foreground/60 group-hover:text-primary-foreground transition-colors" /> : <ChevronDown className="w-4 h-4 text-primary-foreground/60 group-hover:text-primary-foreground transition-colors" />}
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="space-y-3">
+                    {dimensions.map((dimension, index) => {
+                      const descriptionFieldName = `${dimension.title.toLowerCase().replace(/ & /g, '_').replace(/ /g, '_')}_description`;
+                      const isEditing = editingField === descriptionFieldName;
+                      
+                      return (
+                        <Card
+                          key={index}
+                          className="bg-background/50 border-accent/20 p-4 space-y-2"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <h4 className="text-sm font-semibold text-primary-foreground">
+                              {dimension.title}
+                            </h4>
+                            <span className="text-accent font-mono text-xs">
+                              {dimension.code}
+                            </span>
+                          </div>
+                          
+                          {isEditing ? (
+                            <div className="space-y-2">
+                              <Textarea
+                                value={editValue}
+                                onChange={(e) => setEditValue(e.target.value)}
+                                className="bg-background/20 border-accent/30 text-primary-foreground min-h-[80px] text-sm"
+                                autoFocus
+                                disabled={saving}
+                              />
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleSave(descriptionFieldName)}
+                                  disabled={saving}
+                                  className="bg-accent hover:bg-accent/90 text-xs h-7"
+                                >
+                                  {saving ? (
+                                    <>
+                                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                      Saving...
+                                    </>
+                                  ) : (
+                                    "Save"
+                                  )}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={handleCancel}
+                                  disabled={saving}
+                                  className="text-xs h-7 bg-background/10 border-primary-foreground/20"
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <p className="text-primary-foreground/70 text-xs leading-relaxed">
+                                {dimension.description || "No description provided"}
+                              </p>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleEdit(descriptionFieldName, dimension.description || "")}
+                                className="text-accent hover:text-accent-foreground hover:bg-accent/20 -ml-2 text-xs h-7"
+                              >
+                                <Pencil className="w-3 h-3 mr-1" />
+                                Edit
+                              </Button>
+                            </>
+                          )}
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </CollapsibleContent>
+              </div>
+            </Collapsible>
+
+            {/* REGGI Codes Section */}
+            <Collapsible open={reggiOpen} onOpenChange={setReggiOpen}>
+              <div className="space-y-3">
+                <CollapsibleTrigger className="flex items-center justify-between w-full group">
+                  <h3 className="text-sm font-semibold text-primary-foreground uppercase tracking-wide">REGGI Codes</h3>
+                  {reggiOpen ? <ChevronUp className="w-4 h-4 text-primary-foreground/60 group-hover:text-primary-foreground transition-colors" /> : <ChevronDown className="w-4 h-4 text-primary-foreground/60 group-hover:text-primary-foreground transition-colors" />}
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <Card className="bg-background/50 border-accent/20 p-4 space-y-2">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Hex Code</p>
+                      <p className="text-lg font-mono text-accent">{data.hex_code}</p>
+                    </div>
+                    <div className="pt-2 border-t border-accent/10">
+                      <p className="text-xs text-muted-foreground">Augmented</p>
+                      <p className="text-lg font-mono text-accent">{data.augmented_hex_code}</p>
+                    </div>
+                  </Card>
+                </CollapsibleContent>
+              </div>
+            </Collapsible>
           </div>
         </div>
       </div>
