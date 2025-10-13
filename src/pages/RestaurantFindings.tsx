@@ -36,18 +36,8 @@ const RestaurantFindings = () => {
   
   // KPI Chat state
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      role: "assistant",
-      content: "Hey! 👋 I need a few quick ops numbers to personalize your analysis and make real recommendations. Just give me your best guesses if you're not 100% sure.",
-      type: "question",
-    },
-    {
-      role: "assistant",
-      content: "What are your average weekly sales $? (Feel free to round)",
-      type: "question",
-    },
-  ]);
+  const [hasCompletedKPIs, setHasCompletedKPIs] = useState<boolean | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentInput, setCurrentInput] = useState("");
   const [currentStep, setCurrentStep] = useState(0);
   const [kpiData, setKPIData] = useState<KPIData>({
@@ -115,7 +105,7 @@ const RestaurantFindings = () => {
     },
   ];
 
-  // Fetch restaurant data
+  // Fetch restaurant data and KPIs
   useEffect(() => {
     const fetchRestaurant = async () => {
       if (!id) {
@@ -124,13 +114,14 @@ const RestaurantFindings = () => {
       }
 
       try {
-        const { data: restaurant, error } = await supabase
+        // Fetch restaurant data
+        const { data: restaurant, error: restaurantError } = await supabase
           .from('restaurants')
           .select('*')
           .eq('id', id)
           .single();
 
-        if (error) throw error;
+        if (restaurantError) throw restaurantError;
 
         if (!restaurant) {
           toast.error("Restaurant not found");
@@ -139,6 +130,54 @@ const RestaurantFindings = () => {
         }
 
         setData(restaurant);
+
+        // Check if KPIs exist
+        const { data: existingKPIs, error: kpisError } = await supabase
+          .from('restaurant_kpis')
+          .select('*')
+          .eq('restaurant_id', id)
+          .maybeSingle();
+
+        if (kpisError) {
+          console.error('Error fetching KPIs:', kpisError);
+        }
+
+        if (existingKPIs) {
+          // Returning user - has KPIs
+          setHasCompletedKPIs(true);
+          setKPIData({
+            avg_weekly_sales: existingKPIs.avg_weekly_sales,
+            food_cost_goal: existingKPIs.food_cost_goal,
+            labor_cost_goal: existingKPIs.labor_cost_goal,
+            sales_mix_food: existingKPIs.sales_mix_food,
+            sales_mix_liquor: existingKPIs.sales_mix_liquor,
+            sales_mix_wine: existingKPIs.sales_mix_wine,
+            sales_mix_beer: existingKPIs.sales_mix_beer,
+            sales_mix_na_bev: existingKPIs.sales_mix_na_bev,
+          });
+          setMessages([
+            {
+              role: "assistant",
+              content: "Welcome back! I'm here to help you explore your restaurant's data and insights. What would you like to know?",
+              type: "question",
+            },
+          ]);
+        } else {
+          // First-time user - no KPIs
+          setHasCompletedKPIs(false);
+          setMessages([
+            {
+              role: "assistant",
+              content: "First things first, I am a restaurant intelligence tool. I don't have all the answers by any means, but through conversation, hopefully the two of us have more of them. I know a lot about restaurants but just a little bit about yours. This initial conversation is meant to help me learn more. That way I can be more helpful to you going forward.",
+              type: "question",
+            },
+            {
+              role: "assistant",
+              content: "What are your average weekly sales $? (Feel free to round)",
+              type: "question",
+            },
+          ]);
+        }
       } catch (error) {
         console.error('Error fetching restaurant:', error);
         toast.error("Failed to load restaurant data");
