@@ -4,14 +4,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-
-interface RestaurantFindingsProps {
-  data: any;
-  onBack: () => void;
-  onUpdate: (updatedData: any) => void;
-}
 
 interface KPIData {
   avg_weekly_sales: number | null;
@@ -30,7 +25,11 @@ interface ChatMessage {
   type?: "question" | "confirmation" | "input";
 }
 
-const RestaurantFindings = ({ data, onBack, onUpdate }: RestaurantFindingsProps) => {
+const RestaurantFindings = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [saving, setSaving] = useState(false);
@@ -116,6 +115,42 @@ const RestaurantFindings = ({ data, onBack, onUpdate }: RestaurantFindingsProps)
     },
   ];
 
+  // Fetch restaurant data
+  useEffect(() => {
+    const fetchRestaurant = async () => {
+      if (!id) {
+        navigate('/');
+        return;
+      }
+
+      try {
+        const { data: restaurant, error } = await supabase
+          .from('restaurants')
+          .select('*')
+          .eq('id', id)
+          .single();
+
+        if (error) throw error;
+
+        if (!restaurant) {
+          toast.error("Restaurant not found");
+          navigate('/');
+          return;
+        }
+
+        setData(restaurant);
+      } catch (error) {
+        console.error('Error fetching restaurant:', error);
+        toast.error("Failed to load restaurant data");
+        navigate('/');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRestaurant();
+  }, [id, navigate]);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -165,6 +200,8 @@ const RestaurantFindings = ({ data, onBack, onUpdate }: RestaurantFindingsProps)
   };
 
   const saveKPIs = async () => {
+    if (!data) return;
+
     setSavingKPIs(true);
     setMessages((prev) => [
       ...prev,
@@ -206,6 +243,8 @@ const RestaurantFindings = ({ data, onBack, onUpdate }: RestaurantFindingsProps)
   };
 
   const handleSave = async (fieldName: string) => {
+    if (!data) return;
+
     if (!editValue.trim()) {
       toast.error("Description cannot be empty");
       return;
@@ -226,7 +265,7 @@ const RestaurantFindings = ({ data, onBack, onUpdate }: RestaurantFindingsProps)
       if (error) throw error;
 
       toast.success("Changes saved successfully");
-      onUpdate({ ...data, [fieldName]: editValue.trim() });
+      setData({ ...data, [fieldName]: editValue.trim() });
       setEditingField(null);
       setEditValue("");
     } catch (error) {
@@ -236,6 +275,18 @@ const RestaurantFindings = ({ data, onBack, onUpdate }: RestaurantFindingsProps)
       setSaving(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-hero flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary-foreground" />
+      </div>
+    );
+  }
+
+  if (!data) {
+    return null;
+  }
 
   const dimensions = [
     {
@@ -269,7 +320,6 @@ const RestaurantFindings = ({ data, onBack, onUpdate }: RestaurantFindingsProps)
       description: data.hospitality_approach_description,
     },
   ];
-
 
   return (
     <div className="min-h-screen bg-gradient-hero flex w-full">
@@ -357,7 +407,7 @@ const RestaurantFindings = ({ data, onBack, onUpdate }: RestaurantFindingsProps)
               )}
               <Button
                 variant="outline"
-                onClick={onBack}
+                onClick={() => navigate('/')}
                 className="bg-background/10 backdrop-blur-sm border-primary-foreground/20 text-primary-foreground hover:bg-background/20"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />

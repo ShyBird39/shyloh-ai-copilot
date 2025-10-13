@@ -1,15 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import RestaurantFindings from "./RestaurantFindings";
 
 const Hero = () => {
+  const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
   const [restaurantName, setRestaurantName] = useState("");
   const [location, setLocation] = useState("");
-  const [restaurantData, setRestaurantData] = useState<any>(null);
   const [multipleResults, setMultipleResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -41,9 +41,9 @@ const Hero = () => {
         return;
       }
 
-      // If single result, show it directly
+      // If single result, navigate to it directly
       if (data.length === 1) {
-        setRestaurantData(data[0]);
+        navigate(`/restaurant/${data[0].id}`);
       } else {
         // Multiple results, show selection UI
         setMultipleResults(data);
@@ -57,22 +57,12 @@ const Hero = () => {
   };
 
   const handleSelectRestaurant = (restaurant: any) => {
-    setRestaurantData(restaurant);
-    setMultipleResults([]);
+    navigate(`/restaurant/${restaurant.id}`);
   };
 
   const handleBack = () => {
-    setRestaurantData(null);
     setMultipleResults([]);
   };
-
-  const handleUpdate = (updatedData: any) => {
-    setRestaurantData(updatedData);
-  };
-
-  if (restaurantData) {
-    return <RestaurantFindings data={restaurantData} onBack={handleBack} onUpdate={handleUpdate} />;
-  }
 
   // Show selection UI if multiple results
   if (multipleResults.length > 0) {
