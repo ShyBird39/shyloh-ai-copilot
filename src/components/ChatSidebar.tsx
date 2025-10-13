@@ -232,14 +232,17 @@ export function ChatSidebar({
                             </p>
                           )}
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6"
-                          onClick={() => onDeleteFile(file.id)}
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => onDeleteFile(file.id)}
+                            aria-label={`Delete ${file.file_name}`}
+                          >
+                            <Trash2 className="w-3 h-3 mr-1" />
+                            Delete
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}
