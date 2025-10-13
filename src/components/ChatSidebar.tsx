@@ -203,46 +203,44 @@ export function ChatSidebar({
                   {files.map((file) => (
                     <div
                       key={file.id}
-                      className="group p-3 rounded-lg border border-border bg-card hover:bg-accent transition-colors"
+                      className="p-3 rounded-lg border border-border bg-card hover:bg-accent transition-colors"
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <FileText className="w-4 h-4 flex-shrink-0" />
-                            <h3 className="font-medium text-sm truncate">
+                      <div className="space-y-2">
+                        <div className="flex items-start gap-2">
+                          <FileText className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-medium text-sm break-words" title={file.file_name}>
                               {file.file_name}
                             </h3>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {formatFileSize(file.file_size)} • {file.file_type}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {formatDistanceToNow(new Date(file.uploaded_at), {
+                                addSuffix: true,
+                              })}
+                            </p>
+                            {file.processed && (
+                              <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                                ✓ {file.embeddings_generated ? "Ready for RAG" : "Processed"}
+                              </p>
+                            )}
+                            {!file.processed && (
+                              <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                                Processing...
+                              </p>
+                            )}
                           </div>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {formatFileSize(file.file_size)} • {file.file_type}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {formatDistanceToNow(new Date(file.uploaded_at), {
-                              addSuffix: true,
-                            })}
-                          </p>
-                          {file.processed && (
-                            <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                              ✓ {file.embeddings_generated ? "Ready for RAG" : "Processed"}
-                            </p>
-                          )}
-                          {!file.processed && (
-                            <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                              Processing...
-                            </p>
-                          )}
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => onDeleteFile(file.id)}
-                            aria-label={`Delete ${file.file_name}`}
-                          >
-                            <Trash2 className="w-3 h-3 mr-1" />
-                            Delete
-                          </Button>
-                        </div>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => onDeleteFile(file.id)}
+                          className="w-full"
+                        >
+                          <Trash2 className="w-3 h-3 mr-1" />
+                          Delete File
+                        </Button>
                       </div>
                     </div>
                   ))}

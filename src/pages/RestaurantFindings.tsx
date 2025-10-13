@@ -9,6 +9,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { ChatSidebar } from "@/components/ChatSidebar";
 
 interface KPIData {
@@ -656,21 +657,27 @@ const RestaurantFindings = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen bg-gradient-hero flex w-full">
-        {/* Left Sidebar - Chat History & Files */}
-        <ChatSidebar
-          restaurantId={id || ""}
-          conversations={conversations}
-          files={files}
-          currentConversationId={currentConversationId}
-          onNewConversation={handleNewConversation}
-          onLoadConversation={handleLoadConversation}
-          onDeleteConversation={handleDeleteConversation}
-          onFileUpload={handleFileUpload}
-          onDeleteFile={handleDeleteFile}
-          onRefreshConversations={loadConversations}
-          onRefreshFiles={loadFiles}
-        />
+      <ResizablePanelGroup direction="horizontal" className="min-h-screen bg-gradient-hero w-full">
+        {/* Left Sidebar - Chat History & Files - Resizable */}
+        <ResizablePanel defaultSize={20} minSize={15} maxSize={40}>
+          <ChatSidebar
+            restaurantId={id || ""}
+            conversations={conversations}
+            files={files}
+            currentConversationId={currentConversationId}
+            onNewConversation={handleNewConversation}
+            onLoadConversation={handleLoadConversation}
+            onDeleteConversation={handleDeleteConversation}
+            onFileUpload={handleFileUpload}
+            onDeleteFile={handleDeleteFile}
+            onRefreshConversations={loadConversations}
+            onRefreshFiles={loadFiles}
+          />
+        </ResizablePanel>
+
+        <ResizableHandle withHandle className="bg-border hover:bg-primary/20 transition-colors" />
+
+        <ResizablePanel defaultSize={80}>
 
         {/* Main Chat Interface */}
         <div className="flex-1 flex flex-col">
@@ -1153,7 +1160,8 @@ const RestaurantFindings = () => {
           </div>
         </div>
       </div>
-    </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
     </SidebarProvider>
   );
 };
