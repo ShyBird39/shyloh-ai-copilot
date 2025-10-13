@@ -2,7 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft } from "lucide-react";
+import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, ChevronDown, ChevronUp } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,6 +37,7 @@ const RestaurantFindings = () => {
   
   // KPI Chat state
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [promptsVisible, setPromptsVisible] = useState(true);
   const [hasCompletedKPIs, setHasCompletedKPIs] = useState<boolean | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentInput, setCurrentInput] = useState("");
@@ -53,6 +55,17 @@ const RestaurantFindings = () => {
   const [savingKPIs, setSavingKPIs] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const samplePrompts = [
+    "I am here to...",
+    "Check my vitals...",
+    "Tips for using Shyloh"
+  ];
+
+  const handlePromptClick = (promptText: string) => {
+    setCurrentInput(promptText);
+    inputRef.current?.focus();
+  };
 
   const steps = [
     {
@@ -395,6 +408,35 @@ const RestaurantFindings = () => {
             </div>
           </div>
         </div>
+
+        {/* Collapsible Quick Start Prompts */}
+        <Collapsible 
+          open={promptsVisible} 
+          onOpenChange={setPromptsVisible}
+          className="border-b border-accent/20 bg-background/50 backdrop-blur-sm"
+        >
+          <div className="container mx-auto px-4 py-3 max-w-4xl">
+            <CollapsibleTrigger className="flex items-center gap-2 text-sm text-primary-foreground/70 hover:text-primary-foreground transition-colors">
+              {promptsVisible ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              Quick Start Prompts
+            </CollapsibleTrigger>
+            
+            <CollapsibleContent className="pt-3">
+              <div className="flex flex-col gap-2">
+                {samplePrompts.map((prompt, idx) => (
+                  <Button
+                    key={idx}
+                    variant="outline"
+                    className="w-full justify-start rounded-full py-3 px-4 text-left border-accent/30 text-primary-foreground hover:bg-background/30"
+                    onClick={() => handlePromptClick(prompt)}
+                  >
+                    {prompt}
+                  </Button>
+                ))}
+              </div>
+            </CollapsibleContent>
+          </div>
+        </Collapsible>
 
         {/* Chat Area */}
         <div className="flex-1 overflow-y-auto">
