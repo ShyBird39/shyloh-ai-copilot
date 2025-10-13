@@ -67,6 +67,7 @@ const RestaurantFindings = () => {
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<any[]>([]);
   const [files, setFiles] = useState<any[]>([]);
+  const [cleanupAttempted, setCleanupAttempted] = useState(false);
 
   const samplePrompts = [
     "I am here to...",
@@ -224,6 +225,31 @@ const RestaurantFindings = () => {
     }
   };
 
+  // One-time cleanup: remove any previous stuck upload (unprocessed)
+  const deleteStuckFileIfAny = async () => {
+    if (!id) return;
+    try {
+      const { data: stuck, error } = await supabase
+        .from("restaurant_files")
+        .select("id, file_path, processed, uploaded_at")
+        .eq("restaurant_id", id)
+        .order("uploaded_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (stuck && stuck.processed === false) {
+        await supabase.storage.from("restaurant-documents").remove([stuck.file_path]);
+        await supabase.from("restaurant_files").delete().eq("id", stuck.id);
+        toast.success("Removed previous stuck upload");
+        loadFiles();
+      }
+    } catch (e) {
+      console.error("Cleanup error:", e);
+    }
+  };
+
   const loadConversations = async () => {
     if (!id) return;
     
@@ -283,6 +309,14 @@ const RestaurantFindings = () => {
     loadConversations();
     loadFiles();
   }, [id]);
+
+  // One-time: auto-remove any stuck unprocessed upload for this restaurant
+  useEffect(() => {
+    if (!id || cleanupAttempted) return;
+    setCleanupAttempted(true);
+    deleteStuckFileIfAny();
+  }, [id, cleanupAttempted]);
+
 
   // Fetch restaurant data and KPIs
   useEffect(() => {
