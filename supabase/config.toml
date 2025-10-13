@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.toast-get-data]
 verify_jwt = false
+
+[functions.chat-shyloh]
+verify_jwt = false

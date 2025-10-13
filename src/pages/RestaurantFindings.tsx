@@ -35,13 +35,12 @@ const RestaurantFindings = () => {
   const [editValue, setEditValue] = useState("");
   const [saving, setSaving] = useState(false);
   
-  // KPI Chat state
+  // Chat state
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [promptsVisible, setPromptsVisible] = useState(true);
   const [hasCompletedKPIs, setHasCompletedKPIs] = useState<boolean | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentInput, setCurrentInput] = useState("");
-  const [currentStep, setCurrentStep] = useState(0);
   const [kpiData, setKPIData] = useState<KPIData>({
     avg_weekly_sales: null,
     food_cost_goal: null,
@@ -52,7 +51,7 @@ const RestaurantFindings = () => {
     sales_mix_beer: null,
     sales_mix_na_bev: null,
   });
-  const [savingKPIs, setSavingKPIs] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -64,59 +63,14 @@ const RestaurantFindings = () => {
 
   const handlePromptClick = (promptText: string) => {
     setCurrentInput(promptText);
-    inputRef.current?.focus();
+    // Auto-send the prompt
+    setTimeout(() => {
+      if (hasCompletedKPIs) {
+        handleSendMessage(promptText);
+      }
+    }, 100);
   };
 
-  const steps = [
-    {
-      question: "What are your average weekly sales $? (Feel free to round)",
-      field: "avg_weekly_sales" as keyof KPIData,
-      type: "currency",
-      confirmation: (value: number) => `💰 Noted—$${(value / 1000).toFixed(0)}K/week. Strong volume.`,
-    },
-    {
-      question: "What's your target food cost %? (Normally lands ~25–32% depending on concept. Where do you aim?)",
-      field: "food_cost_goal" as keyof KPIData,
-      type: "percentage",
-      confirmation: (value: number) => `✅ Got it—${value}% food cost target. Dialed in.`,
-    },
-    {
-      question: "What's your target labor cost %? (Typically 28–32% for total wages + salaries. Where do you aim?)",
-      field: "labor_cost_goal" as keyof KPIData,
-      type: "percentage",
-      confirmation: (value: number) => `✓ Logged—${value}% labor cost goal. Tight but doable at your volume.`,
-    },
-    {
-      question: "Out of every $100 in sales, roughly how much is Food?",
-      field: "sales_mix_food" as keyof KPIData,
-      type: "percentage",
-      confirmation: (value: number) => `Got it, ${value}% food.`,
-    },
-    {
-      question: "And how much is Liquor?",
-      field: "sales_mix_liquor" as keyof KPIData,
-      type: "percentage",
-      confirmation: (value: number) => `${value}% liquor, nice.`,
-    },
-    {
-      question: "Wine?",
-      field: "sales_mix_wine" as keyof KPIData,
-      type: "percentage",
-      confirmation: (value: number) => `${value}% wine.`,
-    },
-    {
-      question: "Beer?",
-      field: "sales_mix_beer" as keyof KPIData,
-      type: "percentage",
-      confirmation: (value: number) => `${value}% beer.`,
-    },
-    {
-      question: "And finally, N/A Beverages?",
-      field: "sales_mix_na_bev" as keyof KPIData,
-      type: "percentage",
-      confirmation: (value: number) => `📊 Perfect! ${value}% N/A beverages. Revenue mix captured—you're all set!`,
-    },
-  ];
 
   // Fetch restaurant data and KPIs
   useEffect(() => {
@@ -213,100 +167,65 @@ const RestaurantFindings = () => {
     }
   }, [messages, sidebarOpen]);
 
-  const handleSendKPI = async () => {
-    if (!currentInput.trim()) return;
+  const handleSendMessage = async (messageOverride?: string) => {
+    const messageText = messageOverride || currentInput;
+    if (!messageText.trim()) return;
 
-    // Extract numbers from natural language input
-    const extractNumber = (input: string): number | null => {
-      // Remove common words and extract numbers
-      const cleaned = input.toLowerCase()
-        .replace(/\$/g, '')
-        .replace(/k/gi, '000')
-        .replace(/percent|%/gi, '')
-        .trim();
-      
-      // Try to find a number in the string
-      const matches = cleaned.match(/[\d,]+\.?\d*/);
-      if (matches) {
-        const numStr = matches[0].replace(/,/g, '');
-        const num = parseFloat(numStr);
-        return isNaN(num) ? null : num;
-      }
-      
-      return null;
-    };
-
-    const value = extractNumber(currentInput);
-    
-    if (value === null || value <= 0) {
-      setMessages((prev) => [
-        ...prev,
-        { role: "user", content: currentInput, type: "input" },
-        { role: "assistant", content: "I didn't catch a number in that response. Could you try again? For example: '50000' or '50k' or 'about 25%'", type: "question" },
-      ]);
-      setCurrentInput("");
-      return;
-    }
-
-    setMessages((prev) => [
-      ...prev,
-      { role: "user", content: currentInput, type: "input" },
-    ]);
-
-    const currentStepData = steps[currentStep];
-    const updatedKPIData = { ...kpiData, [currentStepData.field]: value };
-    setKPIData(updatedKPIData);
-
-    setMessages((prev) => [
-      ...prev,
-      { role: "assistant", content: currentStepData.confirmation(value), type: "confirmation" },
-    ]);
-
+    const userMessage: ChatMessage = { role: "user", content: messageText };
+    setMessages((prev) => [...prev, userMessage]);
     setCurrentInput("");
-
-    if (currentStep < steps.length - 1) {
-      setTimeout(() => {
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: steps[currentStep + 1].question, type: "question" },
-        ]);
-        setCurrentStep(currentStep + 1);
-      }, 500);
-    } else {
-      await saveKPIs();
-    }
-  };
-
-  const saveKPIs = async () => {
-    if (!data) return;
-
-    setSavingKPIs(true);
-    setMessages((prev) => [
-      ...prev,
-      { role: "assistant", content: "Saving your KPIs...", type: "confirmation" },
-    ]);
+    setIsTyping(true);
 
     try {
-      const { error } = await supabase
-        .from("restaurant_kpis")
-        .upsert({
-          restaurant_id: data.id,
-          ...kpiData,
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-shyloh`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            messages: [...messages, userMessage],
+            restaurantData: data,
+            kpiData: kpiData,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to get AI response');
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response stream');
+      }
+
+      const decoder = new TextDecoder();
+      let assistantMessage = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        assistantMessage += chunk;
+
+        // Update the last message or add new assistant message
+        setMessages((prev) => {
+          const lastMsg = prev[prev.length - 1];
+          if (lastMsg?.role === 'assistant') {
+            return [...prev.slice(0, -1), { ...lastMsg, content: assistantMessage }];
+          }
+          return [...prev, { role: 'assistant', content: assistantMessage }];
         });
-
-      if (error) throw error;
-
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: "All set! 🎉 Your KPIs are saved and ready to power your insights.", type: "confirmation" },
-      ]);
-
-      toast.success("KPIs saved successfully");
+      }
     } catch (error) {
-      console.error("Error saving KPIs:", error);
-      toast.error("Failed to save KPIs");
+      console.error('Chat error:', error);
+      toast.error('Failed to get response from AI');
     } finally {
-      setSavingKPIs(false);
+      setIsTyping(false);
     }
   };
 
@@ -499,18 +418,18 @@ const RestaurantFindings = () => {
                 type="text"
                 value={currentInput}
                 onChange={(e) => setCurrentInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && !savingKPIs && handleSendKPI()}
-                placeholder="Type your answer..."
-                disabled={savingKPIs}
+                onKeyDown={(e) => e.key === "Enter" && !isTyping && handleSendMessage()}
+                placeholder="Ask me anything about your restaurant..."
+                disabled={isTyping}
                 className="flex-1 bg-background/50 border-accent/30 text-foreground placeholder:text-muted-foreground"
               />
               <Button
-                onClick={handleSendKPI}
-                disabled={savingKPIs || !currentInput.trim()}
+                onClick={() => handleSendMessage()}
+                disabled={isTyping || !currentInput.trim()}
                 size="icon"
                 className="h-10 w-10"
               >
-                <Send className="w-4 h-4" />
+                {isTyping ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               </Button>
             </div>
           </div>
