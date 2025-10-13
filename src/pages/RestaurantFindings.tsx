@@ -55,6 +55,7 @@ const RestaurantFindings = () => {
   });
   
   // Chat state
+  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [promptsVisible, setPromptsVisible] = useState(true);
   const [hasCompletedKPIs, setHasCompletedKPIs] = useState<boolean | null>(null);
@@ -791,33 +792,45 @@ const RestaurantFindings = () => {
     <SidebarProvider>
       <ResizablePanelGroup direction="horizontal" className="min-h-screen bg-gradient-hero w-full">
         {/* Left Sidebar - Chat History & Files - Resizable */}
-        <ResizablePanel defaultSize={20} minSize={15} maxSize={40}>
-          <ChatSidebar
-            restaurantId={id || ""}
-            conversations={conversations}
-            files={files}
-            currentConversationId={currentConversationId}
-            onNewConversation={handleNewConversation}
-            onLoadConversation={handleLoadConversation}
-            onDeleteConversation={handleDeleteConversation}
-            onFileUpload={handleFileUpload}
-            onDeleteFile={handleDeleteFile}
-            onRefreshConversations={loadConversations}
-            onRefreshFiles={loadFiles}
-          />
-        </ResizablePanel>
+        {!leftPanelCollapsed && (
+          <>
+            <ResizablePanel defaultSize={20} minSize={15} maxSize={40} id="chat-files-panel">
+              <ChatSidebar
+                restaurantId={id || ""}
+                conversations={conversations}
+                files={files}
+                currentConversationId={currentConversationId}
+                onNewConversation={handleNewConversation}
+                onLoadConversation={handleLoadConversation}
+                onDeleteConversation={handleDeleteConversation}
+                onFileUpload={handleFileUpload}
+                onDeleteFile={handleDeleteFile}
+                onRefreshConversations={loadConversations}
+                onRefreshFiles={loadFiles}
+              />
+            </ResizablePanel>
 
-        <ResizableHandle withHandle className="bg-border hover:bg-primary/20 transition-colors" />
+            <ResizableHandle withHandle className="bg-border hover:bg-primary/20 transition-colors" />
+          </>
+        )}
 
         {/* Main Chat Interface */}
-        <ResizablePanel defaultSize={sidebarOpen ? 55 : 80} minSize={40}>
+        <ResizablePanel defaultSize={sidebarOpen ? 55 : 80} minSize={40} id="main-chat-panel">
           <div className="h-full flex flex-col">
             {/* Header */}
             <div className="border-b border-accent/20 bg-background/80 backdrop-blur-sm">
               <div className="container mx-auto px-4 py-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <SidebarTrigger className="text-primary-foreground hover:bg-background/20" />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setLeftPanelCollapsed(!leftPanelCollapsed)}
+                      className="text-primary-foreground hover:bg-background/20"
+                      title={leftPanelCollapsed ? "Show chat history" : "Hide chat history"}
+                    >
+                      {leftPanelCollapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+                    </Button>
                     <div>
                       <h1 className="text-lg font-bold text-primary-foreground">{data.name}</h1>
                       <p className="text-xs text-primary-foreground/60">{data.location}</p>
