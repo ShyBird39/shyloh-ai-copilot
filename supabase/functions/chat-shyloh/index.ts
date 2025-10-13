@@ -1,10 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.0';
-import { getDocument, GlobalWorkerOptions } from 'https://esm.sh/pdfjs-dist@4.0.379/legacy/build/pdf.mjs';
-
-// Set up PDF.js worker
-GlobalWorkerOptions.workerSrc = 'https://esm.sh/pdfjs-dist@4.0.379/legacy/build/pdf.worker.mjs';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -58,34 +54,7 @@ serve(async (req) => {
               let extractedText = '';
 
               // Extract text based on file type
-              if (file.file_type === 'application/pdf') {
-                // Use pdfjs-dist for robust PDF text extraction
-                try {
-                  const arrayBuffer = await blob.arrayBuffer();
-                  const typedArray = new Uint8Array(arrayBuffer);
-                  
-                  const loadingTask = getDocument({ data: typedArray });
-                  const pdfDoc = await loadingTask.promise;
-                  
-                  const textParts: string[] = [];
-                  const numPages = Math.min(pdfDoc.numPages, 50); // Limit to 50 pages for performance
-                  
-                  for (let i = 1; i <= numPages; i++) {
-                    const page = await pdfDoc.getPage(i);
-                    const textContent = await page.getTextContent();
-                    const pageText = textContent.items
-                      .map((item: any) => item.str)
-                      .join(' ');
-                    textParts.push(pageText);
-                  }
-                  
-                  extractedText = textParts.join('\n\n');
-                  console.log(`Successfully parsed PDF ${file.file_name} - ${numPages} pages`);
-                } catch (pdfError) {
-                  console.error(`Failed to parse PDF ${file.file_name}:`, pdfError);
-                  extractedText = '';
-                }
-              } else if (file.file_type === 'text/csv' || file.file_type === 'text/plain') {
+              if (file.file_type === 'text/csv' || file.file_type === 'text/plain') {
                 extractedText = await blob.text();
               }
 
