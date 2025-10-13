@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, ChevronDown, ChevronUp } from "lucide-react";
+import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, ChevronDown, ChevronUp, RotateCcw } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -73,6 +73,29 @@ const RestaurantFindings = () => {
     { id: 'guest', label: 'Improve the guest experience', icon: '✨' },
     { id: 'team', label: 'Improve the team experience', icon: '👥' }
   ];
+
+  const handleRefreshChat = () => {
+    setMessages(hasCompletedKPIs ? [
+      {
+        role: "assistant",
+        content: "Welcome back! I'm here to help you explore your restaurant's data and insights. What would you like to know?",
+        type: "question",
+      },
+    ] : [
+      {
+        role: "assistant",
+        content: "First things first, I am a restaurant intelligence tool. I don't have all the answers by any means, but through conversation, hopefully the two of us have more of them. I know a lot about restaurants but just a little bit about yours. This initial conversation is meant to help me learn more. That way I can be more helpful to you going forward.",
+        type: "question",
+      },
+      {
+        role: "assistant",
+        content: "What are your average weekly sales $? (Feel free to round)",
+        type: "question",
+      },
+    ]);
+    setCurrentInput("");
+    setShowObjectives(false);
+  };
 
   const handleObjectiveClick = (objective: typeof objectives[0]) => {
     setShowObjectives(false);
@@ -396,6 +419,15 @@ const RestaurantFindings = () => {
                 <p className="text-xs text-primary-foreground/60">{data.location} • {data.category}</p>
               </div>
               <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleRefreshChat}
+                  className="text-primary-foreground hover:bg-background/20"
+                  title="Refresh chat"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
