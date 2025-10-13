@@ -8,6 +8,8 @@ import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { ChatSidebar } from "@/components/ChatSidebar";
 
 interface KPIData {
   avg_weekly_sales: number | null;
@@ -61,6 +63,11 @@ const RestaurantFindings = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // New state for chat history and files
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [conversations, setConversations] = useState<any[]>([]);
+  const [files, setFiles] = useState<any[]>([]);
+
   const samplePrompts = [
     "I am here to...",
     "Check my vitals...",
@@ -75,6 +82,11 @@ const RestaurantFindings = () => {
   ];
 
   const handleRefreshChat = () => {
+    handleNewConversation();
+  };
+
+  const handleNewConversation = () => {
+    setCurrentConversationId(null);
     setMessages(hasCompletedKPIs ? [
       {
         role: "assistant",
@@ -97,6 +109,153 @@ const RestaurantFindings = () => {
     setShowObjectives(false);
   };
 
+  const handleLoadConversation = async (conversationId: string) => {
+    try {
+      const { data: msgs, error } = await supabase
+        .from("chat_messages")
+        .select("*")
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+
+      setCurrentConversationId(conversationId);
+      setMessages(msgs.map(msg => ({
+        role: msg.role as "user" | "assistant",
+        content: msg.content,
+      })));
+    } catch (error) {
+      console.error("Error loading conversation:", error);
+      toast.error("Failed to load conversation");
+    }
+  };
+
+  const handleDeleteConversation = async (conversationId: string) => {
+    try {
+      const { error } = await supabase
+        .from("chat_conversations")
+        .delete()
+        .eq("id", conversationId);
+
+      if (error) throw error;
+
+      if (currentConversationId === conversationId) {
+        handleNewConversation();
+      }
+      loadConversations();
+      toast.success("Conversation deleted");
+    } catch (error) {
+      console.error("Error deleting conversation:", error);
+      toast.error("Failed to delete conversation");
+    }
+  };
+
+  const handleFileUpload = async (fileList: FileList) => {
+    if (!id) return;
+
+    for (let i = 0; i < fileList.length; i++) {
+      const file = fileList[i];
+      const fileName = `${id}/${crypto.randomUUID()}/${file.name}`;
+
+      try {
+        // Upload to storage
+        const { error: uploadError } = await supabase.storage
+          .from("restaurant-documents")
+          .upload(fileName, file);
+
+        if (uploadError) throw uploadError;
+
+        // Create database record
+        const { error: dbError } = await supabase
+          .from("restaurant_files")
+          .insert({
+            restaurant_id: id,
+            file_name: file.name,
+            file_path: fileName,
+            file_size: file.size,
+            file_type: file.type,
+          });
+
+        if (dbError) throw dbError;
+
+        toast.success(`${file.name} uploaded successfully`);
+      } catch (error) {
+        console.error("Error uploading file:", error);
+        toast.error(`Failed to upload ${file.name}`);
+      }
+    }
+
+    loadFiles();
+  };
+
+  const handleDeleteFile = async (fileId: string) => {
+    try {
+      // Get file info
+      const { data: fileData, error: fetchError } = await supabase
+        .from("restaurant_files")
+        .select("file_path")
+        .eq("id", fileId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Delete from storage
+      const { error: storageError } = await supabase.storage
+        .from("restaurant-documents")
+        .remove([fileData.file_path]);
+
+      if (storageError) throw storageError;
+
+      // Delete from database
+      const { error: dbError } = await supabase
+        .from("restaurant_files")
+        .delete()
+        .eq("id", fileId);
+
+      if (dbError) throw dbError;
+
+      loadFiles();
+      toast.success("File deleted");
+    } catch (error) {
+      console.error("Error deleting file:", error);
+      toast.error("Failed to delete file");
+    }
+  };
+
+  const loadConversations = async () => {
+    if (!id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from("chat_conversations")
+        .select("*")
+        .eq("restaurant_id", id)
+        .order("updated_at", { ascending: false });
+
+      if (error) throw error;
+      setConversations(data || []);
+    } catch (error) {
+      console.error("Error loading conversations:", error);
+    }
+  };
+
+  const loadFiles = async () => {
+    if (!id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("restaurant_files")
+        .select("*")
+        .eq("restaurant_id", id)
+        .order("uploaded_at", { ascending: false });
+
+      if (error) throw error;
+      setFiles(data || []);
+    } catch (error) {
+      console.error("Error loading files:", error);
+    }
+  };
+
   const handleObjectiveClick = (objective: typeof objectives[0]) => {
     setShowObjectives(false);
     handleSendMessage(`I want to ${objective.label.toLowerCase()}`);
@@ -116,6 +275,12 @@ const RestaurantFindings = () => {
     }, 100);
   };
 
+
+  // Load conversations and files on mount
+  useEffect(() => {
+    loadConversations();
+    loadFiles();
+  }, [id]);
 
   // Fetch restaurant data and KPIs
   useEffect(() => {
@@ -214,7 +379,7 @@ const RestaurantFindings = () => {
 
   const handleSendMessage = async (messageOverride?: string) => {
     const messageText = messageOverride || currentInput;
-    if (!messageText.trim()) return;
+    if (!messageText.trim() || !id) return;
 
     // Hide objectives when sending a message
     setShowObjectives(false);
@@ -225,6 +390,33 @@ const RestaurantFindings = () => {
     setIsTyping(true);
 
     try {
+      // Create or update conversation
+      let convId = currentConversationId;
+      
+      if (!convId) {
+        // Create new conversation with a temporary title
+        const { data: newConv, error: convError } = await supabase
+          .from("chat_conversations")
+          .insert({
+            restaurant_id: id,
+            title: messageText.substring(0, 50) + (messageText.length > 50 ? "..." : ""),
+            message_count: 1,
+          })
+          .select()
+          .single();
+
+        if (convError) throw convError;
+        convId = newConv.id;
+        setCurrentConversationId(convId);
+      }
+
+      // Save user message
+      await supabase.from("chat_messages").insert({
+        conversation_id: convId,
+        role: "user",
+        content: messageText,
+      });
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-shyloh`,
         {
@@ -268,6 +460,26 @@ const RestaurantFindings = () => {
           }
           return [...prev, { role: 'assistant', content: assistantMessage }];
         });
+      }
+
+      // Save assistant message
+      if (assistantMessage && convId) {
+        await supabase.from("chat_messages").insert({
+          conversation_id: convId,
+          role: "assistant",
+          content: assistantMessage,
+        });
+
+        // Update conversation message count and updated_at
+        await supabase
+          .from("chat_conversations")
+          .update({
+            message_count: messages.length + 2, // +2 for user and assistant messages
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", convId);
+
+        loadConversations();
       }
     } catch (error) {
       console.error('Chat error:', error);
@@ -407,9 +619,25 @@ const RestaurantFindings = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-hero flex w-full">
-      {/* Main Chat Interface */}
-      <div className="flex-1 flex flex-col">
+    <SidebarProvider>
+      <div className="min-h-screen bg-gradient-hero flex w-full">
+        {/* Left Sidebar - Chat History & Files */}
+        <ChatSidebar
+          restaurantId={id || ""}
+          conversations={conversations}
+          files={files}
+          currentConversationId={currentConversationId}
+          onNewConversation={handleNewConversation}
+          onLoadConversation={handleLoadConversation}
+          onDeleteConversation={handleDeleteConversation}
+          onFileUpload={handleFileUpload}
+          onDeleteFile={handleDeleteFile}
+          onRefreshConversations={loadConversations}
+          onRefreshFiles={loadFiles}
+        />
+
+        {/* Main Chat Interface */}
+        <div className="flex-1 flex flex-col">
         {/* Header */}
         <div className="border-b border-accent/20 bg-background/80 backdrop-blur-sm">
           <div className="container mx-auto px-4 py-4">
@@ -887,6 +1115,7 @@ const RestaurantFindings = () => {
         </div>
       </div>
     </div>
+    </SidebarProvider>
   );
 };
 

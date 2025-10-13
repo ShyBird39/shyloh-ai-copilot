@@ -14,6 +14,120 @@ export type Database = {
   }
   public: {
     Tables: {
+      chat_conversations: {
+        Row: {
+          created_at: string | null
+          id: string
+          message_count: number | null
+          restaurant_id: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message_count?: number | null
+          restaurant_id: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message_count?: number | null
+          restaurant_id?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_conversations_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string | null
+          id: string
+          role: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string | null
+          id?: string
+          role: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string | null
+          id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      restaurant_files: {
+        Row: {
+          embeddings: Json | null
+          embeddings_generated: boolean | null
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id: string
+          processed: boolean | null
+          restaurant_id: string
+          uploaded_at: string | null
+        }
+        Insert: {
+          embeddings?: Json | null
+          embeddings_generated?: boolean | null
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id?: string
+          processed?: boolean | null
+          restaurant_id: string
+          uploaded_at?: string | null
+        }
+        Update: {
+          embeddings?: Json | null
+          embeddings_generated?: boolean | null
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          processed?: boolean | null
+          restaurant_id?: string
+          uploaded_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_files_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       restaurant_kpis: {
         Row: {
           avg_weekly_sales: number | null
