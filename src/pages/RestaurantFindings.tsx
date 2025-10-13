@@ -174,6 +174,8 @@ const RestaurantFindings = () => {
             file_path: fileName,
             file_size: file.size,
             file_type: file.type,
+            processed: true,
+            embeddings_generated: false,
           });
 
         if (dbError) throw dbError;
