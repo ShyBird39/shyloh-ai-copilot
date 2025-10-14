@@ -238,6 +238,44 @@ export type Database = {
           },
         ]
       }
+      restaurant_saved_prompts: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          id: string
+          prompt_text: string
+          restaurant_id: string
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          prompt_text: string
+          restaurant_id: string
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          prompt_text?: string
+          restaurant_id?: string
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_saved_prompts_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       restaurants: {
         Row: {
           augmented_hex_code: string

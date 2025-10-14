@@ -55,6 +55,17 @@ const RestaurantFindings = () => {
     category: "",
   });
   
+  // Prompt library state
+  const [promptsOpen, setPromptsOpen] = useState(false);
+  const [savedPrompts, setSavedPrompts] = useState<any[]>([]);
+  const [showAddPrompt, setShowAddPrompt] = useState(false);
+  const [editingPrompt, setEditingPrompt] = useState<string | null>(null);
+  const [promptForm, setPromptForm] = useState({
+    title: "",
+    prompt_text: "",
+    category: "",
+  });
+  
   // Chat state
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -393,6 +404,23 @@ const RestaurantFindings = () => {
     }
   };
 
+  const loadSavedPrompts = async () => {
+    if (!id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from("restaurant_saved_prompts")
+        .select("*")
+        .eq("restaurant_id", id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setSavedPrompts(data || []);
+    } catch (error) {
+      console.error("Error loading saved prompts:", error);
+    }
+  };
+
   const handleObjectiveClick = (objective: typeof objectives[0]) => {
     setShowObjectives(false);
     handleSendMessage(`I want to ${objective.label.toLowerCase()}`);
@@ -487,6 +515,7 @@ const RestaurantFindings = () => {
     loadConversations();
     loadFiles();
     loadCustomKnowledge();
+    loadSavedPrompts();
   }, [id]);
 
   // One-time: auto-remove any stuck unprocessed upload for this restaurant
@@ -1124,6 +1153,96 @@ const RestaurantFindings = () => {
     setShowAddKnowledge(false);
     setEditingKnowledge(null);
     setKnowledgeForm({ title: "", content: "", category: "" });
+  };
+
+  // Prompt Library handlers
+  const handleSavePrompt = async () => {
+    if (!id) return;
+
+    if (!promptForm.prompt_text.trim()) {
+      toast.error("Prompt text is required");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      if (editingPrompt) {
+        // Update existing
+        const { error } = await supabase
+          .from("restaurant_saved_prompts")
+          .update({
+            title: promptForm.title.trim() || null,
+            prompt_text: promptForm.prompt_text.trim(),
+            category: promptForm.category.trim() || null,
+          })
+          .eq("id", editingPrompt);
+
+        if (error) throw error;
+        toast.success("Prompt updated");
+      } else {
+        // Create new
+        const { error } = await supabase
+          .from("restaurant_saved_prompts")
+          .insert({
+            restaurant_id: id,
+            title: promptForm.title.trim() || null,
+            prompt_text: promptForm.prompt_text.trim(),
+            category: promptForm.category.trim() || null,
+          });
+
+        if (error) throw error;
+        toast.success("Prompt saved");
+      }
+
+      setPromptForm({ title: "", prompt_text: "", category: "" });
+      setShowAddPrompt(false);
+      setEditingPrompt(null);
+      loadSavedPrompts();
+    } catch (error) {
+      console.error("Error saving prompt:", error);
+      toast.error("Failed to save prompt");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeletePrompt = async (promptId: string) => {
+    try {
+      const { error } = await supabase
+        .from("restaurant_saved_prompts")
+        .delete()
+        .eq("id", promptId);
+
+      if (error) throw error;
+
+      toast.success("Prompt deleted");
+      loadSavedPrompts();
+    } catch (error) {
+      console.error("Error deleting prompt:", error);
+      toast.error("Failed to delete prompt");
+    }
+  };
+
+  const handleEditPrompt = (prompt: any) => {
+    setPromptForm({
+      title: prompt.title || "",
+      prompt_text: prompt.prompt_text,
+      category: prompt.category || "",
+    });
+    setEditingPrompt(prompt.id);
+    setShowAddPrompt(true);
+  };
+
+  const handleCopyPromptToInput = (promptText: string) => {
+    setCurrentInput(promptText);
+    inputRef.current?.focus();
+    toast.success("Prompt copied to input");
+  };
+
+  const handleCancelPrompt = () => {
+    setShowAddPrompt(false);
+    setEditingPrompt(null);
+    setPromptForm({ title: "", prompt_text: "", category: "" });
   };
 
   if (loading) {
@@ -1868,6 +1987,145 @@ const RestaurantFindings = () => {
                               variant="ghost"
                               onClick={() => handleDeleteKnowledge(knowledge.id)}
                               className="text-destructive hover:text-destructive-foreground hover:bg-destructive/20 h-6 w-6 p-0"
+                            >
+                              ×
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                </CollapsibleContent>
+              </div>
+            </Collapsible>
+
+            {/* Prompt Library Section */}
+            <Collapsible open={promptsOpen} onOpenChange={setPromptsOpen}>
+              <div className="space-y-3">
+                <CollapsibleTrigger className="flex items-center justify-between w-full group">
+                  <h3 className="text-sm font-semibold text-primary-foreground uppercase tracking-wide">
+                    Prompt Library
+                  </h3>
+                  {promptsOpen ? (
+                    <ChevronUp className="w-4 h-4 text-primary-foreground/60 group-hover:text-primary-foreground transition-colors" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-primary-foreground/60 group-hover:text-primary-foreground transition-colors" />
+                  )}
+                </CollapsibleTrigger>
+                
+                <CollapsibleContent>
+                  <div className="space-y-3">
+                    {/* Add New Prompt Button */}
+                    {!showAddPrompt && (
+                      <Button
+                        onClick={() => setShowAddPrompt(true)}
+                        size="sm"
+                        className="w-full bg-accent hover:bg-accent/90 text-xs h-8"
+                      >
+                        + Save a Prompt
+                      </Button>
+                    )}
+
+                    {/* Add/Edit Prompt Form */}
+                    {showAddPrompt && (
+                      <Card className="bg-background/50 border-accent/20 p-4 space-y-3">
+                        <Input
+                          placeholder="Title (optional, e.g., 'Cost Analysis')"
+                          value={promptForm.title}
+                          onChange={(e) => setPromptForm({ ...promptForm, title: e.target.value })}
+                          className="bg-background/20 border-accent/30 text-primary-foreground h-8 text-sm"
+                          disabled={saving}
+                        />
+                        <Input
+                          placeholder="Category (optional, e.g., 'Operations')"
+                          value={promptForm.category}
+                          onChange={(e) => setPromptForm({ ...promptForm, category: e.target.value })}
+                          className="bg-background/20 border-accent/30 text-primary-foreground h-8 text-sm"
+                          disabled={saving}
+                        />
+                        <Textarea
+                          placeholder="Paste or type your prompt here..."
+                          value={promptForm.prompt_text}
+                          onChange={(e) => setPromptForm({ ...promptForm, prompt_text: e.target.value })}
+                          className="bg-background/20 border-accent/30 text-primary-foreground min-h-[100px] text-sm"
+                          disabled={saving}
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={handleSavePrompt}
+                            disabled={saving || !promptForm.prompt_text.trim()}
+                            size="sm"
+                            className="bg-accent hover:bg-accent/90 text-xs h-7"
+                          >
+                            {saving ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : null}
+                            {editingPrompt ? "Update" : "Save"}
+                          </Button>
+                          <Button
+                            onClick={handleCancelPrompt}
+                            disabled={saving}
+                            size="sm"
+                            variant="outline"
+                            className="text-xs h-7 bg-background/10 border-primary-foreground/20"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </Card>
+                    )}
+
+                    {/* Empty State */}
+                    {savedPrompts.length === 0 && !showAddPrompt && (
+                      <Card className="bg-background/50 border-accent/20 p-4">
+                        <p className="text-xs text-primary-foreground/60 text-center">
+                          No saved prompts yet. Save prompts you use often for quick access.
+                        </p>
+                      </Card>
+                    )}
+
+                    {/* Saved Prompts List */}
+                    {savedPrompts.map((prompt) => (
+                      <Card
+                        key={prompt.id}
+                        className="bg-background/50 border-accent/20 p-4 space-y-2 hover:border-accent/40 transition-colors cursor-pointer"
+                        onClick={() => handleCopyPromptToInput(prompt.prompt_text)}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1">
+                            {prompt.title && (
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className="text-sm font-semibold text-primary-foreground">
+                                  {prompt.title}
+                                </h4>
+                                {prompt.category && (
+                                  <span className="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded">
+                                    {prompt.category}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            <p className="text-primary-foreground/70 text-xs leading-relaxed line-clamp-3">
+                              {prompt.prompt_text}
+                            </p>
+                            <p className="text-primary-foreground/40 text-xs mt-2">
+                              Click to copy to input
+                            </p>
+                          </div>
+                          <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleEditPrompt(prompt)}
+                              className="text-accent hover:text-accent-foreground hover:bg-accent/20 h-6 w-6 p-0"
+                              title="Edit"
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleDeletePrompt(prompt.id)}
+                              className="text-destructive hover:text-destructive-foreground hover:bg-destructive/20 h-6 w-6 p-0"
+                              title="Delete"
                             >
                               ×
                             </Button>
