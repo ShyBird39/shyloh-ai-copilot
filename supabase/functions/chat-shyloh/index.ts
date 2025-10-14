@@ -349,7 +349,7 @@ serve(async (req) => {
 
     // Conditionally add Notion context to system prompt
     const notionContext = useNotion 
-      ? "\n\nNOTION INTEGRATION\nYou have access to the restaurant's Notion workspace via these tools:\n- search_notion: Search for pages/databases by keyword\n- read_notion_page: Get full content of a specific page\n- query_notion_database: Query structured databases\n\nUse these tools to retrieve SOPs, recipes, inventory data, schedules, or any other documentation stored in Notion. Always cite the specific Notion page when using this information."
+      ? "\n\nNOTION INTEGRATION ACTIVE\nThe user has explicitly requested Notion access via @notion mention. You MUST use these tools to search their Notion workspace:\n- search_notion: Search for pages/databases by keyword (START HERE - always search first)\n- read_notion_page: Get full content of a specific page after finding it via search\n- query_notion_database: Query structured databases after finding them via search\n\nWhen the user asks about logs, SOPs, schedules, recipes, inventory, or any operational documentation, IMMEDIATELY use search_notion to look for it. Don't ask where it's stored—assume it's in Notion and search for it. Only mention that you couldn't find it if the search returns no results. Always cite specific Notion pages when using this information."
       : "";
 
     // Build system prompt with restaurant context
