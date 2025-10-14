@@ -18,7 +18,9 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, restaurantData, kpiData, restaurantId } = await req.json();
+    const { messages, restaurantData, kpiData, restaurantId, useNotion = false } = await req.json();
+    
+    console.log(`Notion tools ${useNotion ? 'ENABLED' : 'disabled'} for this query`);
     
     const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
     if (!ANTHROPIC_API_KEY) {
@@ -153,6 +155,70 @@ serve(async (req) => {
 
     const model = isComplex ? 'claude-opus-4-1-20250805' : 'claude-sonnet-4-5';
 
+    // Notion tools - only included when explicitly requested via @notion or /notion
+    const notionTools = useNotion ? [
+      {
+        name: "search_notion",
+        description: "Search across all accessible Notion pages and databases for specific content, keywords, or concepts. Returns matching pages with titles, URLs, and excerpts.",
+        input_schema: {
+          type: "object",
+          properties: {
+            query: {
+              type: "string",
+              description: "The search query to find relevant Notion pages or database entries"
+            },
+            filter: {
+              type: "string",
+              description: "Optional filter by object type: 'page' or 'database'",
+              enum: ["page", "database"]
+            }
+          },
+          required: ["query"]
+        }
+      },
+      {
+        name: "read_notion_page",
+        description: "Retrieve the full content of a specific Notion page by its ID. Use this after finding relevant pages via search to get detailed information.",
+        input_schema: {
+          type: "object",
+          properties: {
+            page_id: {
+              type: "string",
+              description: "The Notion page ID to retrieve (can be found from search results)"
+            }
+          },
+          required: ["page_id"]
+        }
+      },
+      {
+        name: "query_notion_database",
+        description: "Query a Notion database with filters and sorting. Useful for retrieving structured data like inventory lists, SOPs, schedules, or recipes.",
+        input_schema: {
+          type: "object",
+          properties: {
+            database_id: {
+              type: "string",
+              description: "The Notion database ID to query"
+            },
+            filter: {
+              type: "object",
+              description: "Optional filter object following Notion API filter syntax"
+            },
+            sorts: {
+              type: "array",
+              description: "Optional array of sort objects"
+            }
+          },
+          required: ["database_id"]
+        }
+      }
+    ] : [];
+
+    // Conditionally add Notion context to system prompt
+    const notionContext = useNotion 
+      ? "\n\nNOTION INTEGRATION\nYou have access to the restaurant's Notion workspace via these tools:\n- search_notion: Search for pages/databases by keyword\n- read_notion_page: Get full content of a specific page\n- query_notion_database: Query structured databases\n\nUse these tools to retrieve SOPs, recipes, inventory data, schedules, or any other documentation stored in Notion. Always cite the specific Notion page when using this information."
+      : "";
+
     // Build system prompt with restaurant context
     const systemPrompt = `IDENTITY
 You are Shyloh: a millennial, female restaurant-operations consultant from the Danny Meyer school—warm hospitality + sharp finance & tech chops (AGI/LLMs). Fluent in industry shorthand (86, behind, weeds, covers, VIP, soigné, etc.).
@@ -257,13 +323,32 @@ When uploaded documents are available in the context above:
 - Reference specific documents by name when using their information
 - Synthesize insights across multiple documents when relevant
 - Quote or paraphrase key sections to ground your advice in their specific context
-- If a question can be answered more accurately with document context, prioritize that over general knowledge${customKnowledgeContext}${docsContext}`;
+- If a question can be answered more accurately with document context, prioritize that over general knowledge${customKnowledgeContext}${docsContext}${notionContext}`;
 
     // Log total context size for monitoring
     const totalContextChars = docsContext.length + systemPrompt.length;
     const estimatedTokens = Math.ceil(totalContextChars / 4); // Rough estimate: 1 token ≈ 4 chars
     console.log(`Using model: ${model} for query complexity: ${isComplex ? 'high' : 'normal'}`);
     console.log(`Total context size: ~${estimatedTokens} tokens (${totalContextChars} chars)`);
+
+    // Build request body with conditional tools
+    const requestBody: any = {
+      model,
+      max_tokens: 16384,
+      system: systemPrompt,
+      messages: messages.map((msg: any) => ({
+        role: msg.role === 'assistant' ? 'assistant' : 'user',
+        content: msg.content
+      })),
+      stream: true,
+    };
+
+    // Add tools if Notion is enabled (Note: streaming must be disabled when using tools)
+    if (notionTools.length > 0) {
+      requestBody.tools = notionTools;
+      requestBody.stream = false; // Anthropic doesn't support streaming with tool use
+      console.log(`Added ${notionTools.length} Notion tools to request (streaming disabled)`);
+    }
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -272,16 +357,7 @@ When uploaded documents are available in the context above:
         'anthropic-version': '2023-06-01',
         'content-type': 'application/json',
       },
-      body: JSON.stringify({
-        model,
-        max_tokens: 16384,
-        system: systemPrompt,
-        messages: messages.map((msg: any) => ({
-          role: msg.role === 'assistant' ? 'assistant' : 'user',
-          content: msg.content
-        })),
-        stream: true,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
