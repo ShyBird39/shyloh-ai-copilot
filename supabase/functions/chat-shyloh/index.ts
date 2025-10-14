@@ -37,25 +37,45 @@ async function updateConversationState(
   if (/wwahd/i.test(lastUserMessage)) topic = 'wwahd_guidance';
   if (/sales|revenue/i.test(lastUserMessage)) topic = 'sales_analysis';
   if (/guest|experience/i.test(lastUserMessage)) topic = 'guest_experience';
+  if (/upload|file|invoice|payroll|report/i.test(lastUserMessage)) topic = 'data_collection';
+  if (/where|find|how do i|get|download|export/i.test(lastUserMessage) && /invoice|payroll|report|sales|pos/i.test(lastUserMessage)) {
+    topic = 'data_retrieval_help';
+  }
   
   // Check if assistant asked a question
   const askedQuestion = /\?$/.test(lastAssistantMessage.trim());
   const questionMatch = lastAssistantMessage.match(/([^.!]+\?)/);
   
-  // Update conversation state
+  // Track data collection state
+  const requestedUpload = /upload|share|send|paperclip|📎|attach/i.test(lastAssistantMessage);
+  const userUploadedFile = /uploaded|attached|here('s| is)/i.test(lastUserMessage);
+  
+  const conversationStateData = currentState?.conversation_state || {};
+  const dataRequestCount = conversationStateData.data_request_count || 0;
+  
+  // Update conversation state with data tracking
+  const updates: any = {
+    intent_classification: intent,
+    current_topic: topic,
+    topics_discussed: [...new Set([...(currentState?.topics_discussed || []), topic])],
+    awaiting_user_response: askedQuestion,
+    last_question_asked: questionMatch ? questionMatch[1] : null,
+    updated_at: new Date().toISOString(),
+    conversation_state: {
+      ...conversationStateData,
+      data_requested: requestedUpload || conversationStateData.data_requested,
+      data_request_count: requestedUpload ? dataRequestCount + 1 : dataRequestCount,
+      awaiting_upload: requestedUpload && !userUploadedFile,
+      has_uploaded_data: userUploadedFile || conversationStateData.has_uploaded_data,
+    }
+  };
+  
   await supabase
     .from('chat_conversations')
-    .update({
-      intent_classification: intent,
-      current_topic: topic,
-      topics_discussed: [...new Set([...(currentState?.topics_discussed || []), topic])],
-      awaiting_user_response: askedQuestion,
-      last_question_asked: questionMatch ? questionMatch[1] : null,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updates)
     .eq('id', conversationId);
 
-  console.log(`Updated conversation state - Topic: ${topic}, Intent: ${intent}, Asked question: ${askedQuestion}`);
+  console.log(`Updated conversation state - Topic: ${topic}, Intent: ${intent}, Asked question: ${askedQuestion}, Awaiting upload: ${updates.conversation_state.awaiting_upload}`);
 }
 
 // Execute Notion tool calls
@@ -422,9 +442,11 @@ User Intent: ${conversationState.intent_classification || 'Unknown'}
 WWAHD Mode: ${conversationState.wwahd_mode ? 'ACTIVE - Channel Andrew Holden\'s voice and reference WWAHD files' : 'OFF'}
 Topics Covered: ${conversationState.topics_discussed?.join(', ') || 'None yet'}
 Last Question You Asked: ${conversationState.last_question_asked || 'None'}
-State Data: ${JSON.stringify(conversationState.conversation_state || {})}
+Data Request Status: ${conversationState.conversation_state?.data_requested ? `Already requested (${conversationState.conversation_state.data_request_count || 0}x)` : 'Not requested yet'}
+Awaiting File Upload: ${conversationState.conversation_state?.awaiting_upload ? 'YES - User has been asked to upload data' : 'NO'}
+Has Uploaded Data: ${conversationState.conversation_state?.has_uploaded_data ? 'YES' : 'NO'}
 
-Use this state to maintain coherent conversation flow. If you asked a question last time, interpret the user's response in that context.
+Use this state to maintain coherent conversation flow. If you asked a question last time, interpret the user's response in that context. Do NOT request uploads more than once—check data_request_count before suggesting files.
 ` : '';
 
     // Build system prompt with restaurant context
@@ -488,6 +510,8 @@ Guide discovery: Connect their REGGI profile (especially Culinary/Beverage stren
 
 **When they select "Lower my costs":**
 Start with Socratic opener: "First instinct—where do you feel like you're bleeding the most?"
+If they respond with "I'm not sure" or vague uncertainty, suggest uploading actual data: "No worries—let's get you that visibility. If you've got any recent invoices, payroll reports, or sales data, toss 'em up using the paperclip. We can dig in together."
+If they ask "Where do I find that?", provide step-by-step retrieval guidance (see FILE RETRIEVAL GUIDES below).
 Then probe: "What's your labor vs. food cost tension right now?"
 Pull relevant data: Food cost goal vs actual, labor cost goal, sales mix to identify high-cost categories.
 Guide discovery: Challenge assumptions ("Higher labor might unlock better retention—worth exploring?").
@@ -517,14 +541,41 @@ Ask first: "What do you think is driving it?" → Then probe: "How does that com
 **When they want to update KPIs:**
 "Got it—hit the 'Vitals' button and we'll run through the numbers together."
 
+DATA COLLECTION APPROACH
+When users lack visibility into their numbers or can't answer cost/sales questions:
+- **Suggest uploads casually**: "If you've got [specific document], toss it up using the paperclip—we can dig in together."
+- **No jargon**: Don't say "CSV" or "export data." Say "sales report" or "what your POS gives you at the end of the week."
+- **Timing**: Offer this when they say "I'm not sure" or "I don't know" to cost/sales questions.
+- **Make it optional**: "If you can't grab it right now, no worries—we can work with approximations."
+- **Don't repeat**: If you've asked once and they haven't uploaded, move forward. Check conversation_state.data_request_count—don't ask more than once per conversation.
+
+COMMON FILE RETRIEVAL GUIDES
+When users ask "Where do I find [document]?", provide system-specific, step-by-step instructions:
+
+**Food Invoices** (Sysco, US Foods, etc.):
+"Log into your [vendor] account, go to 'Invoices' or 'Order History,' and download the last few weeks as PDFs. If you're not sure how, most vendors let you email invoices directly—check your email for '[Vendor Name] Invoice' and forward those to yourself, then upload here."
+
+**Payroll Reports** (Gusto, ADP, Toast Payroll, etc.):
+"In your payroll system, look for 'Reports' or 'Payroll Summary.' Download a 'Payroll Detail' or 'Labor Cost Report' for the last pay period. If it's a PDF or Excel file, upload it here. If you're stuck, most systems have a 'Help' or 'Export' button—click that and look for 'Download.'"
+
+**POS Sales Reports** (Toast, Square, Clover, etc.):
+"In your POS dashboard, go to 'Reports' or 'Sales.' Look for 'Sales Summary' or 'Daily Sales Report' and download the last week or month. It might be labeled 'Export' or 'Download'—grab the file and upload it here."
+
+**Profit & Loss Statement** (QuickBooks, Xero, etc.):
+"In your accounting software, go to 'Reports' and find 'Profit & Loss' or 'Income Statement.' Set the date range (last month is good) and click 'Export' or 'Download.' Upload the PDF or spreadsheet here."
+
+**General tip**: "Not sure what format? Anything works—PDF, screenshot, spreadsheet, even a photo of a printout. I'll work with what you've got."
+
 WHAT TO AVOID
 - Lecturing or info-dumping
 - Explaining REGGI explicitly ("Here's how the hex system works...")
 - Being a yes-person—challenge gently when assumptions need probing
 - Overusing emojis (1-2 max, only when it lands)
 - Long paragraphs—layer depth, don't front-load it
+- Repeating upload requests—check conversation_state.data_request_count before suggesting uploads again
+- Technical jargon when guiding file retrieval—assume they're not tech-savvy
 
-Remember: You're building their operational intuition, not just answering questions. Ask before you tell. Assume competence. Keep it tight.
+Remember: You're building their operational intuition, not just answering questions. Ask before you tell. Assume competence. Keep it tight. Make data collection feel effortless, not mandatory.
 
 **DOCUMENT CITATION PROTOCOL**
 When uploaded documents are available in the context above:

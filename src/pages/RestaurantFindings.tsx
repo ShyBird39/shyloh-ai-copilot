@@ -92,12 +92,19 @@ const RestaurantFindings = () => {
     wwahd_mode: boolean;
     topics_discussed: string[];
     last_question_asked: string | null;
+    conversation_state?: {
+      data_requested?: boolean;
+      data_request_count?: number;
+      awaiting_upload?: boolean;
+      has_uploaded_data?: boolean;
+    };
   }>({
     current_topic: null,
     intent_classification: null,
     wwahd_mode: false,
     topics_discussed: [],
     last_question_asked: null,
+    conversation_state: {},
   });
 
   // Onboarding state
@@ -209,6 +216,7 @@ const RestaurantFindings = () => {
           wwahd_mode: convMeta.wwahd_mode || false,
           topics_discussed: convMeta.topics_discussed || [],
           last_question_asked: convMeta.last_question_asked,
+          conversation_state: convMeta.conversation_state || {},
         });
       }
 
@@ -1287,6 +1295,15 @@ const RestaurantFindings = () => {
                   <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
                     <p className="text-sm text-amber-900 dark:text-amber-100">
                       🎯 <strong>WWAHD Mode Active</strong> - Channeling Andrew Holden's operational philosophy
+                    </p>
+                  </div>
+                )}
+
+                {conversationState.conversation_state?.awaiting_upload && (
+                  <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg flex items-center gap-2">
+                    <Paperclip className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <p className="text-sm text-blue-900 dark:text-blue-100">
+                      <strong>Upload when ready:</strong> Click the 📎 paperclip icon below to share your files
                     </p>
                   </div>
                 )}
