@@ -363,6 +363,39 @@ const RestaurantFindings = () => {
       setShowObjectives(true);
       return;
     }
+    
+    // Handle WWAHD prompt with specific two-part response
+    if (promptText === "WWAHD?") {
+      if (!hasCompletedKPIs) return;
+      
+      const userMessage: ChatMessage = { role: "user", content: promptText };
+      setMessages((prev) => [...prev, userMessage]);
+      setShowObjectives(false);
+      setIsTyping(true);
+      
+      // First response
+      setTimeout(() => {
+        setMessages((prev) => [...prev, {
+          role: "assistant",
+          content: "First, how're the lighting and music level?...."
+        }]);
+        setIsTyping(false);
+        
+        // Immediate follow-up
+        setTimeout(() => {
+          setIsTyping(true);
+          setTimeout(() => {
+            setMessages((prev) => [...prev, {
+              role: "assistant",
+              content: "Ok, what's the context for WWAHD and I'll do my best to channel him"
+            }]);
+            setIsTyping(false);
+          }, 800);
+        }, 1000);
+      }, 600);
+      return;
+    }
+    
     setCurrentInput(promptText);
     // Auto-send the prompt
     setTimeout(() => {
