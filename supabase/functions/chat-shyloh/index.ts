@@ -12,6 +12,139 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Execute Notion tool calls
+async function executeNotionTool(toolName: string, toolInput: any): Promise<string> {
+  const NOTION_API_KEY = Deno.env.get('NOTION_API_KEY');
+  if (!NOTION_API_KEY) {
+    return JSON.stringify({ error: "Notion API key not configured" });
+  }
+
+  const notionHeaders = {
+    'Authorization': `Bearer ${NOTION_API_KEY}`,
+    'Notion-Version': '2022-06-28',
+    'Content-Type': 'application/json',
+  };
+
+  try {
+    if (toolName === 'search_notion') {
+      const response = await fetch('https://api.notion.com/v1/search', {
+        method: 'POST',
+        headers: notionHeaders,
+        body: JSON.stringify({
+          query: toolInput.query,
+          filter: toolInput.filter ? { value: toolInput.filter, property: 'object' } : undefined,
+          page_size: 10,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error('Notion search error:', error);
+        return JSON.stringify({ error: `Notion API error: ${response.status}` });
+      }
+
+      const data = await response.json();
+      return JSON.stringify({
+        results: data.results.map((item: any) => ({
+          id: item.id,
+          type: item.object,
+          title: item.properties?.title?.title?.[0]?.plain_text || 
+                 item.properties?.Name?.title?.[0]?.plain_text || 
+                 'Untitled',
+          url: item.url,
+        })),
+      });
+    }
+
+    if (toolName === 'read_notion_page') {
+      const pageId = toolInput.page_id.replace(/-/g, '');
+      
+      // Get page properties
+      const pageResponse = await fetch(`https://api.notion.com/v1/pages/${pageId}`, {
+        headers: notionHeaders,
+      });
+
+      if (!pageResponse.ok) {
+        const error = await pageResponse.text();
+        console.error('Notion page error:', error);
+        return JSON.stringify({ error: `Notion API error: ${pageResponse.status}` });
+      }
+
+      // Get page content blocks
+      const blocksResponse = await fetch(`https://api.notion.com/v1/blocks/${pageId}/children`, {
+        headers: notionHeaders,
+      });
+
+      if (!blocksResponse.ok) {
+        return JSON.stringify({ error: 'Failed to fetch page content' });
+      }
+
+      const pageData = await pageResponse.json();
+      const blocksData = await blocksResponse.json();
+
+      // Extract text content from blocks
+      const content = blocksData.results.map((block: any) => {
+        if (block.type === 'paragraph' && block.paragraph?.rich_text) {
+          return block.paragraph.rich_text.map((t: any) => t.plain_text).join('');
+        }
+        if (block.type === 'heading_1' && block.heading_1?.rich_text) {
+          return '# ' + block.heading_1.rich_text.map((t: any) => t.plain_text).join('');
+        }
+        if (block.type === 'heading_2' && block.heading_2?.rich_text) {
+          return '## ' + block.heading_2.rich_text.map((t: any) => t.plain_text).join('');
+        }
+        if (block.type === 'bulleted_list_item' && block.bulleted_list_item?.rich_text) {
+          return '• ' + block.bulleted_list_item.rich_text.map((t: any) => t.plain_text).join('');
+        }
+        return '';
+      }).filter(Boolean).join('\n\n');
+
+      return JSON.stringify({
+        id: pageData.id,
+        title: pageData.properties?.title?.title?.[0]?.plain_text || 
+               pageData.properties?.Name?.title?.[0]?.plain_text || 
+               'Untitled',
+        url: pageData.url,
+        content,
+      });
+    }
+
+    if (toolName === 'query_notion_database') {
+      const databaseId = toolInput.database_id.replace(/-/g, '');
+      
+      const response = await fetch(`https://api.notion.com/v1/databases/${databaseId}/query`, {
+        method: 'POST',
+        headers: notionHeaders,
+        body: JSON.stringify({
+          filter: toolInput.filter,
+          sorts: toolInput.sorts,
+          page_size: 20,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error('Notion database query error:', error);
+        return JSON.stringify({ error: `Notion API error: ${response.status}` });
+      }
+
+      const data = await response.json();
+      return JSON.stringify({
+        results: data.results.map((item: any) => ({
+          id: item.id,
+          properties: item.properties,
+          url: item.url,
+        })),
+      });
+    }
+
+    return JSON.stringify({ error: 'Unknown tool' });
+  } catch (error) {
+    console.error('Notion tool execution error:', error);
+    return JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -366,7 +499,101 @@ When uploaded documents are available in the context above:
       throw new Error(`Anthropic API error: ${response.status}`);
     }
 
-    // Stream the response back to the client
+    // Handle tool use (non-streaming) vs regular streaming
+    if (notionTools.length > 0) {
+      // Tool use mode - non-streaming response
+      const responseData = await response.json();
+      console.log('Received tool use response from Anthropic');
+
+      let currentMessages = [...messages.map((msg: any) => ({
+        role: msg.role === 'assistant' ? 'assistant' : 'user',
+        content: msg.content
+      }))];
+
+      let finalResponse = '';
+      let maxIterations = 5; // Prevent infinite loops
+      let iteration = 0;
+
+      while (iteration < maxIterations) {
+        iteration++;
+        
+        // Check if response contains tool use
+        const hasToolUse = responseData.content?.some((block: any) => block.type === 'tool_use');
+        
+        if (!hasToolUse) {
+          // No more tool use - extract final text response
+          finalResponse = responseData.content
+            ?.filter((block: any) => block.type === 'text')
+            .map((block: any) => block.text)
+            .join('') || '';
+          break;
+        }
+
+        // Execute tools
+        console.log(`Tool use iteration ${iteration}`);
+        const toolResults: any[] = [];
+
+        for (const block of responseData.content) {
+          if (block.type === 'tool_use') {
+            console.log(`Executing tool: ${block.name}`);
+            const toolResult = await executeNotionTool(block.name, block.input);
+            toolResults.push({
+              type: 'tool_result',
+              tool_use_id: block.id,
+              content: toolResult,
+            });
+          }
+        }
+
+        // Add assistant message with tool use + tool results to conversation
+        currentMessages.push({
+          role: 'assistant',
+          content: responseData.content,
+        });
+
+        currentMessages.push({
+          role: 'user',
+          content: toolResults,
+        });
+
+        // Make another API call with tool results
+        const followUpResponse = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'x-api-key': ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01',
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            model,
+            max_tokens: 16384,
+            system: systemPrompt,
+            messages: currentMessages,
+            tools: notionTools,
+            stream: false,
+          }),
+        });
+
+        if (!followUpResponse.ok) {
+          const errorText = await followUpResponse.text();
+          console.error('Anthropic follow-up API error:', errorText);
+          break;
+        }
+
+        const followUpData = await followUpResponse.json();
+        Object.assign(responseData, followUpData); // Update for next iteration
+      }
+
+      // Return final response as plain text stream
+      return new Response(finalResponse, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'text/plain',
+        },
+      });
+    }
+
+    // Regular streaming mode (no tools)
     const stream = new ReadableStream({
       async start(controller) {
         const reader = response.body?.getReader();
