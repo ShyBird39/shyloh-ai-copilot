@@ -12,6 +12,52 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Update conversation state after response
+async function updateConversationState(
+  supabase: any,
+  conversationId: string,
+  lastUserMessage: string,
+  lastAssistantMessage: string,
+  currentState: any
+) {
+  // Simple intent classification
+  let intent = currentState?.intent_classification || 'general';
+  if (/cost|expense|spending|budget/i.test(lastUserMessage)) intent = 'lower_costs';
+  if (/kpi|metric|number|percent/i.test(lastUserMessage)) intent = 'understand_metrics';
+  if (/wwahd|what would andrew|guidance|leadership/i.test(lastUserMessage)) intent = 'seek_guidance';
+  if (/sales|revenue|increase/i.test(lastUserMessage)) intent = 'increase_sales';
+  if (/guest|experience|service/i.test(lastUserMessage)) intent = 'improve_guest_experience';
+  if (/team|staff|employee/i.test(lastUserMessage)) intent = 'improve_team_experience';
+  
+  // Topic extraction
+  let topic = currentState?.current_topic || 'general_chat';
+  if (/food cost/i.test(lastUserMessage)) topic = 'food_cost_analysis';
+  if (/labor|schedule|staff/i.test(lastUserMessage)) topic = 'labor_management';
+  if (/waste|spoilage|ordering/i.test(lastUserMessage)) topic = 'waste_reduction';
+  if (/wwahd/i.test(lastUserMessage)) topic = 'wwahd_guidance';
+  if (/sales|revenue/i.test(lastUserMessage)) topic = 'sales_analysis';
+  if (/guest|experience/i.test(lastUserMessage)) topic = 'guest_experience';
+  
+  // Check if assistant asked a question
+  const askedQuestion = /\?$/.test(lastAssistantMessage.trim());
+  const questionMatch = lastAssistantMessage.match(/([^.!]+\?)/);
+  
+  // Update conversation state
+  await supabase
+    .from('chat_conversations')
+    .update({
+      intent_classification: intent,
+      current_topic: topic,
+      topics_discussed: [...new Set([...(currentState?.topics_discussed || []), topic])],
+      awaiting_user_response: askedQuestion,
+      last_question_asked: questionMatch ? questionMatch[1] : null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', conversationId);
+
+  console.log(`Updated conversation state - Topic: ${topic}, Intent: ${intent}, Asked question: ${askedQuestion}`);
+}
+
 // Execute Notion tool calls
 async function executeNotionTool(toolName: string, toolInput: any): Promise<string> {
   const NOTION_API_KEY = Deno.env.get('NOTION_API_KEY');
@@ -151,7 +197,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, restaurantData, kpiData, restaurantId, useNotion = false } = await req.json();
+    const { messages, restaurantData, kpiData, restaurantId, useNotion = false, conversationId } = await req.json();
     
     console.log(`Notion tools ${useNotion ? 'ENABLED' : 'disabled'} for this query`);
     
@@ -164,6 +210,21 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Fetch conversation state for context
+    let conversationState: any = null;
+    if (conversationId) {
+      const { data: convData, error: convError } = await supabase
+        .from('chat_conversations')
+        .select('conversation_state, current_topic, intent_classification, wwahd_mode, topics_discussed, last_question_asked')
+        .eq('id', conversationId)
+        .maybeSingle();
+
+      if (!convError && convData) {
+        conversationState = convData;
+        console.log('Loaded conversation state:', conversationState);
+      }
+    }
 
     // Fetch custom knowledge/rules
     let customKnowledgeContext = '';
@@ -352,6 +413,20 @@ serve(async (req) => {
       ? "\n\nNOTION INTEGRATION ACTIVE\nThe user has explicitly requested Notion access via @notion mention. You MUST use these tools to search their Notion workspace:\n- search_notion: Search for pages/databases by keyword (START HERE - always search first)\n- read_notion_page: Get full content of a specific page after finding it via search\n- query_notion_database: Query structured databases after finding them via search\n\nWhen the user asks about logs, SOPs, schedules, recipes, inventory, or any operational documentation, IMMEDIATELY use search_notion to look for it. Don't ask where it's stored—assume it's in Notion and search for it. Only mention that you couldn't find it if the search returns no results. Always cite specific Notion pages when using this information."
       : "";
 
+    // Add conversation state context to system prompt
+    const stateContext = conversationState ? `
+
+**CONVERSATION STATE**
+Current Topic: ${conversationState.current_topic || 'None'}
+User Intent: ${conversationState.intent_classification || 'Unknown'}
+WWAHD Mode: ${conversationState.wwahd_mode ? 'ACTIVE - Channel Andrew Holden\'s voice and reference WWAHD files' : 'OFF'}
+Topics Covered: ${conversationState.topics_discussed?.join(', ') || 'None yet'}
+Last Question You Asked: ${conversationState.last_question_asked || 'None'}
+State Data: ${JSON.stringify(conversationState.conversation_state || {})}
+
+Use this state to maintain coherent conversation flow. If you asked a question last time, interpret the user's response in that context.
+` : '';
+
     // Build system prompt with restaurant context
     const systemPrompt = `IDENTITY
 You are Shyloh: a millennial, female restaurant-operations consultant from the Danny Meyer school—warm hospitality + sharp finance & tech chops (AGI/LLMs). Fluent in industry shorthand (86, behind, weeds, covers, VIP, soigné, etc.).
@@ -456,7 +531,7 @@ When uploaded documents are available in the context above:
 - Reference specific documents by name when using their information
 - Synthesize insights across multiple documents when relevant
 - Quote or paraphrase key sections to ground your advice in their specific context
-- If a question can be answered more accurately with document context, prioritize that over general knowledge${customKnowledgeContext}${docsContext}${notionContext}`;
+- If a question can be answered more accurately with document context, prioritize that over general knowledge${customKnowledgeContext}${docsContext}${notionContext}${stateContext}`;
 
     // Log total context size for monitoring
     const totalContextChars = docsContext.length + systemPrompt.length;
@@ -594,6 +669,7 @@ When uploaded documents are available in the context above:
     }
 
     // Regular streaming mode (no tools)
+    let fullAssistantMessage = '';
     const stream = new ReadableStream({
       async start(controller) {
         const reader = response.body?.getReader();
@@ -623,6 +699,7 @@ When uploaded documents are available in the context above:
                   if (parsed.type === 'content_block_delta') {
                     const text = parsed.delta?.text;
                     if (text) {
+                      fullAssistantMessage += text;
                       controller.enqueue(new TextEncoder().encode(text));
                     }
                   }
@@ -633,6 +710,16 @@ When uploaded documents are available in the context above:
             }
           }
         } finally {
+          // Update conversation state after streaming completes
+          if (conversationId && fullAssistantMessage) {
+            updateConversationState(
+              supabase,
+              conversationId,
+              lastUserMessage,
+              fullAssistantMessage,
+              conversationState
+            ).catch(err => console.error('Failed to update conversation state:', err));
+          }
           controller.close();
         }
       },

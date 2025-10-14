@@ -16,31 +16,52 @@ export type Database = {
     Tables: {
       chat_conversations: {
         Row: {
+          awaiting_user_response: boolean | null
+          conversation_state: Json | null
           conversation_type: string | null
           created_at: string | null
+          current_topic: string | null
           id: string
+          intent_classification: string | null
+          last_question_asked: string | null
           message_count: number | null
           restaurant_id: string
           title: string
+          topics_discussed: string[] | null
           updated_at: string | null
+          wwahd_mode: boolean | null
         }
         Insert: {
+          awaiting_user_response?: boolean | null
+          conversation_state?: Json | null
           conversation_type?: string | null
           created_at?: string | null
+          current_topic?: string | null
           id?: string
+          intent_classification?: string | null
+          last_question_asked?: string | null
           message_count?: number | null
           restaurant_id: string
           title: string
+          topics_discussed?: string[] | null
           updated_at?: string | null
+          wwahd_mode?: boolean | null
         }
         Update: {
+          awaiting_user_response?: boolean | null
+          conversation_state?: Json | null
           conversation_type?: string | null
           created_at?: string | null
+          current_topic?: string | null
           id?: string
+          intent_classification?: string | null
+          last_question_asked?: string | null
           message_count?: number | null
           restaurant_id?: string
           title?: string
+          topics_discussed?: string[] | null
           updated_at?: string | null
+          wwahd_mode?: boolean | null
         }
         Relationships: [
           {

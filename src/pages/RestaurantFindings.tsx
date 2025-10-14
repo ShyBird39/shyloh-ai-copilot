@@ -85,6 +85,21 @@ const RestaurantFindings = () => {
   const [files, setFiles] = useState<any[]>([]);
   const [cleanupAttempted, setCleanupAttempted] = useState(false);
 
+  // Conversation state tracking
+  const [conversationState, setConversationState] = useState<{
+    current_topic: string | null;
+    intent_classification: string | null;
+    wwahd_mode: boolean;
+    topics_discussed: string[];
+    last_question_asked: string | null;
+  }>({
+    current_topic: null,
+    intent_classification: null,
+    wwahd_mode: false,
+    topics_discussed: [],
+    last_question_asked: null,
+  });
+
   // Onboarding state
   const [isOnboarding, setIsOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(1);
@@ -179,6 +194,23 @@ const RestaurantFindings = () => {
         .order("created_at", { ascending: true });
 
       if (error) throw error;
+
+      // Fetch conversation state
+      const { data: convMeta, error: metaError } = await supabase
+        .from('chat_conversations')
+        .select('conversation_state, current_topic, intent_classification, wwahd_mode, topics_discussed, last_question_asked')
+        .eq('id', conversationId)
+        .maybeSingle();
+
+      if (!metaError && convMeta) {
+        setConversationState({
+          current_topic: convMeta.current_topic,
+          intent_classification: convMeta.intent_classification,
+          wwahd_mode: convMeta.wwahd_mode || false,
+          topics_discussed: convMeta.topics_discussed || [],
+          last_question_asked: convMeta.last_question_asked,
+        });
+      }
 
       setCurrentConversationId(conversationId);
       setMessages(msgs.map(msg => ({
@@ -358,7 +390,7 @@ const RestaurantFindings = () => {
     handleSendMessage(`I want to ${objective.label.toLowerCase()}`);
   };
 
-  const handlePromptClick = (promptText: string) => {
+  const handlePromptClick = async (promptText: string) => {
     if (promptText === "I am here to...") {
       setShowObjectives(true);
       return;
@@ -372,6 +404,25 @@ const RestaurantFindings = () => {
       setMessages((prev) => [...prev, userMessage]);
       setShowObjectives(false);
       setIsTyping(true);
+
+      // Mark conversation as WWAHD mode
+      if (currentConversationId) {
+        await supabase
+          .from('chat_conversations')
+          .update({ 
+            wwahd_mode: true,
+            current_topic: 'wwahd_guidance',
+            intent_classification: 'seek_guidance'
+          })
+          .eq('id', currentConversationId);
+
+        setConversationState(prev => ({ 
+          ...prev, 
+          wwahd_mode: true,
+          current_topic: 'wwahd_guidance',
+          intent_classification: 'seek_guidance'
+        }));
+      }
       
       // First response
       setTimeout(() => {
@@ -821,6 +872,7 @@ const RestaurantFindings = () => {
             kpiData: kpiData,
             restaurantId: id,
             useNotion: useNotion,
+            conversationId: convId,
           }),
         }
       );
@@ -1230,6 +1282,21 @@ const RestaurantFindings = () => {
             {/* Chat Area */}
             <div className="flex-1 overflow-y-auto">
               <div className="container mx-auto px-4 py-8 max-w-4xl">
+                {/* Conversation State Indicators */}
+                {conversationState.wwahd_mode && (
+                  <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+                    <p className="text-sm text-amber-900 dark:text-amber-100">
+                      🎯 <strong>WWAHD Mode Active</strong> - Channeling Andrew Holden's operational philosophy
+                    </p>
+                  </div>
+                )}
+                
+                {conversationState.current_topic && conversationState.current_topic !== 'general_chat' && (
+                  <div className="mb-4 text-xs text-primary-foreground/50">
+                    Current focus: {conversationState.current_topic.replace(/_/g, ' ')}
+                  </div>
+                )}
+
                 <div className="space-y-6">
                   {messages.map((message, idx) => (
                     <div
