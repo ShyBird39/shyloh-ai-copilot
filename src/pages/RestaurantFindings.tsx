@@ -62,6 +62,7 @@ const RestaurantFindings = () => {
   const [hasCompletedKPIs, setHasCompletedKPIs] = useState<boolean | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentInput, setCurrentInput] = useState("");
+  const [notionMentioned, setNotionMentioned] = useState(false);
   const [showObjectives, setShowObjectives] = useState(false);
   const [kpiData, setKPIData] = useState<KPIData>({
     avg_weekly_sales: null,
@@ -713,6 +714,15 @@ const RestaurantFindings = () => {
     }]);
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setCurrentInput(value);
+    
+    // Check for @notion or /notion mentions
+    const hasNotionMention = /@notion|\/notion/i.test(value);
+    setNotionMentioned(hasNotionMention);
+  };
+
   const handleSendMessage = async (messageOverride?: string) => {
     const messageText = messageOverride || currentInput;
     if (!messageText.trim() || !id) return;
@@ -725,9 +735,14 @@ const RestaurantFindings = () => {
     // Hide objectives when sending a message
     setShowObjectives(false);
 
-    const userMessage: ChatMessage = { role: "user", content: messageText };
+    // Detect Notion mention and strip it from the message
+    const useNotion = /@notion|\/notion/i.test(messageText);
+    const cleanedMessage = messageText.replace(/@notion|\/notion/gi, '').trim();
+
+    const userMessage: ChatMessage = { role: "user", content: cleanedMessage };
     setMessages((prev) => [...prev, userMessage]);
     setCurrentInput("");
+    setNotionMentioned(false);
     setIsTyping(true);
 
     try {
@@ -771,6 +786,7 @@ const RestaurantFindings = () => {
             restaurantData: data,
             kpiData: kpiData,
             restaurantId: id,
+            useNotion: useNotion,
           }),
         }
       );
@@ -1238,46 +1254,61 @@ const RestaurantFindings = () => {
             {/* Input Area - Sticky at bottom */}
             <div className="sticky bottom-0 z-10 border-t border-accent/20 bg-background/95 backdrop-blur-sm">
               <div className="container mx-auto px-4 py-4 max-w-4xl">
-                <div className="flex gap-3">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    className="hidden"
-                    onChange={(e) => {
-                      if (e.target.files) {
-                        handleFileUpload(e.target.files);
-                      }
-                    }}
-                  />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isTyping}
-                    className="h-10 w-10 text-muted-foreground hover:text-foreground"
-                    title="Upload files"
-                  >
-                    <Paperclip className="w-5 h-5" />
-                  </Button>
-                  <Input
-                    ref={inputRef}
-                    type="text"
-                    value={currentInput}
-                    onChange={(e) => setCurrentInput(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && !isTyping && handleSendMessage()}
-                    placeholder="Ask me anything about your restaurant..."
-                    disabled={isTyping}
-                    className="flex-1 bg-background/50 border-accent/30 text-foreground placeholder:text-muted-foreground"
-                  />
-                  <Button
-                    onClick={() => handleSendMessage()}
-                    disabled={isTyping || !currentInput.trim()}
-                    size="icon"
-                    className="h-10 w-10"
-                  >
-                    {isTyping ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                  </Button>
+                <div className="space-y-2">
+                  <div className="flex gap-3">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files) {
+                          handleFileUpload(e.target.files);
+                        }
+                      }}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isTyping}
+                      className="h-10 w-10 text-muted-foreground hover:text-foreground"
+                      title="Upload files"
+                    >
+                      <Paperclip className="w-5 h-5" />
+                    </Button>
+                    <Input
+                      ref={inputRef}
+                      type="text"
+                      value={currentInput}
+                      onChange={handleInputChange}
+                      onKeyDown={(e) => e.key === "Enter" && !isTyping && handleSendMessage()}
+                      placeholder="Ask me anything about your restaurant..."
+                      disabled={isTyping}
+                      className="flex-1 bg-background/50 border-accent/30 text-foreground placeholder:text-muted-foreground"
+                    />
+                    <Button
+                      onClick={() => handleSendMessage()}
+                      disabled={isTyping || !currentInput.trim()}
+                      size="icon"
+                      className="h-10 w-10"
+                    >
+                      {isTyping ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                  
+                  {/* Notion Mention Indicator */}
+                  {notionMentioned && (
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-accent/10 border border-accent/20 rounded-lg animate-fade-in">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-4 h-4 rounded bg-accent/20 flex items-center justify-center">
+                          <span className="text-[10px] font-semibold text-accent-foreground">N</span>
+                        </div>
+                        <span className="text-xs font-medium text-accent-foreground">Notion enabled</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">I'll search your Notion workspace</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
