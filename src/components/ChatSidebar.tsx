@@ -1,11 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { MessageSquare, Upload, Trash2, FileText, Plus, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface Conversation {
   id: string;
@@ -53,41 +52,7 @@ export function ChatSidebar({
   onRefreshFiles,
 }: ChatSidebarProps) {
   const [isDragging, setIsDragging] = useState(false);
-  const [lindyDialogOpen, setLindyDialogOpen] = useState(false);
   const { toast } = useToast();
-
-  const loadLindyEmbed = () => {
-    // Remove existing script if any
-    const existingScript = document.querySelector('script[src*="lindyEmbed.js"]');
-    if (existingScript) {
-      existingScript.remove();
-    }
-
-    // Create and append new script
-    const script = document.createElement('script');
-    script.src = 'https://api.lindy.ai/api/lindyEmbed/lindyEmbed.js?a=f6692a72-1d35-4c57-8df6-3f1bd73988a8';
-    script.async = true;
-    script.crossOrigin = 'use-credentials';
-    document.body.appendChild(script);
-  };
-
-  const handleOpenLindy = () => {
-    setLindyDialogOpen(true);
-    // Load script when dialog opens
-    setTimeout(() => {
-      loadLindyEmbed();
-    }, 100);
-  };
-
-  useEffect(() => {
-    return () => {
-      // Cleanup Lindy script when component unmounts
-      const script = document.querySelector('script[src*="lindyEmbed.js"]');
-      if (script) {
-        script.remove();
-      }
-    };
-  }, []);
 
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return bytes + " B";
@@ -291,8 +256,6 @@ export function ChatSidebar({
               <p className="text-sm text-muted-foreground mb-4">
                 AI-powered agents to help with specific tasks
               </p>
-              
-              {/* SBSB P&L Agent */}
               <Button
                 onClick={() => window.open('https://chatgpt.com/g/g-68cc45772d2881918b1c95417c95d31f-sbsb-p-l-analyzer-fall-25', '_blank')}
                 className="w-full justify-start"
@@ -301,32 +264,7 @@ export function ChatSidebar({
                 <Bot className="w-4 h-4 mr-2" />
                 SBSB P&L Agent
               </Button>
-
-              {/* Reservation Availability Agent */}
-              <Button
-                onClick={handleOpenLindy}
-                className="w-full justify-start"
-                variant="outline"
-              >
-                <Bot className="w-4 h-4 mr-2" />
-                Check Ressie Availability
-              </Button>
             </div>
-
-            {/* Lindy Dialog */}
-            <Dialog open={lindyDialogOpen} onOpenChange={setLindyDialogOpen}>
-              <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden">
-                <DialogHeader>
-                  <DialogTitle>Reservation Availability</DialogTitle>
-                </DialogHeader>
-                <div 
-                  id="lindy-embed-container" 
-                  className="min-h-[500px] w-full"
-                >
-                  {/* Lindy embed will load here */}
-                </div>
-              </DialogContent>
-            </Dialog>
           </TabsContent>
         </Tabs>
       </div>
