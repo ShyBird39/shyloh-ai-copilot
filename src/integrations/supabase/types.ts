@@ -120,6 +120,7 @@ export type Database = {
           conversation_id: string
           created_at: string | null
           id: string
+          mentions: string[] | null
           role: string
           user_id: string | null
         }
@@ -128,6 +129,7 @@ export type Database = {
           conversation_id: string
           created_at?: string | null
           id?: string
+          mentions?: string[] | null
           role: string
           user_id?: string | null
         }
@@ -136,6 +138,7 @@ export type Database = {
           conversation_id?: string
           created_at?: string | null
           id?: string
+          mentions?: string[] | null
           role?: string
           user_id?: string | null
         }
@@ -145,6 +148,63 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          is_read: boolean
+          mentioned_by: string
+          message_id: string
+          read_at: string | null
+          restaurant_id: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          mentioned_by: string
+          message_id: string
+          read_at?: string | null
+          restaurant_id: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          mentioned_by?: string
+          message_id?: string
+          read_at?: string | null
+          restaurant_id?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
             referencedColumns: ["id"]
           },
         ]

@@ -15,6 +15,7 @@ import { OnboardingProgress } from "@/components/OnboardingProgress";
 import { TeamManagement } from "@/components/TeamManagement";
 import { ConversationSettings } from "@/components/ConversationSettings";
 import { MentionInput } from "@/components/MentionInput";
+import { NotificationBell } from "@/components/NotificationBell";
 import { useAuth } from "@/hooks/useAuth";
 
 interface KPIData {
@@ -1009,12 +1010,35 @@ const RestaurantFindings = () => {
       }
 
       // Save user message
-      await supabase.from("chat_messages").insert({
-        conversation_id: convId,
-        role: "user",
-        content: messageText,
-        user_id: user?.id,
-      });
+      const { data: insertedMessage } = await supabase
+        .from("chat_messages")
+        .insert({
+          conversation_id: convId,
+          role: "user",
+          content: messageText,
+          user_id: user?.id,
+        })
+        .select()
+        .single();
+
+      // Process mentions asynchronously
+      if (insertedMessage) {
+        supabase.functions.invoke('process-mentions', {
+          body: {
+            messageId: insertedMessage.id,
+            content: messageText,
+            conversationId: convId,
+            restaurantId: id,
+            senderId: user?.id
+          }
+        }).then(({ data, error }) => {
+          if (error) {
+            console.error('Error processing mentions:', error);
+          } else {
+            console.log('Mentions processed:', data);
+          }
+        });
+      }
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-shyloh`,
@@ -1560,6 +1584,12 @@ const RestaurantFindings = () => {
                     >
                       <RotateCcw className="w-4 h-4" />
                     </Button>
+                    <NotificationBell
+                      restaurantId={id || ""}
+                      onNavigate={(conversationId) => {
+                        handleLoadConversation(conversationId);
+                      }}
+                    />
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1648,22 +1678,41 @@ const RestaurantFindings = () => {
                 )}
 
                 <div className="space-y-6">
-                  {messages.map((message, idx) => (
-                    <div
-                      key={idx}
-                      className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} animate-fade-in`}
-                    >
+                  {messages.map((message, idx) => {
+                    // Render message with @mention highlighting
+                    const renderMessageContent = (content: string) => {
+                      const parts = content.split(/(@[A-Za-z0-9\s\-_.]+?)(?=\s|$|[.,!?])/g);
+                      return parts.map((part, i) => {
+                        if (part.startsWith('@')) {
+                          return (
+                            <span key={i} className="bg-primary/10 text-primary px-1 rounded">
+                              {part}
+                            </span>
+                          );
+                        }
+                        return part;
+                      });
+                    };
+
+                    return (
                       <div
-                        className={`max-w-[75%] rounded-2xl p-4 ${
-                          message.role === "user"
-                            ? "bg-accent text-accent-foreground"
-                            : "bg-background/50 backdrop-blur-sm border border-accent/20 text-primary-foreground"
-                        }`}
+                        key={idx}
+                        className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} animate-fade-in`}
                       >
-                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                        <div
+                          className={`max-w-[75%] rounded-2xl p-4 ${
+                            message.role === "user"
+                              ? "bg-accent text-accent-foreground"
+                              : "bg-background/50 backdrop-blur-sm border border-accent/20 text-primary-foreground"
+                          }`}
+                        >
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                            {renderMessageContent(message.content)}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   {isTyping && (
                     <div className="flex justify-start animate-fade-in">
                       <div className="bg-background/50 backdrop-blur-sm border border-accent/20 rounded-2xl p-4">
