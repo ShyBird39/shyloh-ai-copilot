@@ -280,6 +280,14 @@ export function ChatSidebar({
                 <Bot className="w-4 h-4 mr-2" />
                 Weekly Payroll Analysis
               </Button>
+              <Button
+                onClick={() => toast({ title: "Coming Soon", description: "Line Check Agent will be available soon." })}
+                className="w-full justify-start"
+                variant="outline"
+              >
+                <Bot className="w-4 h-4 mr-2" />
+                Line Check Agent
+              </Button>
             </div>
           </TabsContent>
         </Tabs>
