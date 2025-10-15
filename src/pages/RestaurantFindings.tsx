@@ -1553,35 +1553,37 @@ const RestaurantFindings = () => {
               <OnboardingProgress steps={onboardingSteps} currentStep={onboardingStep} />
             )}
 
-            {/* Collapsible Quick Start Prompts */}
-            <Collapsible 
-              open={promptsVisible && !isOnboarding} 
-              onOpenChange={setPromptsVisible}
-              className="border-b border-accent/20 bg-background/50 backdrop-blur-sm"
-            >
-              <div className="container mx-auto px-4 py-3 max-w-4xl">
-                <CollapsibleTrigger className="flex items-center gap-2 text-sm text-primary-foreground/70 hover:text-primary-foreground transition-colors mb-3">
-                  {promptsVisible ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                  Quick Start Prompts
-                </CollapsibleTrigger>
-                
-                <CollapsibleContent>
-                  <div className="flex flex-wrap gap-2">
-                    {samplePrompts.map((prompt, idx) => (
-                      <Button
-                        key={idx}
-                        variant="outline"
-                        size="sm"
-                        className="rounded-full px-4 py-2 h-auto bg-background/80 border-accent/20 text-primary-foreground/80 hover:bg-background hover:text-primary-foreground hover:border-accent/40 transition-all"
-                        onClick={() => handlePromptClick(prompt)}
-                      >
-                        {prompt}
-                      </Button>
-                    ))}
-                  </div>
-                </CollapsibleContent>
-              </div>
-            </Collapsible>
+            {/* Collapsible Quick Start Prompts - Hidden during onboarding */}
+            {!isOnboarding && (
+              <Collapsible 
+                open={promptsVisible} 
+                onOpenChange={setPromptsVisible}
+                className="border-b border-accent/20 bg-background/50 backdrop-blur-sm"
+              >
+                <div className="container mx-auto px-4 py-3 max-w-4xl">
+                  <CollapsibleTrigger className="flex items-center gap-2 text-sm text-primary-foreground/70 hover:text-primary-foreground transition-colors mb-3">
+                    {promptsVisible ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    Quick Start Prompts
+                  </CollapsibleTrigger>
+                  
+                  <CollapsibleContent>
+                    <div className="flex flex-wrap gap-2">
+                      {samplePrompts.map((prompt, idx) => (
+                        <Button
+                          key={idx}
+                          variant="outline"
+                          size="sm"
+                          className="rounded-full px-4 py-2 h-auto bg-background/80 border-accent/20 text-primary-foreground/80 hover:bg-background hover:text-primary-foreground hover:border-accent/40 transition-all"
+                          onClick={() => handlePromptClick(prompt)}
+                        >
+                          {prompt}
+                        </Button>
+                      ))}
+                    </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
+            )}
 
             {/* Chat Area */}
             <div className="flex-1 overflow-y-auto">
