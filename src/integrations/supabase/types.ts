@@ -276,6 +276,51 @@ export type Database = {
           },
         ]
       }
+      restaurant_tools: {
+        Row: {
+          accounting_system: string | null
+          created_at: string
+          id: string
+          inventory_system: string | null
+          marketing_tools: string | null
+          other_tools: Json | null
+          payroll_system: string | null
+          pos_system: string | null
+          reservation_system: string | null
+          restaurant_id: string
+          scheduling_system: string | null
+          updated_at: string
+        }
+        Insert: {
+          accounting_system?: string | null
+          created_at?: string
+          id?: string
+          inventory_system?: string | null
+          marketing_tools?: string | null
+          other_tools?: Json | null
+          payroll_system?: string | null
+          pos_system?: string | null
+          reservation_system?: string | null
+          restaurant_id: string
+          scheduling_system?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accounting_system?: string | null
+          created_at?: string
+          id?: string
+          inventory_system?: string | null
+          marketing_tools?: string | null
+          other_tools?: Json | null
+          payroll_system?: string | null
+          pos_system?: string | null
+          reservation_system?: string | null
+          restaurant_id?: string
+          scheduling_system?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       restaurants: {
         Row: {
           augmented_hex_code: string

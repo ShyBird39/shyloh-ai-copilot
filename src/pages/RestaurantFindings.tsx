@@ -42,8 +42,22 @@ const RestaurantFindings = () => {
   const [dimensionsOpen, setDimensionsOpen] = useState(false);
   const [reggiOpen, setReggiOpen] = useState(false);
   const [knowledgeOpen, setKnowledgeOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
   const [editingKPI, setEditingKPI] = useState<string | null>(null);
   const [kpiEditValue, setKpiEditValue] = useState("");
+  
+  // Tools state
+  const [toolsData, setToolsData] = useState<any>({
+    pos_system: null,
+    reservation_system: null,
+    payroll_system: null,
+    accounting_system: null,
+    inventory_system: null,
+    scheduling_system: null,
+    marketing_tools: null,
+  });
+  const [editingTool, setEditingTool] = useState<string | null>(null);
+  const [toolEditValue, setToolEditValue] = useState("");
   
   // Custom knowledge state
   const [customKnowledge, setCustomKnowledge] = useState<any[]>([]);
@@ -134,6 +148,7 @@ const RestaurantFindings = () => {
     { id: 'welcome', label: 'Welcome', completed: false, active: true },
     { id: 'reggi', label: 'Profile', completed: false, active: false },
     { id: 'kpis', label: 'KPIs', completed: false, active: false },
+    { id: 'tools', label: 'Tools', completed: false, active: false },
     { id: 'files', label: 'Files', completed: false, active: false },
     { id: 'rules', label: 'Rules', completed: false, active: false },
     { id: 'complete', label: 'Complete', completed: false, active: false },
@@ -563,6 +578,29 @@ const RestaurantFindings = () => {
           console.error('Error fetching KPIs:', kpisError);
         }
 
+        // Check if tools exist
+        const { data: existingTools, error: toolsError } = await supabase
+          .from('restaurant_tools')
+          .select('*')
+          .eq('restaurant_id', id)
+          .maybeSingle();
+
+        if (toolsError) {
+          console.error('Error fetching tools:', toolsError);
+        }
+
+        if (existingTools) {
+          setToolsData({
+            pos_system: existingTools.pos_system,
+            reservation_system: existingTools.reservation_system,
+            payroll_system: existingTools.payroll_system,
+            accounting_system: existingTools.accounting_system,
+            inventory_system: existingTools.inventory_system,
+            scheduling_system: existingTools.scheduling_system,
+            marketing_tools: existingTools.marketing_tools,
+          });
+        }
+
         if (existingKPIs) {
           // Returning user - has KPIs
           setHasCompletedKPIs(true);
@@ -717,18 +755,18 @@ const RestaurantFindings = () => {
     // Step 3: KPI Collection - simplified version
     if (onboardingStep === 3) {
       // This is a simplified flow - in production you'd want the full KPIInput flow
-      // For now, just acknowledge and move to files
+      // For now, just acknowledge and move to tools
       setIsTyping(false);
       setTimeout(() => {
         setMessages((prev) => [...prev, {
           role: "assistant",
-          content: `Got it! For the full KPI setup, you can use the "Vitals" section in the sidebar anytime. Let's move on to getting you set up with data files.`,
+          content: `Got it! For the full KPI setup, you can use the "Vitals" section in the sidebar anytime.`,
         }]);
         
         setTimeout(() => {
           setMessages((prev) => [...prev, {
             role: "assistant",
-            content: `You're dialed in! 🎉 One more thing to unlock my full potential—**real data**.\n\nI work way better when I have your actual numbers. Got any of these?\n- 📊 Sales reports (weekly/monthly)\n- ⏰ Labor/time entry reports\n- 🧾 Invoices or order guides\n- 📋 Menu pricing sheets\n- 📈 P&L statements\n\nYou can upload them now using the 📎 **paperclip icon** below, or just type "skip" to add them later. What works?`,
+            content: `Quick question—**what tools do you use to run the restaurant?**\n\nSpecifically:\n- 💳 **POS system** (e.g., Toast, Square, Clover)\n- 📅 **Reservation system** (e.g., Resy, OpenTable)\n- 💰 **Payroll** (e.g., Gusto, ADP)\n- 📊 **Accounting** (e.g., QuickBooks, Xero)\n\nJust tell me what you use, or type "skip" if you want to add these later!`,
           }]);
         }, 1200);
         
@@ -738,8 +776,30 @@ const RestaurantFindings = () => {
       return;
     }
 
-    // Step 4: File upload prompt
+    // Step 4: Tools collection
     if (onboardingStep === 4) {
+      setIsTyping(false);
+      setTimeout(() => {
+        setMessages((prev) => [...prev, {
+          role: "assistant",
+          content: `Perfect! I've noted those tools. You can always update this in the **Tech Stack** section on the right.`,
+        }]);
+        
+        setTimeout(() => {
+          setMessages((prev) => [...prev, {
+            role: "assistant",
+            content: `You're dialed in! 🎉 One more thing to unlock my full potential—**real data**.\n\nI work way better when I have your actual numbers. Got any of these?\n- 📊 Sales reports (weekly/monthly)\n- ⏰ Labor/time entry reports\n- 🧾 Invoices or order guides\n- 📋 Menu pricing sheets\n- 📈 P&L statements\n\nYou can upload them now using the 📎 **paperclip icon** below, or just type "skip" to add them later. What works?`,
+          }]);
+        }, 1200);
+        
+        setOnboardingStep(5);
+        updateOnboardingProgress(5, true);
+      }, 800);
+      return;
+    }
+
+    // Step 5: File upload prompt
+    if (onboardingStep === 5) {
       setIsTyping(false);
       setTimeout(() => {
         setMessages((prev) => [...prev, {
@@ -754,14 +814,14 @@ const RestaurantFindings = () => {
           }]);
         }, 1200);
         
-        setOnboardingStep(5);
-        updateOnboardingProgress(5, true);
+        setOnboardingStep(6);
+        updateOnboardingProgress(6, true);
       }, 800);
       return;
     }
 
-    // Step 5: Custom knowledge intro
-    if (onboardingStep === 5) {
+    // Step 6: Custom knowledge intro
+    if (onboardingStep === 6) {
       setIsTyping(false);
       
       // Complete onboarding
@@ -771,8 +831,8 @@ const RestaurantFindings = () => {
           content: `Alright, **${data.name}**—you're all set! ✅\n\nNow—what do you want to tackle first? I can help you:\n- 📊 **Check your vitals** (KPIs vs. benchmarks)\n- 📈 **Increase sales**\n- 💰 **Lower costs**\n- ✨ **Improve guest experience**\n- 👥 **Improve team experience**\n\nOr just ask me anything—I'm here.`,
         }]);
         
-        setOnboardingStep(6);
-        updateOnboardingProgress(6, true);
+        setOnboardingStep(7);
+        updateOnboardingProgress(7, true);
         setShowObjectives(true);
         
         // Create onboarding conversation record
@@ -1049,6 +1109,62 @@ const RestaurantFindings = () => {
     } catch (error) {
       console.error('Error saving KPI:', error);
       toast.error("Failed to save KPI");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleEditTool = (toolName: string, currentValue: string | null) => {
+    setEditingTool(toolName);
+    setToolEditValue(currentValue || "");
+  };
+
+  const handleCancelTool = () => {
+    setEditingTool(null);
+    setToolEditValue("");
+  };
+
+  const handleSaveTool = async (toolName: string) => {
+    if (!data) return;
+
+    const value = toolEditValue.trim();
+
+    setSaving(true);
+    try {
+      // Check if tools record exists
+      const { data: existingTools } = await supabase
+        .from('restaurant_tools')
+        .select('id')
+        .eq('restaurant_id', data.id)
+        .maybeSingle();
+
+      if (existingTools) {
+        // Update existing
+        const { error } = await supabase
+          .from('restaurant_tools')
+          .update({ [toolName]: value || null })
+          .eq('restaurant_id', data.id);
+
+        if (error) throw error;
+      } else {
+        // Create new
+        const { error } = await supabase
+          .from('restaurant_tools')
+          .insert({
+            restaurant_id: data.id,
+            [toolName]: value || null,
+          });
+
+        if (error) throw error;
+      }
+
+      toast.success("Tool updated successfully");
+      setToolsData({ ...toolsData, [toolName]: value || null });
+      setEditingTool(null);
+      setToolEditValue("");
+    } catch (error) {
+      console.error('Error saving tool:', error);
+      toast.error("Failed to save tool");
     } finally {
       setSaving(false);
     }
@@ -1866,6 +1982,93 @@ const RestaurantFindings = () => {
                       <p className="text-lg font-mono text-accent">{data.augmented_hex_code}</p>
                     </div>
                   </Card>
+                </CollapsibleContent>
+              </div>
+            </Collapsible>
+
+            {/* Tech Stack Section */}
+            <Collapsible open={toolsOpen} onOpenChange={setToolsOpen}>
+              <div className="space-y-3">
+                <CollapsibleTrigger className="flex items-center justify-between w-full group">
+                  <h3 className="text-sm font-semibold text-primary-foreground uppercase tracking-wide">Tech Stack</h3>
+                  {toolsOpen ? <ChevronUp className="w-4 h-4 text-primary-foreground/60 group-hover:text-primary-foreground transition-colors" /> : <ChevronDown className="w-4 h-4 text-primary-foreground/60 group-hover:text-primary-foreground transition-colors" />}
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="space-y-3">
+                    {[
+                      { key: 'pos_system', label: 'POS System', icon: '💳' },
+                      { key: 'reservation_system', label: 'Reservations', icon: '📅' },
+                      { key: 'payroll_system', label: 'Payroll', icon: '💰' },
+                      { key: 'accounting_system', label: 'Accounting', icon: '📊' },
+                      { key: 'inventory_system', label: 'Inventory', icon: '📦' },
+                      { key: 'scheduling_system', label: 'Scheduling', icon: '⏰' },
+                      { key: 'marketing_tools', label: 'Marketing', icon: '📣' },
+                    ].map((tool) => {
+                      const isEditing = editingTool === tool.key;
+                      const value = toolsData[tool.key as keyof typeof toolsData];
+                      
+                      return (
+                        <Card
+                          key={tool.key}
+                          className="bg-background/50 border-accent/20 p-3 space-y-2"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg">{tool.icon}</span>
+                              <p className="text-xs font-medium text-primary-foreground">{tool.label}</p>
+                            </div>
+                          </div>
+                          
+                          {isEditing ? (
+                            <div className="space-y-2">
+                              <Input
+                                value={toolEditValue}
+                                onChange={(e) => setToolEditValue(e.target.value)}
+                                className="bg-background/20 border-accent/30 text-primary-foreground h-8 text-sm"
+                                placeholder={`e.g., ${tool.label === 'POS System' ? 'Toast' : tool.label === 'Reservations' ? 'Resy' : tool.label === 'Payroll' ? 'Gusto' : 'QuickBooks'}`}
+                                autoFocus
+                                disabled={saving}
+                              />
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleSaveTool(tool.key)}
+                                  disabled={saving}
+                                  className="bg-accent hover:bg-accent/90 text-xs h-6"
+                                >
+                                  {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save"}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={handleCancelTool}
+                                  disabled={saving}
+                                  className="text-xs h-6 bg-background/10 border-primary-foreground/20"
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <p className="text-primary-foreground/90 text-sm">
+                                {value || <span className="text-primary-foreground/50 text-xs">Not set</span>}
+                              </p>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleEditTool(tool.key, value)}
+                                className="text-accent hover:text-accent-foreground hover:bg-accent/20 -ml-2 text-xs h-6"
+                              >
+                                <Pencil className="w-3 h-3 mr-1" />
+                                {value ? 'Edit' : 'Add'}
+                              </Button>
+                            </>
+                          )}
+                        </Card>
+                      );
+                    })}
+                  </div>
                 </CollapsibleContent>
               </div>
             </Collapsible>
