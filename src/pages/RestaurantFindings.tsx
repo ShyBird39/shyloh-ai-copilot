@@ -12,6 +12,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { ChatSidebar } from "@/components/ChatSidebar";
 import { OnboardingProgress } from "@/components/OnboardingProgress";
+import { TeamManagement } from "@/components/TeamManagement";
 
 interface KPIData {
   avg_weekly_sales: number | null;
@@ -197,7 +198,7 @@ const RestaurantFindings = () => {
 
   const samplePrompts = [
     "I am here to...",
-    "Check my vitals...",
+    "Check my settings...",
     "WWAHD?",
     "Tips for using Shyloh"
   ];
@@ -774,7 +775,7 @@ const RestaurantFindings = () => {
       setTimeout(() => {
         setMessages((prev) => [...prev, {
           role: "assistant",
-          content: `Got it! For the full KPI setup, you can use the "Vitals" section in the sidebar anytime.`,
+          content: `Got it! For the full KPI setup, you can use the "Settings" section in the sidebar anytime.`,
         }]);
         
         setTimeout(() => {
@@ -842,7 +843,7 @@ const RestaurantFindings = () => {
       setTimeout(async () => {
         setMessages((prev) => [...prev, {
           role: "assistant",
-          content: `Alright, **${data.name}**—you're all set! ✅\n\nNow—what do you want to tackle first? I can help you:\n- 📊 **Check your vitals** (KPIs vs. benchmarks)\n- 📈 **Increase sales**\n- 💰 **Lower costs**\n- ✨ **Improve guest experience**\n- 👥 **Improve team experience**\n\nOr just ask me anything—I'm here.`,
+          content: `Alright, **${data.name}**—you're all set! ✅\n\nNow—what do you want to tackle first? I can help you:\n- 📊 **Check your settings** (KPIs vs. benchmarks)\n- 📈 **Increase sales**\n- 💰 **Lower costs**\n- ✨ **Improve guest experience**\n- 👥 **Improve team experience**\n\nOr just ask me anything—I'm here.`,
         }]);
         
         setOnboardingStep(7);
@@ -1528,7 +1529,7 @@ const RestaurantFindings = () => {
                       className="bg-background/10 backdrop-blur-sm border-primary-foreground/20 text-primary-foreground hover:bg-background/20"
                     >
                       {sidebarOpen ? <PanelLeftClose className="w-4 h-4 mr-2" /> : <PanelLeft className="w-4 h-4 mr-2" />}
-                      Vitals
+                      Settings
                     </Button>
                   </div>
                 </div>
@@ -2446,6 +2447,12 @@ const RestaurantFindings = () => {
                 </CollapsibleContent>
               </div>
             </Collapsible>
+
+            {/* Team Section */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-primary-foreground uppercase tracking-wide">Team</h3>
+              <TeamManagement restaurantId={id!} />
+            </div>
           </div>
         </div>
               </div>
