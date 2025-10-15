@@ -219,20 +219,10 @@ const RestaurantFindings = () => {
     setCurrentReggiDimension(0);
     setCurrentConversationId(null);
     
-    // Show first REGGI dimension
-    const firstDim = reggiDimensions[0];
-    const code = data?.[firstDim.codeKey] || 'Not set';
-    const description = data?.[firstDim.descKey] || 'No description available';
-    
     setMessages([
       {
         role: "assistant",
         content: `Hey! 👋 I'm Shyloh—think of me as your ops thought partner. I'm here to help you run a tighter, more profitable operation. Before we dive in, I need to learn about your restaurant. This'll take about 5 minutes. Sound good?`,
-        type: "question",
-      },
-      {
-        role: "assistant",
-        content: `Let's start with your restaurant's profile. First up: **${firstDim.label}**\n\n**Code:** ${code}\n**Description:** ${description}\n\nDoes this look right? You can edit it in the panel on the right, or just type "looks good" to continue.`,
         type: "question",
       },
     ]);
