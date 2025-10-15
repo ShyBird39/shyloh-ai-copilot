@@ -745,12 +745,11 @@ const RestaurantFindings = () => {
         // Show next REGGI dimension
         setTimeout(() => {
           const nextDim = reggiDimensions[nextIndex];
-          const code = data?.[nextDim.codeKey] || 'Not set';
           const description = data?.[nextDim.descKey] || 'No description available';
           
           setMessages((prev) => [...prev, {
             role: "assistant",
-            content: `Great! Next up: **${nextDim.label}**:\n\n**Code:** ${code}\n**Description:** ${description}\n\nDoes this capture it? Edit on the right or type "looks good" to continue.`,
+            content: `Great! Next up: **${nextDim.label}**\n\n${description}\n\nDoes this capture it? Edit on the right or type "looks good" to continue.`,
           }]);
           
           setCurrentReggiDimension(nextIndex);
