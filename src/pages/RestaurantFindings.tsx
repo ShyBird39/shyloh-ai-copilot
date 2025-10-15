@@ -138,24 +138,14 @@ const RestaurantFindings = () => {
 
   // Onboarding state
   const [isOnboarding, setIsOnboarding] = useState(false);
-  const [onboardingStep, setOnboardingStep] = useState(1);
-  const [reggiDimensionsReviewed, setReggiDimensionsReviewed] = useState({
-    culinary: false,
-    vibe: false,
-    social: false,
-    time: false,
-    operational: false,
-    hospitality: false,
-  });
-  const [currentReggiDimension, setCurrentReggiDimension] = useState(0);
+  const [onboardingStep, setOnboardingStep] = useState<number>(1);
+  const [currentReggiDimension, setCurrentReggiDimension] = useState<number>(0); // Track which REGGI dimension (0-5)
   const [onboardingSteps, setOnboardingSteps] = useState([
-    { id: 'welcome', label: 'Welcome', completed: false, active: true },
-    { id: 'reggi', label: 'Profile', completed: false, active: false },
+    { id: 'profile', label: 'Profile', completed: false, active: true },
     { id: 'kpis', label: 'KPIs', completed: false, active: false },
     { id: 'tools', label: 'Tools', completed: false, active: false },
     { id: 'files', label: 'Files', completed: false, active: false },
     { id: 'rules', label: 'Rules', completed: false, active: false },
-    { id: 'complete', label: 'Complete', completed: false, active: false },
   ]);
 
   const samplePrompts = [
@@ -176,14 +166,71 @@ const RestaurantFindings = () => {
     handleNewConversation();
   };
 
+  const reggiDimensions = [
+    { 
+      key: 'culinary_beverage', 
+      label: 'Culinary/Beverage', 
+      icon: UtensilsCrossed,
+      codeKey: 'culinary_beverage_code',
+      descKey: 'culinary_beverage_description'
+    },
+    { 
+      key: 'vibe_energy', 
+      label: 'Vibe/Energy', 
+      icon: Sparkles,
+      codeKey: 'vibe_energy_code',
+      descKey: 'vibe_energy_description'
+    },
+    { 
+      key: 'social_context', 
+      label: 'Social Context', 
+      icon: Users,
+      codeKey: 'social_context_code',
+      descKey: 'social_context_description'
+    },
+    { 
+      key: 'time_occasion', 
+      label: 'Time/Occasion', 
+      icon: Clock,
+      codeKey: 'time_occasion_code',
+      descKey: 'time_occasion_description'
+    },
+    { 
+      key: 'operational_execution', 
+      label: 'Operational Execution', 
+      icon: Settings,
+      codeKey: 'operational_execution_code',
+      descKey: 'operational_execution_description'
+    },
+    { 
+      key: 'hospitality_approach', 
+      label: 'Hospitality Approach', 
+      icon: Heart,
+      codeKey: 'hospitality_approach_code',
+      descKey: 'hospitality_approach_description'
+    },
+  ];
+
   const startOnboarding = () => {
     setIsOnboarding(true);
     setOnboardingStep(1);
+    setCurrentReggiDimension(0);
     setCurrentConversationId(null);
+    
+    // Show first REGGI dimension
+    const firstDim = reggiDimensions[0];
+    const code = data?.[firstDim.codeKey] || 'Not set';
+    const description = data?.[firstDim.descKey] || 'No description available';
+    
     setMessages([
       {
         role: "assistant",
         content: `Hey! 👋 I'm Shyloh—think of me as your ops thought partner. I'm here to help you run a tighter, more profitable operation. Before we dive in, I need to learn about your restaurant. This'll take about 5 minutes. Sound good?`,
+        type: "question",
+      },
+      {
+        role: "assistant",
+        content: `Let's start with your restaurant's profile. First up: **${firstDim.label}**\n\n**Code:** ${code}\n**Description:** ${description}\n\nDoes this look right? You can edit it in the panel on the right, or just type "looks good" to continue.`,
         type: "question",
       },
     ]);
@@ -660,7 +707,7 @@ const RestaurantFindings = () => {
     setCurrentInput("");
     setIsTyping(true);
 
-    // Step 1: Welcome - show REGGI dimensions for review
+    // Step 1: Welcome - introduce profile review
     if (onboardingStep === 1) {
       setTimeout(() => {
         setMessages((prev) => [...prev, {
@@ -669,45 +716,64 @@ const RestaurantFindings = () => {
         }]);
         
         setTimeout(() => {
-          // Show all REGGI dimensions at once for review
-          const reggiSummary = `Here's your current profile:\n\n**Culinary & Beverage**: ${data.culinary_beverage_description || 'Not set'}\n\n**Vibe & Energy**: ${data.vibe_energy_description || 'Not set'}\n\n**Social Context**: ${data.social_context_description || 'Not set'}\n\n**Time & Occasion**: ${data.time_occasion_description || 'Not set'}\n\n**Operational Execution**: ${data.operational_execution_description || 'Not set'}\n\n**Hospitality Approach**: ${data.hospitality_approach_description || 'Not set'}\n\nDoes this capture your concept? You can edit any dimension in the **REGGI Codes** section on the right, or just type "looks good" to continue!`;
+          // Show first REGGI dimension
+          const firstDim = reggiDimensions[0];
+          const code = data?.[firstDim.codeKey] || 'Not set';
+          const description = data?.[firstDim.descKey] || 'No description available';
           
           setMessages((prev) => [...prev, {
             role: "assistant",
-            content: reggiSummary,
+            content: `Let's start with **${firstDim.label}**:\n\n**Code:** ${code}\n**Description:** ${description}\n\nDoes this look right? You can edit it in the **REGGI Codes** section on the right, or just type "looks good" to move to the next one.`,
           }]);
         }, 1200);
         
         setIsTyping(false);
+        setCurrentReggiDimension(0);
         
-        // Move to step 2
-        setOnboardingStep(2);
-        updateOnboardingProgress(2, true);
+        // Stay in step 1 to handle each dimension
       }, 800);
       return;
     }
 
-    // Step 2: REGGI Review - user confirms or asks to move on
-    if (onboardingStep === 2) {
-      setIsTyping(false);
+    // Step 1 (continued): User reviews each REGGI dimension one at a time
+    if (onboardingStep === 1 && currentReggiDimension < reggiDimensions.length) {
+      const nextIndex = currentReggiDimension + 1;
       
-      // User acknowledged, move to KPIs
-      setTimeout(() => {
-        setMessages((prev) => [...prev, {
-          role: "assistant",
-          content: `Perfect! ✅ Your concept profile is locked in. Now let's get into the numbers—this is where I can really help you operationally.`,
-        }]);
-        
+      if (nextIndex < reggiDimensions.length) {
+        // Show next REGGI dimension
+        setTimeout(() => {
+          const nextDim = reggiDimensions[nextIndex];
+          const code = data?.[nextDim.codeKey] || 'Not set';
+          const description = data?.[nextDim.descKey] || 'No description available';
+          
+          setMessages((prev) => [...prev, {
+            role: "assistant",
+            content: `Great! Next up: **${nextDim.label}**:\n\n**Code:** ${code}\n**Description:** ${description}\n\nDoes this capture it? Edit on the right or type "looks good" to continue.`,
+          }]);
+          
+          setCurrentReggiDimension(nextIndex);
+          setIsTyping(false);
+        }, 800);
+      } else {
+        // Finished all REGGI dimensions, move to KPIs
         setTimeout(() => {
           setMessages((prev) => [...prev, {
             role: "assistant",
-            content: `I need a few quick ops numbers. Let's start with your **average weekly sales** in dollars. Feel free to round!`,
+            content: `Perfect! ✅ Your concept profile is locked in. Now let's get into the numbers—this is where I can really help you operationally.`,
           }]);
-        }, 1000);
-        
-        setOnboardingStep(3);
-        updateOnboardingProgress(3, true);
-      }, 800);
+          
+          setTimeout(() => {
+            setMessages((prev) => [...prev, {
+              role: "assistant",
+              content: `I need a few quick ops numbers. Let's start with your **average weekly sales** in dollars. Feel free to round!`,
+            }]);
+          }, 1000);
+          
+          setOnboardingStep(3);
+          updateOnboardingProgress(3, true);
+          setIsTyping(false);
+        }, 800);
+      }
       return;
     }
 
