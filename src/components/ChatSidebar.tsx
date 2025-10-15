@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MessageSquare, Upload, Trash2, FileText, Plus, Bot, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Conversation {
   id: string;
@@ -53,7 +54,28 @@ export function ChatSidebar({
   onRefreshFiles,
 }: ChatSidebarProps) {
   const [isDragging, setIsDragging] = useState(false);
+  const [agents, setAgents] = useState<any[]>([]);
   const { toast } = useToast();
+
+  useEffect(() => {
+    loadAgents();
+  }, [restaurantId]);
+
+  const loadAgents = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("restaurant_agents")
+        .select("*")
+        .eq("restaurant_id", restaurantId)
+        .eq("is_active", true)
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+      setAgents(data || []);
+    } catch (error) {
+      console.error("Error loading agents:", error);
+    }
+  };
 
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return bytes + " B";
@@ -262,38 +284,24 @@ export function ChatSidebar({
               <p className="text-sm text-muted-foreground mb-4">
                 AI-powered agents to help with specific tasks
               </p>
-              <Button
-                onClick={() => window.open('https://chatgpt.com/g/g-68cc45772d2881918b1c95417c95d31f-sbsb-p-l-analyzer-fall-25', '_blank')}
-                className="w-full justify-start"
-                variant="outline"
-              >
-                <Bot className="w-4 h-4 mr-2" />
-                SBSB P&L Agent
-              </Button>
-              <Button
-                onClick={() => toast({ title: "Coming Soon", description: "Reservation Availability agent will be available soon." })}
-                className="w-full justify-start"
-                variant="outline"
-              >
-                <Bot className="w-4 h-4 mr-2" />
-                Reservation Availability
-              </Button>
-              <Button
-                onClick={() => toast({ title: "Coming Soon", description: "Weekly Payroll Analysis agent will be available soon." })}
-                className="w-full justify-start"
-                variant="outline"
-              >
-                <Bot className="w-4 h-4 mr-2" />
-                Weekly Payroll Analysis
-              </Button>
-              <Button
-                onClick={() => toast({ title: "Coming Soon", description: "Line Check Agent will be available soon." })}
-                className="w-full justify-start"
-                variant="outline"
-              >
-                <Bot className="w-4 h-4 mr-2" />
-                Line Check Agent
-              </Button>
+              
+              {agents.length === 0 ? (
+                <div className="text-center text-muted-foreground py-8 text-sm">
+                  No agents configured for this restaurant yet
+                </div>
+              ) : (
+                agents.map((agent) => (
+                  <Button
+                    key={agent.id}
+                    onClick={() => window.open(agent.url, '_blank')}
+                    className="w-full justify-start"
+                    variant="outline"
+                  >
+                    <Bot className="w-4 h-4 mr-2" />
+                    {agent.name}
+                  </Button>
+                ))
+              )}
             </div>
           </TabsContent>
         </Tabs>

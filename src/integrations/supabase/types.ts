@@ -129,6 +129,42 @@ export type Database = {
         }
         Relationships: []
       }
+      restaurant_agents: {
+        Row: {
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          restaurant_id: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          restaurant_id: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          restaurant_id?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
       restaurant_custom_knowledge: {
         Row: {
           category: string | null
