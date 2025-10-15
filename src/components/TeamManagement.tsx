@@ -38,6 +38,8 @@ export function TeamManagement({ restaurantId }: TeamManagementProps) {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<string>("member");
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [showLinkDialog, setShowLinkDialog] = useState(false);
 
   useEffect(() => {
     loadMembers();
@@ -93,13 +95,10 @@ export function TeamManagement({ restaurantId }: TeamManagementProps) {
 
       if (!profile) {
         // User doesn't exist yet - show signup link
-        toast({
-          title: "Invitation Ready",
-          description: `Send this signup link to ${inviteEmail}: ${window.location.origin}/auth`,
-        });
+        const link = `${window.location.origin}/auth`;
+        setInviteLink(link);
         setInviteDialogOpen(false);
-        setInviteEmail("");
-        setInviteRole("member");
+        setShowLinkDialog(true);
         return;
       }
 
@@ -137,6 +136,7 @@ export function TeamManagement({ restaurantId }: TeamManagementProps) {
       setInviteDialogOpen(false);
       setInviteEmail("");
       setInviteRole("member");
+      setInviteLink(null);
       loadMembers();
     } catch (error: any) {
       toast({
@@ -257,6 +257,55 @@ export function TeamManagement({ restaurantId }: TeamManagementProps) {
           )}
         </div>
       </ScrollArea>
+
+      {/* Signup Link Dialog */}
+      <Dialog open={showLinkDialog} onOpenChange={setShowLinkDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Invitation Link Ready</DialogTitle>
+            <DialogDescription>
+              This user doesn't have an account yet. Send them this link to sign up:
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              <Input
+                value={inviteLink || ""}
+                readOnly
+                className="font-mono text-sm"
+              />
+              <Button
+                onClick={() => {
+                  if (inviteLink) {
+                    navigator.clipboard.writeText(inviteLink);
+                    toast({
+                      title: "Link copied!",
+                      description: "Invitation link has been copied to clipboard.",
+                    });
+                  }
+                }}
+              >
+                Copy
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Once {inviteEmail} signs up, you can invite them again to add them to your team.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={() => {
+                setShowLinkDialog(false);
+                setInviteLink(null);
+                setInviteEmail("");
+                setInviteRole("member");
+              }}
+            >
+              Done
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
