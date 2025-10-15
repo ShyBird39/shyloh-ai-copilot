@@ -264,6 +264,22 @@ export function ChatSidebar({
                 <Bot className="w-4 h-4 mr-2" />
                 SBSB P&L Agent
               </Button>
+              <Button
+                onClick={() => toast({ title: "Coming Soon", description: "Reservation Availability Check agent will be available soon." })}
+                className="w-full justify-start"
+                variant="outline"
+              >
+                <Bot className="w-4 h-4 mr-2" />
+                Reservation Availability Check
+              </Button>
+              <Button
+                onClick={() => toast({ title: "Coming Soon", description: "Weekly Payroll Analysis agent will be available soon." })}
+                className="w-full justify-start"
+                variant="outline"
+              >
+                <Bot className="w-4 h-4 mr-2" />
+                Weekly Payroll Analysis
+              </Button>
             </div>
           </TabsContent>
         </Tabs>
