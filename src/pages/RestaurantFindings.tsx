@@ -1735,6 +1735,7 @@ const RestaurantFindings = () => {
                       placeholder="Ask me anything about your restaurant... (use @ to mention)"
                       disabled={isTyping}
                       restaurantId={id || ""}
+                      className="h-12"
                     />
                     <Button
                       onClick={() => handleSendMessage()}

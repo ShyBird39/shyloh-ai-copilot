@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { AtSign } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface TeamMember {
   user_id: string;
@@ -19,6 +20,7 @@ interface MentionInputProps {
   restaurantId: string;
   placeholder?: string;
   disabled?: boolean;
+  className?: string;
 }
 
 export function MentionInput({
@@ -28,6 +30,7 @@ export function MentionInput({
   restaurantId,
   placeholder,
   disabled,
+  className,
 }: MentionInputProps) {
   const [showMentions, setShowMentions] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
@@ -141,7 +144,7 @@ export function MentionInput({
   });
 
   return (
-    <div className="relative">
+    <div className="relative flex-1">
       <Input
         ref={inputRef}
         value={value}
@@ -149,6 +152,7 @@ export function MentionInput({
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         disabled={disabled}
+        className={cn(className)}
       />
       
       {showMentions && filteredMembers.length > 0 && (
