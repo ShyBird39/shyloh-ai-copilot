@@ -525,6 +525,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_restaurant_member: {
+        Args: { _restaurant_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_super_admin: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "owner" | "admin" | "member" | "viewer"
