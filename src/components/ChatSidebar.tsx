@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MessageSquare, Upload, Trash2, FileText, Plus } from "lucide-react";
+import { MessageSquare, Upload, Trash2, FileText, Plus, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -85,7 +85,7 @@ export function ChatSidebar({
 
       <div className="flex-1 overflow-hidden">
         <Tabs defaultValue="conversations" className="w-full h-full flex flex-col">
-          <TabsList className="w-full grid grid-cols-2 mx-4 mt-2" style={{ width: 'calc(100% - 2rem)' }}>
+          <TabsList className="w-full grid grid-cols-3 mx-4 mt-2" style={{ width: 'calc(100% - 2rem)' }}>
             <TabsTrigger value="conversations">
               <MessageSquare className="w-4 h-4 mr-2" />
               Chats
@@ -93,6 +93,10 @@ export function ChatSidebar({
             <TabsTrigger value="files">
               <FileText className="w-4 h-4 mr-2" />
               Files
+            </TabsTrigger>
+            <TabsTrigger value="agents">
+              <Bot className="w-4 h-4 mr-2" />
+              Agents
             </TabsTrigger>
           </TabsList>
 
@@ -245,6 +249,22 @@ export function ChatSidebar({
                 </div>
               )}
             </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="agents" className="mt-4 px-4">
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground mb-4">
+                AI-powered agents to help with specific tasks
+              </p>
+              <Button
+                onClick={() => window.open('https://chatgpt.com/g/g-68cc45772d2881918b1c95417c95d31f-sbsb-p-l-analyzer-fall-25', '_blank')}
+                className="w-full justify-start"
+                variant="outline"
+              >
+                <Bot className="w-4 h-4 mr-2" />
+                SBSB P&L Agent
+              </Button>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
