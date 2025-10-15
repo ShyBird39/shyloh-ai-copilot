@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { MessageSquare, Upload, Trash2, FileText, Plus, Bot } from "lucide-react";
+import { MessageSquare, Upload, Trash2, FileText, Plus, Bot, Users, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { TeamManagement } from "./TeamManagement";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Conversation {
   id: string;
@@ -77,15 +79,20 @@ export function ChatSidebar({
     }
   };
 
+  const { signOut } = useAuth();
+
   return (
     <div className="h-full flex flex-col border-r border-border bg-background">
       <div className="border-b border-border p-4 flex flex-row items-center justify-between">
         <h2 className="text-lg font-semibold">Chat & Files</h2>
+        <Button variant="ghost" size="sm" onClick={signOut}>
+          <LogOut className="w-4 h-4" />
+        </Button>
       </div>
 
       <div className="flex-1 overflow-hidden">
         <Tabs defaultValue="conversations" className="w-full h-full flex flex-col">
-          <TabsList className="w-full grid grid-cols-3 mx-4 mt-2" style={{ width: 'calc(100% - 2rem)' }}>
+          <TabsList className="w-full grid grid-cols-4 mx-4 mt-2" style={{ width: 'calc(100% - 2rem)' }}>
             <TabsTrigger value="conversations">
               <MessageSquare className="w-4 h-4 mr-2" />
               Chats
@@ -97,6 +104,10 @@ export function ChatSidebar({
             <TabsTrigger value="agents">
               <Bot className="w-4 h-4 mr-2" />
               Agents
+            </TabsTrigger>
+            <TabsTrigger value="team">
+              <Users className="w-4 h-4 mr-2" />
+              Team
             </TabsTrigger>
           </TabsList>
 
@@ -289,6 +300,11 @@ export function ChatSidebar({
                 Line Check Agent
               </Button>
             </div>
+          </TabsContent>
+
+          {/* Team Tab */}
+          <TabsContent value="team" className="flex-1 overflow-hidden mt-0 p-4">
+            <TeamManagement restaurantId={restaurantId} />
           </TabsContent>
         </Tabs>
       </div>
