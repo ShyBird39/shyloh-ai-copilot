@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, ChevronDown, ChevronUp, RotateCcw, Paperclip } from "lucide-react";
+import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, ChevronDown, ChevronUp, RotateCcw, Paperclip, UtensilsCrossed, Sparkles, Users, Clock, Settings, Heart } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -45,6 +45,10 @@ const RestaurantFindings = () => {
   const [toolsOpen, setToolsOpen] = useState(false);
   const [editingKPI, setEditingKPI] = useState<string | null>(null);
   const [kpiEditValue, setKpiEditValue] = useState("");
+  
+  // REGGI editing state
+  const [editingReggi, setEditingReggi] = useState<string | null>(null);
+  const [reggiEditValue, setReggiEditValue] = useState("");
   
   // Tools state
   const [toolsData, setToolsData] = useState<any>({
@@ -667,88 +671,54 @@ const RestaurantFindings = () => {
     setCurrentInput("");
     setIsTyping(true);
 
-    // Step 1: Welcome - just confirm and move to REGGI
+    // Step 1: Welcome - show REGGI dimensions for review
     if (onboardingStep === 1) {
       setTimeout(() => {
         setMessages((prev) => [...prev, {
           role: "assistant",
-          content: `Perfect! Let's take 5 minutes to make sure I've got your profile dialed in correctly. I've broken your restaurant down into 6 dimensions—the DNA of your concept. For each one, tell me if I'm on track or if we need to adjust. Ready?`,
+          content: `Perfect! Let's take 5 minutes to make sure I've got your profile dialed in correctly. I've broken your restaurant down into 6 dimensions—the DNA of your concept.`,
         }]);
+        
+        setTimeout(() => {
+          // Show all REGGI dimensions at once for review
+          const reggiSummary = `Here's your current profile:\n\n**Culinary & Beverage**: ${data.culinary_beverage_description || 'Not set'}\n\n**Vibe & Energy**: ${data.vibe_energy_description || 'Not set'}\n\n**Social Context**: ${data.social_context_description || 'Not set'}\n\n**Time & Occasion**: ${data.time_occasion_description || 'Not set'}\n\n**Operational Execution**: ${data.operational_execution_description || 'Not set'}\n\n**Hospitality Approach**: ${data.hospitality_approach_description || 'Not set'}\n\nDoes this capture your concept? You can edit any dimension in the **REGGI Codes** section on the right, or just type "looks good" to continue!`;
+          
+          setMessages((prev) => [...prev, {
+            role: "assistant",
+            content: reggiSummary,
+          }]);
+        }, 1200);
+        
         setIsTyping(false);
         
-        // Move to step 2 and start REGGI review
+        // Move to step 2
         setOnboardingStep(2);
         updateOnboardingProgress(2, true);
-        
-        // Show first REGGI dimension after short delay
-        setTimeout(() => {
-          showNextReggiDimension();
-        }, 1000);
       }, 800);
       return;
     }
 
-    // Step 2: REGGI Review
+    // Step 2: REGGI Review - user confirms or asks to move on
     if (onboardingStep === 2) {
-      const dimensionKeys = ['culinary', 'vibe', 'social', 'time', 'operational', 'hospitality'] as const;
-      const currentKey = dimensionKeys[currentReggiDimension];
-      
-      // If user wants to edit, save the edit
-      if (messageText.toLowerCase() !== 'looks good' && messageText.toLowerCase() !== 'correct' && messageText.toLowerCase() !== 'yes') {
-        const fieldMap = {
-          culinary: 'culinary_beverage_description',
-          vibe: 'vibe_energy_description',
-          social: 'social_context_description',
-          time: 'time_occasion_description',
-          operational: 'operational_execution_description',
-          hospitality: 'hospitality_approach_description',
-        };
-
-        try {
-          await supabase
-            .from('restaurants')
-            .update({ [fieldMap[currentKey]]: messageText })
-            .eq('id', id);
-          
-          setData({ ...data, [fieldMap[currentKey]]: messageText });
-        } catch (error) {
-          console.error('Error updating dimension:', error);
-        }
-      }
-
-      // Mark this dimension as reviewed
-      setReggiDimensionsReviewed(prev => ({ ...prev, [currentKey]: true }));
-      
       setIsTyping(false);
-
-      // Check if all dimensions reviewed
-      const allReviewed = currentReggiDimension >= 5;
       
-      if (allReviewed) {
-        // REGGI complete, move to KPIs
+      // User acknowledged, move to KPIs
+      setTimeout(() => {
+        setMessages((prev) => [...prev, {
+          role: "assistant",
+          content: `Perfect! ✅ Your concept profile is locked in. Now let's get into the numbers—this is where I can really help you operationally.`,
+        }]);
+        
         setTimeout(() => {
           setMessages((prev) => [...prev, {
             role: "assistant",
-            content: `Perfect! ✅ Your concept profile is locked in. Now let's get into the numbers—this is where I can really help you operationally.`,
+            content: `I need a few quick ops numbers. Let's start with your **average weekly sales** in dollars. Feel free to round!`,
           }]);
-          
-          setTimeout(() => {
-            setMessages((prev) => [...prev, {
-              role: "assistant",
-              content: `I need a few quick ops numbers. Let's start with your **average weekly sales** in dollars. Feel free to round!`,
-            }]);
-          }, 1000);
-          
-          setOnboardingStep(3);
-          updateOnboardingProgress(3, true);
-        }, 800);
-      } else {
-        // Show next dimension
-        setCurrentReggiDimension(prev => prev + 1);
-        setTimeout(() => {
-          showNextReggiDimension();
-        }, 800);
-      }
+        }, 1000);
+        
+        setOnboardingStep(3);
+        updateOnboardingProgress(3, true);
+      }, 800);
       return;
     }
 
@@ -1069,6 +1039,40 @@ const RestaurantFindings = () => {
     } catch (error) {
       console.error('Error saving:', error);
       toast.error("Failed to save changes");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleEditReggi = (field: string, currentValue: string) => {
+    setEditingReggi(field);
+    setReggiEditValue(currentValue);
+  };
+
+  const handleCancelReggi = () => {
+    setEditingReggi(null);
+    setReggiEditValue("");
+  };
+
+  const handleSaveReggi = async () => {
+    if (!editingReggi || !data) return;
+
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('restaurants')
+        .update({ [editingReggi]: reggiEditValue.trim() })
+        .eq('id', data.id);
+
+      if (error) throw error;
+
+      toast.success("REGGI dimension updated");
+      setData({ ...data, [editingReggi]: reggiEditValue.trim() });
+      setEditingReggi(null);
+      setReggiEditValue("");
+    } catch (error) {
+      console.error('Error updating REGGI:', error);
+      toast.error("Failed to update REGGI dimension");
     } finally {
       setSaving(false);
     }
@@ -1971,7 +1975,8 @@ const RestaurantFindings = () => {
                   <h3 className="text-sm font-semibold text-primary-foreground uppercase tracking-wide">REGGI Codes</h3>
                   {reggiOpen ? <ChevronUp className="w-4 h-4 text-primary-foreground/60 group-hover:text-primary-foreground transition-colors" /> : <ChevronDown className="w-4 h-4 text-primary-foreground/60 group-hover:text-primary-foreground transition-colors" />}
                 </CollapsibleTrigger>
-                <CollapsibleContent>
+                <CollapsibleContent className="space-y-3 pt-2">
+                  {/* Hex Codes */}
                   <Card className="bg-background/50 border-accent/20 p-4 space-y-2">
                     <div>
                       <p className="text-xs text-muted-foreground">Hex Code</p>
@@ -1982,6 +1987,61 @@ const RestaurantFindings = () => {
                       <p className="text-lg font-mono text-accent">{data.augmented_hex_code}</p>
                     </div>
                   </Card>
+
+                  {/* Editable REGGI Dimensions */}
+                  <div className="space-y-3">
+                    {[
+                      { field: 'culinary_beverage_description', label: 'Culinary/Beverage', icon: UtensilsCrossed },
+                      { field: 'vibe_energy_description', label: 'Vibe/Energy', icon: Sparkles },
+                      { field: 'social_context_description', label: 'Social Context', icon: Users },
+                      { field: 'time_occasion_description', label: 'Time/Occasion', icon: Clock },
+                      { field: 'operational_execution_description', label: 'Operational Execution', icon: Settings },
+                      { field: 'hospitality_approach_description', label: 'Hospitality Approach', icon: Heart },
+                    ].map(({ field, label, icon: Icon }) => (
+                      <Card key={field} className="bg-background/50 border-accent/20 p-3 space-y-2">
+                        <div className="flex items-start gap-2">
+                          <Icon className="w-4 h-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-primary-foreground mb-1">{label}</p>
+                            {editingReggi === field ? (
+                              <div className="space-y-2">
+                                <Textarea
+                                  value={reggiEditValue}
+                                  onChange={(e) => setReggiEditValue(e.target.value)}
+                                  className="bg-background/20 border-accent/30 text-primary-foreground text-sm min-h-[60px]"
+                                  autoFocus
+                                  disabled={saving}
+                                />
+                                <div className="flex gap-2">
+                                  <Button size="sm" onClick={handleSaveReggi} disabled={saving} className="bg-accent hover:bg-accent/90 text-xs h-6">
+                                    {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save"}
+                                  </Button>
+                                  <Button size="sm" variant="outline" onClick={handleCancelReggi} disabled={saving} className="text-xs h-6 bg-background/10 border-primary-foreground/20">
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                <p className="text-sm text-primary-foreground/70 leading-relaxed">
+                                  {data[field as keyof typeof data] as string || 'Not set'}
+                                </p>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleEditReggi(field, data[field as keyof typeof data] as string || '')}
+                                  className="text-accent hover:text-accent-foreground hover:bg-accent/20 -ml-2 text-xs h-6 mt-1"
+                                >
+                                  <Pencil className="w-3 h-3 mr-1" />
+                                  Edit
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
                 </CollapsibleContent>
               </div>
             </Collapsible>
