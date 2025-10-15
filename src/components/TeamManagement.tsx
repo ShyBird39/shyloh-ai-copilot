@@ -53,8 +53,8 @@ export function TeamManagement({ restaurantId }: TeamManagementProps) {
           id,
           user_id,
           invited_at,
-          profiles!inner(email, display_name),
-          user_roles!inner(role)
+          profiles!restaurant_members_user_id_fkey(email, display_name),
+          user_roles!user_roles_user_id_fkey(role)
         `)
         .eq("restaurant_id", restaurantId)
         .eq("status", "active");
