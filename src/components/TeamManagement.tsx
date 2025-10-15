@@ -82,19 +82,65 @@ export function TeamManagement({ restaurantId }: TeamManagementProps) {
 
   const handleInviteMember = async () => {
     try {
-      // In a full implementation, this would send an email invitation
-      // For now, we'll just show a message
-      toast({
-        title: "Invitation Ready",
-        description: `Send this signup link to ${inviteEmail}: ${window.location.origin}/auth`,
-      });
+      // First, check if user exists with this email
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("email", inviteEmail)
+        .maybeSingle();
+
+      if (profileError) throw profileError;
+
+      if (!profile) {
+        // User doesn't exist yet - show signup link
+        toast({
+          title: "Invitation Ready",
+          description: `Send this signup link to ${inviteEmail}: ${window.location.origin}/auth`,
+        });
+        setInviteDialogOpen(false);
+        setInviteEmail("");
+        setInviteRole("member");
+        return;
+      }
+
+      // User exists - add them directly
+      const { data: { user } } = await supabase.auth.getUser();
       
+      // Add to restaurant_members
+      const { error: memberError } = await supabase
+        .from("restaurant_members")
+        .insert({
+          restaurant_id: restaurantId,
+          user_id: profile.id,
+          invited_by: user?.id,
+          status: "active",
+        });
+
+      if (memberError) throw memberError;
+
+      // Add to user_roles
+      const { error: roleError } = await supabase
+        .from("user_roles")
+        .insert({
+          user_id: profile.id,
+          restaurant_id: restaurantId,
+          role: inviteRole,
+        });
+
+      if (roleError) throw roleError;
+
+      toast({
+        title: "Team member added",
+        description: `${inviteEmail} has been added to your team.`,
+      });
+
       setInviteDialogOpen(false);
       setInviteEmail("");
       setInviteRole("member");
+      loadMembers();
     } catch (error: any) {
       toast({
-        title: "Error sending invitation",
+        title: "Error adding team member",
         description: error.message,
         variant: "destructive",
       });
