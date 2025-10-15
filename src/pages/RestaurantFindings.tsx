@@ -33,6 +33,53 @@ interface ChatMessage {
 const RestaurantFindings = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  
+  // REGGI dimensions configuration
+  const reggiDimensions = [
+    { 
+      key: 'culinary_beverage', 
+      label: 'Culinary/Beverage', 
+      icon: UtensilsCrossed,
+      codeKey: 'culinary_beverage_code',
+      descKey: 'culinary_beverage_description'
+    },
+    { 
+      key: 'vibe_energy', 
+      label: 'Vibe/Energy', 
+      icon: Sparkles,
+      codeKey: 'vibe_energy_code',
+      descKey: 'vibe_energy_description'
+    },
+    { 
+      key: 'social_context', 
+      label: 'Social Context', 
+      icon: Users,
+      codeKey: 'social_context_code',
+      descKey: 'social_context_description'
+    },
+    { 
+      key: 'time_occasion', 
+      label: 'Time/Occasion', 
+      icon: Clock,
+      codeKey: 'time_occasion_code',
+      descKey: 'time_occasion_description'
+    },
+    { 
+      key: 'operational_execution', 
+      label: 'Operational Execution', 
+      icon: Settings,
+      codeKey: 'operational_execution_code',
+      descKey: 'operational_execution_description'
+    },
+    { 
+      key: 'hospitality_approach', 
+      label: 'Hospitality Approach', 
+      icon: Heart,
+      codeKey: 'hospitality_approach_code',
+      descKey: 'hospitality_approach_description'
+    },
+  ];
+  
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [editingField, setEditingField] = useState<string | null>(null);
@@ -165,51 +212,6 @@ const RestaurantFindings = () => {
   const handleRefreshChat = () => {
     handleNewConversation();
   };
-
-  const reggiDimensions = [
-    { 
-      key: 'culinary_beverage', 
-      label: 'Culinary/Beverage', 
-      icon: UtensilsCrossed,
-      codeKey: 'culinary_beverage_code',
-      descKey: 'culinary_beverage_description'
-    },
-    { 
-      key: 'vibe_energy', 
-      label: 'Vibe/Energy', 
-      icon: Sparkles,
-      codeKey: 'vibe_energy_code',
-      descKey: 'vibe_energy_description'
-    },
-    { 
-      key: 'social_context', 
-      label: 'Social Context', 
-      icon: Users,
-      codeKey: 'social_context_code',
-      descKey: 'social_context_description'
-    },
-    { 
-      key: 'time_occasion', 
-      label: 'Time/Occasion', 
-      icon: Clock,
-      codeKey: 'time_occasion_code',
-      descKey: 'time_occasion_description'
-    },
-    { 
-      key: 'operational_execution', 
-      label: 'Operational Execution', 
-      icon: Settings,
-      codeKey: 'operational_execution_code',
-      descKey: 'operational_execution_description'
-    },
-    { 
-      key: 'hospitality_approach', 
-      label: 'Hospitality Approach', 
-      icon: Heart,
-      codeKey: 'hospitality_approach_code',
-      descKey: 'hospitality_approach_description'
-    },
-  ];
 
   const startOnboarding = () => {
     setIsOnboarding(true);
