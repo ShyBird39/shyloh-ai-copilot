@@ -709,8 +709,8 @@ const RestaurantFindings = () => {
     setCurrentInput("");
     setIsTyping(true);
 
-    // Step 1: Welcome - introduce profile review
-    if (onboardingStep === 1) {
+    // Step 1: Welcome - user responds to "Sound good?"
+    if (onboardingStep === 1 && currentReggiDimension === 0) {
       setTimeout(() => {
         setMessages((prev) => [...prev, {
           role: "assistant",
@@ -720,19 +720,17 @@ const RestaurantFindings = () => {
         setTimeout(() => {
           // Show first REGGI dimension
           const firstDim = reggiDimensions[0];
-          const code = data?.[firstDim.codeKey] || 'Not set';
           const description = data?.[firstDim.descKey] || 'No description available';
           
           setMessages((prev) => [...prev, {
             role: "assistant",
-            content: `Let's start with **${firstDim.label}**:\n\n**Code:** ${code}\n**Description:** ${description}\n\nDoes this look right? You can edit it in the **REGGI Codes** section on the right, or just type "looks good" to move to the next one.`,
+            content: `Let's start with **${firstDim.label}**:\n\n${description}\n\nDoes this look right? You can edit it in the **REGGI Codes** section on the right, or just type "looks good" to move to the next one.`,
           }]);
+          
+          setCurrentReggiDimension(0); // Mark that we've shown the first dimension
         }, 1200);
         
         setIsTyping(false);
-        setCurrentReggiDimension(0);
-        
-        // Stay in step 1 to handle each dimension
       }, 800);
       return;
     }
