@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, ChevronDown, ChevronUp, RotateCcw, Paperclip, UtensilsCrossed, Sparkles, Users, Clock, Settings, Heart } from "lucide-react";
+import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, ChevronDown, ChevronUp, RotateCcw, Paperclip, UtensilsCrossed, Sparkles, Users, Clock, Settings, Heart, UserCog } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -13,6 +13,9 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/componen
 import { ChatSidebar } from "@/components/ChatSidebar";
 import { OnboardingProgress } from "@/components/OnboardingProgress";
 import { TeamManagement } from "@/components/TeamManagement";
+import { ConversationSettings } from "@/components/ConversationSettings";
+import { MentionInput } from "@/components/MentionInput";
+import { useAuth } from "@/hooks/useAuth";
 
 interface KPIData {
   avg_weekly_sales: number | null;
@@ -34,6 +37,7 @@ interface ChatMessage {
 const RestaurantFindings = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   // REGGI dimensions configuration
   const reggiDimensions = [
@@ -161,6 +165,8 @@ const RestaurantFindings = () => {
   const [conversations, setConversations] = useState<any[]>([]);
   const [files, setFiles] = useState<any[]>([]);
   const [cleanupAttempted, setCleanupAttempted] = useState(false);
+  const [showConversationSettings, setShowConversationSettings] = useState(false);
+  const [currentConversationVisibility, setCurrentConversationVisibility] = useState("private");
 
   // Conversation state tracking
   const [conversationState, setConversationState] = useState<{
@@ -272,10 +278,10 @@ const RestaurantFindings = () => {
 
       if (error) throw error;
 
-      // Fetch conversation state
+      // Fetch conversation state and visibility
       const { data: convMeta, error: metaError } = await supabase
         .from('chat_conversations')
-        .select('conversation_state, current_topic, intent_classification, wwahd_mode, topics_discussed, last_question_asked')
+        .select('conversation_state, current_topic, intent_classification, wwahd_mode, topics_discussed, last_question_asked, visibility')
         .eq('id', conversationId)
         .maybeSingle();
 
@@ -288,6 +294,7 @@ const RestaurantFindings = () => {
           last_question_asked: convMeta.last_question_asked,
           conversation_state: convMeta.conversation_state || {},
         });
+        setCurrentConversationVisibility(convMeta.visibility || 'private');
       }
 
       setCurrentConversationId(conversationId);
@@ -426,12 +433,22 @@ const RestaurantFindings = () => {
     try {
       const { data, error } = await supabase
         .from("chat_conversations")
-        .select("*")
+        .select(`
+          *,
+          participants:chat_conversation_participants(count)
+        `)
         .eq("restaurant_id", id)
         .order("updated_at", { ascending: false });
 
       if (error) throw error;
-      setConversations(data || []);
+      
+      // Transform data to include participant_count
+      const conversationsWithCount = (data || []).map(conv => ({
+        ...conv,
+        participant_count: conv.participants?.[0]?.count || 0
+      }));
+      
+      setConversations(conversationsWithCount);
       
       // Check for onboarding completion - only on first load
       if (!isOnboarding && messages.length === 0) {
@@ -859,17 +876,31 @@ const RestaurantFindings = () => {
               title: "Onboarding",
               message_count: messages.length + 2,
               conversation_type: 'onboarding',
+              created_by: user?.id,
+              visibility: 'private',
             })
             .select()
             .single();
 
           if (error) throw error;
 
+          // Add creator as participant (owner)
+          if (user?.id) {
+            await supabase
+              .from("chat_conversation_participants")
+              .insert({
+                conversation_id: newConv.id,
+                user_id: user.id,
+                role: 'owner',
+              });
+          }
+
           // Save all messages to this conversation
           const messagesToSave = [...messages, userMessage].map((msg, idx) => ({
             conversation_id: newConv.id,
             role: msg.role,
             content: msg.content,
+            user_id: msg.role === 'user' ? user?.id : null,
             created_at: new Date(Date.now() + idx * 1000).toISOString(),
           }));
 
@@ -954,6 +985,8 @@ const RestaurantFindings = () => {
             restaurant_id: id,
             title: messageText.substring(0, 50) + (messageText.length > 50 ? "..." : ""),
             message_count: 1,
+            created_by: user?.id,
+            visibility: 'private',
           })
           .select()
           .single();
@@ -961,6 +994,18 @@ const RestaurantFindings = () => {
         if (convError) throw convError;
         convId = newConv.id;
         setCurrentConversationId(convId);
+        setCurrentConversationVisibility('private');
+
+        // Add creator as participant (owner)
+        if (user?.id) {
+          await supabase
+            .from("chat_conversation_participants")
+            .insert({
+              conversation_id: newConv.id,
+              user_id: user.id,
+              role: 'owner',
+            });
+        }
       }
 
       // Save user message
@@ -968,6 +1013,7 @@ const RestaurantFindings = () => {
         conversation_id: convId,
         role: "user",
         content: messageText,
+        user_id: user?.id,
       });
 
       const response = await fetch(
@@ -1024,6 +1070,7 @@ const RestaurantFindings = () => {
           conversation_id: convId,
           role: "assistant",
           content: assistantMessage,
+          user_id: null, // Assistant messages have no user_id
         });
 
         // Update conversation message count and updated_at
@@ -1681,15 +1728,13 @@ const RestaurantFindings = () => {
                     >
                       <Paperclip className="w-5 h-5" />
                     </Button>
-                    <Input
-                      ref={inputRef}
-                      type="text"
+                    <MentionInput
                       value={currentInput}
-                      onChange={handleInputChange}
+                      onChange={setCurrentInput}
                       onKeyDown={(e) => e.key === "Enter" && !isTyping && handleSendMessage()}
-                      placeholder="Ask me anything about your restaurant..."
+                      placeholder="Ask me anything about your restaurant... (use @ to mention)"
                       disabled={isTyping}
-                      className="flex-1 bg-background/50 border-accent/30 text-foreground placeholder:text-muted-foreground"
+                      restaurantId={id || ""}
                     />
                     <Button
                       onClick={() => handleSendMessage()}

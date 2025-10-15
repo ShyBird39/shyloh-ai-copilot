@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MessageSquare, Upload, Trash2, FileText, Plus, Bot, LogOut } from "lucide-react";
+import { MessageSquare, Upload, Trash2, FileText, Plus, Bot, LogOut, Lock, Users as UsersIcon, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -14,6 +14,8 @@ interface Conversation {
   created_at: string;
   updated_at: string;
   message_count: number;
+  visibility: string;
+  participant_count?: number;
 }
 
 interface RestaurantFile {
@@ -81,6 +83,17 @@ export function ChatSidebar({
     if (bytes < 1024) return bytes + " B";
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
     return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  };
+
+  const getVisibilityIcon = (visibility: string) => {
+    switch (visibility) {
+      case "team":
+        return <UsersIcon className="w-3 h-3" />;
+      case "public":
+        return <Globe className="w-3 h-3" />;
+      default:
+        return <Lock className="w-3 h-3" />;
+    }
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -157,9 +170,19 @@ export function ChatSidebar({
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-medium text-sm truncate">
-                            {conv.title}
-                          </h3>
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-medium text-sm truncate flex-1">
+                              {conv.title}
+                            </h3>
+                            <div className="flex items-center gap-1 opacity-70">
+                              {getVisibilityIcon(conv.visibility)}
+                              {conv.participant_count && conv.visibility === "private" && (
+                                <span className="text-xs">
+                                  {conv.participant_count}
+                                </span>
+                              )}
+                            </div>
+                          </div>
                           <p className="text-xs opacity-70 mt-1">
                             {formatDistanceToNow(new Date(conv.updated_at), {
                               addSuffix: true,

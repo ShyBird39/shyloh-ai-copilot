@@ -14,12 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      chat_conversation_participants: {
+        Row: {
+          added_at: string | null
+          added_by: string | null
+          conversation_id: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          added_at?: string | null
+          added_by?: string | null
+          conversation_id: string
+          id?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          added_at?: string | null
+          added_by?: string | null
+          conversation_id?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_conversation_participants_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_conversations: {
         Row: {
           awaiting_user_response: boolean | null
           conversation_state: Json | null
           conversation_type: string | null
           created_at: string | null
+          created_by: string | null
           current_topic: string | null
           id: string
           intent_classification: string | null
@@ -29,6 +65,7 @@ export type Database = {
           title: string
           topics_discussed: string[] | null
           updated_at: string | null
+          visibility: string | null
           wwahd_mode: boolean | null
         }
         Insert: {
@@ -36,6 +73,7 @@ export type Database = {
           conversation_state?: Json | null
           conversation_type?: string | null
           created_at?: string | null
+          created_by?: string | null
           current_topic?: string | null
           id?: string
           intent_classification?: string | null
@@ -45,6 +83,7 @@ export type Database = {
           title: string
           topics_discussed?: string[] | null
           updated_at?: string | null
+          visibility?: string | null
           wwahd_mode?: boolean | null
         }
         Update: {
@@ -52,6 +91,7 @@ export type Database = {
           conversation_state?: Json | null
           conversation_type?: string | null
           created_at?: string | null
+          created_by?: string | null
           current_topic?: string | null
           id?: string
           intent_classification?: string | null
@@ -61,6 +101,7 @@ export type Database = {
           title?: string
           topics_discussed?: string[] | null
           updated_at?: string | null
+          visibility?: string | null
           wwahd_mode?: boolean | null
         }
         Relationships: [
@@ -80,6 +121,7 @@ export type Database = {
           created_at: string | null
           id: string
           role: string
+          user_id: string | null
         }
         Insert: {
           content: string
@@ -87,6 +129,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           role: string
+          user_id?: string | null
         }
         Update: {
           content?: string
@@ -94,6 +137,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           role?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -549,6 +593,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_manage_conversation: {
+        Args: { _conversation_id: string; _user_id: string }
+        Returns: boolean
+      }
       get_user_role: {
         Args: { _restaurant_id: string; _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -559,6 +607,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_conversation_participant: {
+        Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
       }
       is_restaurant_member: {
