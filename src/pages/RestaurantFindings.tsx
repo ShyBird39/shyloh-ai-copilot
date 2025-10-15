@@ -626,20 +626,9 @@ const RestaurantFindings = () => {
             },
           ]);
         } else {
-          // First-time user - no KPIs
+          // First-time user - no KPIs - start onboarding
           setHasCompletedKPIs(false);
-          setMessages([
-            {
-              role: "assistant",
-              content: "First things first, I am a restaurant intelligence tool. I don't have all the answers by any means, but through conversation, hopefully the two of us have more of them. I know a lot about restaurants but just a little bit about yours. This initial conversation is meant to help me learn more. That way I can be more helpful to you going forward.",
-              type: "question",
-            },
-            {
-              role: "assistant",
-              content: "What are your average weekly sales $? (Feel free to round)",
-              type: "question",
-            },
-          ]);
+          // Onboarding will be triggered by loadConversations
         }
       } catch (error) {
         console.error('Error fetching restaurant:', error);
