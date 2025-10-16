@@ -1654,14 +1654,6 @@ const RestaurantFindings = () => {
             <div className="flex-1 overflow-y-auto">
               <div className="container mx-auto px-4 py-8 max-w-4xl">
                 {/* Conversation State Indicators */}
-                {conversationState.wwahd_mode && (
-                  <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
-                    <p className="text-sm text-amber-900 dark:text-amber-100">
-                      🎯 <strong>WWAHD Mode Active</strong> - Channeling Andrew Holden's operational philosophy
-                    </p>
-                  </div>
-                )}
-
                 {conversationState.conversation_state?.awaiting_upload && (
                   <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg flex items-center gap-2">
                     <Paperclip className="h-4 w-4 text-blue-600 dark:text-blue-400" />
