@@ -491,7 +491,9 @@ const RestaurantFindings = () => {
 
     for (let i = 0; i < fileList.length; i++) {
       const file = fileList[i];
-      const fileName = `${id}/${crypto.randomUUID()}/${file.name}`;
+      // Sanitize filename: replace spaces and special characters with underscores
+      const sanitizedName = file.name.replace(/[^\w.-]/g, '_');
+      const fileName = `${id}/${crypto.randomUUID()}/${sanitizedName}`;
 
       try {
         // Upload to storage
