@@ -722,9 +722,7 @@ const RestaurantFindings = () => {
     
     try {
       const { data, error } = await supabase.functions.invoke('toast-get-data', {
-        body: { 
-          restaurantGuid: 'c866c1e4-ef17-4b0b-bff1-ff45a6aec370' 
-        }
+        body: {}
       });
 
       if (error) throw error;
