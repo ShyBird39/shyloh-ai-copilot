@@ -457,7 +457,6 @@ export type Database = {
           created_at: string | null
           id: string
           is_global: boolean | null
-          pinned: boolean
           prompt_text: string
           restaurant_id: string
           title: string | null
@@ -468,7 +467,6 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_global?: boolean | null
-          pinned?: boolean
           prompt_text: string
           restaurant_id: string
           title?: string | null
@@ -479,7 +477,6 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_global?: boolean | null
-          pinned?: boolean
           prompt_text?: string
           restaurant_id?: string
           title?: string | null
