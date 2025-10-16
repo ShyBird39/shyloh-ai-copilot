@@ -875,14 +875,14 @@ const RestaurantFindings = () => {
           content: "Hey! We're the team behind Shy Bird—we run 3 restaurants in Boston. We built Shyloh because AI has helped us with stuff we never imagined.",
         }]);
         
-        // Message 2
+        // Message 2 - longer pause to feel more human
         setTimeout(() => {
           setMessages(prev => [...prev, {
             role: "assistant",
             content: "Things like cutting brunch ticket times, rethinking sidework, lowering food cost. We want to share what we've learned to make running restaurants a little easier.",
           }]);
           
-          // Message 3
+          // Message 3 - another human pause
           setTimeout(() => {
             setMessages(prev => [...prev, {
               role: "assistant",
@@ -890,9 +890,9 @@ const RestaurantFindings = () => {
             }]);
             setOnboardingPhase('pain_point');
             setIsTyping(false);
-          }, 1500);
-        }, 1500);
-      }, 500);
+          }, 2500);
+        }, 2500);
+      }, 1000);
     }
   }, [hasCompletedKPIs, messages.length, onboardingPhase, loading]);
 
@@ -2064,7 +2064,7 @@ const RestaurantFindings = () => {
                         className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} animate-fade-in group`}
                       >
                         <div
-                          className={`max-w-[75%] rounded-2xl p-4 ${
+                          className={`max-w-[70%] rounded-2xl px-4 py-3 ${
                             message.role === "user"
                               ? "bg-accent text-accent-foreground"
                               : "bg-background/50 backdrop-blur-sm border border-accent/20 text-primary-foreground"
