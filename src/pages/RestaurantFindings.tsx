@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, ChevronDown, ChevronUp, RotateCcw, Paperclip, UtensilsCrossed, Sparkles, Users, Clock, Settings, Heart, UserCog } from "lucide-react";
+import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, ChevronDown, ChevronUp, RotateCcw, Paperclip, UtensilsCrossed, Sparkles, Users, Clock, Settings, Heart, UserCog, Pin, Trash2 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -132,6 +132,8 @@ const RestaurantFindings = () => {
   const [savedPrompts, setSavedPrompts] = useState<any[]>([]);
   const [globalPrompts, setGlobalPrompts] = useState<any[]>([]);
   const [myPrompts, setMyPrompts] = useState<any[]>([]);
+  const [pinnedPrompts, setPinnedPrompts] = useState<any[]>([]);
+  const [pinnedGlobalPrompts, setPinnedGlobalPrompts] = useState<any[]>([]);
   const [showAddPrompt, setShowAddPrompt] = useState(false);
   const [editingPrompt, setEditingPrompt] = useState<string | null>(null);
   const [promptForm, setPromptForm] = useState({
@@ -494,10 +496,34 @@ const RestaurantFindings = () => {
       setSavedPrompts(allPrompts);
       
       // Separate global and restaurant-specific prompts
-      setGlobalPrompts(allPrompts.filter(p => p.is_global));
-      setMyPrompts(allPrompts.filter(p => !p.is_global && p.restaurant_id === id));
+      const globals = allPrompts.filter(p => p.is_global);
+      const mine = allPrompts.filter(p => !p.is_global && p.restaurant_id === id);
+      
+      setGlobalPrompts(globals);
+      setMyPrompts(mine);
+      
+      // Set pinned prompts for quick access
+      setPinnedGlobalPrompts(globals.filter(p => p.pinned));
+      setPinnedPrompts(mine.filter(p => p.pinned));
     } catch (error) {
       console.error("Error loading saved prompts:", error);
+    }
+  };
+
+  const handleTogglePin = async (promptId: string, currentPinned: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('restaurant_saved_prompts')
+        .update({ pinned: !currentPinned })
+        .eq('id', promptId);
+
+      if (error) throw error;
+
+      toast.success(currentPinned ? "Prompt unpinned" : "Prompt pinned to top");
+      loadSavedPrompts();
+    } catch (error: any) {
+      console.error("Error toggling pin:", error);
+      toast.error("Failed to update prompt");
     }
   };
 
@@ -1623,6 +1649,49 @@ const RestaurantFindings = () => {
               <OnboardingProgress steps={onboardingSteps} currentStep={onboardingStep} />
             )}
 
+            {/* Pinned Quick Prompts */}
+            {!isOnboarding && (pinnedPrompts && pinnedPrompts.length > 0 || pinnedGlobalPrompts.length > 0) && (
+              <Collapsible 
+                open={promptsVisible} 
+                onOpenChange={setPromptsVisible}
+                className="border-b border-accent/20 bg-background/50 backdrop-blur-sm"
+              >
+                <div className="container mx-auto px-4 py-3 max-w-4xl">
+                  <CollapsibleTrigger className="flex items-center gap-2 text-sm text-primary-foreground/70 hover:text-primary-foreground transition-colors mb-3">
+                    {promptsVisible ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    Quick Access Prompts
+                  </CollapsibleTrigger>
+                  
+                  <CollapsibleContent>
+                    <div className="flex flex-wrap gap-2">
+                      {pinnedGlobalPrompts.map((prompt) => (
+                        <Button
+                          key={prompt.id}
+                          variant="outline"
+                          size="sm"
+                          className="rounded-full px-4 py-2 h-auto bg-background/80 border-accent/20 text-primary-foreground/80 hover:bg-background hover:text-primary-foreground hover:border-accent/40 transition-all"
+                          onClick={() => handlePromptClick(prompt.prompt_text)}
+                        >
+                          {prompt.title || prompt.prompt_text}
+                        </Button>
+                      ))}
+                      {pinnedPrompts?.map((prompt) => (
+                        <Button
+                          key={prompt.id}
+                          variant="outline"
+                          size="sm"
+                          className="rounded-full px-4 py-2 h-auto bg-background/80 border-accent/20 text-primary-foreground/80 hover:bg-background hover:text-primary-foreground hover:border-accent/40 transition-all"
+                          onClick={() => handlePromptClick(prompt.prompt_text)}
+                        >
+                          {prompt.title || prompt.prompt_text}
+                        </Button>
+                      ))}
+                    </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
+            )}
+
             {/* Chat Area */}
             <div className="flex-1 overflow-y-auto">
               <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -2399,11 +2468,13 @@ const RestaurantFindings = () => {
                           {globalPrompts.map((prompt) => (
                             <Card
                               key={prompt.id}
-                              className="bg-background/30 border-accent/20 p-3 hover:border-accent/40 transition-colors cursor-pointer"
-                              onClick={() => handleCopyPromptToInput(prompt.prompt_text)}
+                              className="bg-background/30 border-accent/20 p-3 hover:border-accent/40 transition-colors group"
                             >
                               <div className="flex items-start gap-2">
-                                <div className="flex-1">
+                                <div 
+                                  className="flex-1 cursor-pointer"
+                                  onClick={() => handleCopyPromptToInput(prompt.prompt_text)}
+                                >
                                   {prompt.title && (
                                     <div className="flex items-center gap-2 mb-1">
                                       <h5 className="text-sm font-medium text-primary-foreground">
@@ -2420,6 +2491,18 @@ const RestaurantFindings = () => {
                                     {prompt.prompt_text}
                                   </p>
                                 </div>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 shrink-0"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleTogglePin(prompt.id, prompt.pinned);
+                                  }}
+                                  title={prompt.pinned ? "Unpin" : "Pin to top"}
+                                >
+                                  <Pin className={`w-3 h-3 ${prompt.pinned ? 'fill-current text-accent' : 'text-primary-foreground/60'}`} />
+                                </Button>
                               </div>
                             </Card>
                           ))}
@@ -2512,11 +2595,13 @@ const RestaurantFindings = () => {
                             {myPrompts.map((prompt) => (
                               <Card
                                 key={prompt.id}
-                                className="bg-background/50 border-accent/20 p-3 hover:border-accent/40 transition-colors cursor-pointer"
-                                onClick={() => handleCopyPromptToInput(prompt.prompt_text)}
+                                className="bg-background/50 border-accent/20 p-3 hover:border-accent/40 transition-colors group"
                               >
                                 <div className="flex items-start justify-between gap-2">
-                                  <div className="flex-1">
+                                  <div 
+                                    className="flex-1 cursor-pointer"
+                                    onClick={() => handleCopyPromptToInput(prompt.prompt_text)}
+                                  >
                                     {prompt.title && (
                                       <div className="flex items-center gap-2 mb-1">
                                         <h5 className="text-sm font-medium text-primary-foreground">
@@ -2533,7 +2618,16 @@ const RestaurantFindings = () => {
                                       {prompt.prompt_text}
                                     </p>
                                   </div>
-                                  <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => handleTogglePin(prompt.id, prompt.pinned)}
+                                      className="h-6 w-6 p-0"
+                                      title={prompt.pinned ? "Unpin" : "Pin to top"}
+                                    >
+                                      <Pin className={`w-3 h-3 ${prompt.pinned ? 'fill-current text-accent' : 'text-primary-foreground/60'}`} />
+                                    </Button>
                                     <Button
                                       size="sm"
                                       variant="ghost"
