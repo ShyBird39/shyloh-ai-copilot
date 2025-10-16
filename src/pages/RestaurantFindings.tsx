@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, ChevronDown, ChevronUp, RotateCcw, Paperclip, UtensilsCrossed, Sparkles, Users, Clock, Settings, Heart, UserCog, DollarSign, ShoppingCart } from "lucide-react";
+import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, ChevronDown, ChevronUp, RotateCcw, Paperclip, UtensilsCrossed, Sparkles, Users, Clock, Settings, Heart, UserCog } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -191,11 +191,6 @@ const RestaurantFindings = () => {
     conversation_state: {},
   });
 
-  // Toast API Sales state
-  const [toastSalesOpen, setToastSalesOpen] = useState(true);
-  const [toastLoading, setToastLoading] = useState(false);
-  const [toastData, setToastData] = useState<any>(null);
-  const [toastError, setToastError] = useState<string | null>(null);
 
   // Onboarding state
   const [isOnboarding, setIsOnboarding] = useState(false);
@@ -716,27 +711,6 @@ const RestaurantFindings = () => {
     }
   }, [messages, sidebarOpen]);
 
-  const handleGetSales = async () => {
-    setToastLoading(true);
-    setToastError(null);
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('toast-get-data', {
-        body: {}
-      });
-
-      if (error) throw error;
-
-      setToastData(data);
-      toast.success("Sales data updated successfully");
-    } catch (error: any) {
-      console.error("Error fetching Toast sales data:", error);
-      setToastError(error.message || "Failed to fetch sales data");
-      toast.error("Failed to fetch sales data");
-    } finally {
-      setToastLoading(false);
-    }
-  };
 
   const handleOnboardingMessage = async (messageText: string) => {
     if (!id || !data) return;
@@ -1842,100 +1816,6 @@ const RestaurantFindings = () => {
               <div className="h-full border-l border-accent/20 bg-background/95 backdrop-blur-sm overflow-hidden">
         <div className="h-full overflow-y-auto">
           <div className="p-6 space-y-6">
-            {/* Live Sales Data Section */}
-            <Collapsible open={toastSalesOpen} onOpenChange={setToastSalesOpen}>
-              <div className="space-y-3">
-                <CollapsibleTrigger className="flex items-center justify-between w-full group">
-                  <h3 className="text-sm font-semibold text-primary-foreground uppercase tracking-wide">Live Sales Data</h3>
-                  {toastSalesOpen ? <ChevronUp className="w-4 h-4 text-primary-foreground/60 group-hover:text-primary-foreground transition-colors" /> : <ChevronDown className="w-4 h-4 text-primary-foreground/60 group-hover:text-primary-foreground transition-colors" />}
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <div className="space-y-3">
-                    <Button
-                      onClick={handleGetSales}
-                      disabled={toastLoading}
-                      className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
-                    >
-                      {toastLoading ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Loading...
-                        </>
-                      ) : (
-                        <>
-                          <DollarSign className="w-4 h-4 mr-2" />
-                          Get Today's Sales
-                        </>
-                      )}
-                    </Button>
-
-                    {toastError && (
-                      <Card className="bg-destructive/10 border-destructive/20 p-4">
-                        <p className="text-xs text-destructive font-semibold mb-2">Error fetching data</p>
-                        <p className="text-xs text-destructive">{toastError}</p>
-                      </Card>
-                    )}
-
-                    {toastData?.apiErrors && toastData.apiErrors.length > 0 && (
-                      <Card className="bg-warning/10 border-warning/20 p-4">
-                        <p className="text-xs font-semibold text-warning mb-2">⚠️ API Warnings</p>
-                        <div className="space-y-1">
-                          {toastData.apiErrors.map((error: string, idx: number) => (
-                            <p key={idx} className="text-xs text-warning/90">{error}</p>
-                          ))}
-                        </div>
-                        <p className="text-xs text-warning/70 mt-2">
-                          Restaurant GUID: {toastData.restaurantGuid}
-                        </p>
-                      </Card>
-                    )}
-
-                    {toastData && !toastData.apiErrors && (
-                      <Card className="bg-background/50 border-accent/20 p-4 space-y-3">
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-medium text-primary-foreground/70">Restaurant</span>
-                            <span className="text-xs text-primary-foreground">{toastData.restaurant?.name || 'N/A'}</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-medium text-primary-foreground/70">Location</span>
-                            <span className="text-xs text-primary-foreground">{toastData.restaurant?.locationName || 'N/A'}</span>
-                          </div>
-                        </div>
-
-                        <div className="border-t border-accent/10 pt-3 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <ShoppingCart className="w-4 h-4 text-accent" />
-                              <span className="text-xs font-medium text-primary-foreground">Order Count</span>
-                            </div>
-                            <span className="text-sm font-semibold text-primary-foreground">{toastData.metrics?.orderCount || 0}</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <DollarSign className="w-4 h-4 text-accent" />
-                              <span className="text-xs font-medium text-primary-foreground">Revenue</span>
-                            </div>
-                            <span className="text-sm font-semibold text-primary-foreground">
-                              ${toastData.metrics?.revenue ? parseFloat(toastData.metrics.revenue).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
-                            </span>
-                          </div>
-                        </div>
-
-                        {toastData.lastSync && (
-                          <div className="border-t border-accent/10 pt-2">
-                            <p className="text-xs text-primary-foreground/50">
-                              Last updated: {new Date(toastData.lastSync).toLocaleString()}
-                            </p>
-                          </div>
-                        )}
-                      </Card>
-                    )}
-                  </div>
-                </CollapsibleContent>
-              </div>
-            </Collapsible>
-
             {/* KPIs Section */}
             <Collapsible open={kpisOpen} onOpenChange={setKpisOpen}>
               <div className="space-y-3">
