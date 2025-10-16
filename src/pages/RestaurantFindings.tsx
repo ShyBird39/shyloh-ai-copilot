@@ -1133,10 +1133,12 @@ const RestaurantFindings = () => {
       
       // Complete onboarding
       setTimeout(async () => {
-        setMessages((prev) => [...prev, {
-          role: "assistant",
+        const finalMessage = {
+          role: "assistant" as const,
           content: `Alright, **${data.name}**—you're all set! ✅\n\nNow—what do you want to tackle first? I can help you:\n- 📊 **Check your settings** (KPIs vs. benchmarks)\n- 📈 **Increase sales**\n- 💰 **Lower costs**\n- ✨ **Improve guest experience**\n- 👥 **Improve team experience**\n\nOr just ask me anything—I'm here.`,
-        }]);
+        };
+        
+        setMessages((prev) => [...prev, finalMessage]);
         
         setOnboardingStep(7);
         updateOnboardingProgress(7, true);
@@ -1148,7 +1150,7 @@ const RestaurantFindings = () => {
             .from("chat_conversations")
             .insert({
               restaurant_id: id,
-              title: "Onboarding",
+              title: "Getting Started with Shyloh",
               message_count: messages.length + 2,
               conversation_type: 'onboarding',
               created_by: user?.id,
@@ -1170,8 +1172,8 @@ const RestaurantFindings = () => {
               });
           }
 
-          // Save all messages to this conversation
-          const messagesToSave = [...messages, userMessage].map((msg, idx) => ({
+          // Save all messages to this conversation including the final message
+          const messagesToSave = [...messages, userMessage, finalMessage].map((msg, idx) => ({
             conversation_id: newConv.id,
             role: msg.role,
             content: msg.content,
@@ -1182,12 +1184,17 @@ const RestaurantFindings = () => {
           await supabase.from("chat_messages").insert(messagesToSave);
           
           setCurrentConversationId(newConv.id);
+          setCurrentConversationVisibility('private');
           loadConversations();
           
-          // End onboarding
+          // End onboarding - this allows normal chat to work
           setIsOnboarding(false);
+          setOnboardingPhase('hook'); // Reset phase
         } catch (error) {
           console.error('Error saving onboarding conversation:', error);
+          // Still end onboarding even if save fails so chat can work
+          setIsOnboarding(false);
+          setOnboardingPhase('hook');
         }
       }, 800);
       return;
