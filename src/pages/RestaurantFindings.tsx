@@ -149,6 +149,7 @@ const RestaurantFindings = () => {
   const [currentInput, setCurrentInput] = useState("");
   const [notionMentioned, setNotionMentioned] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<string[]>([]);
+  const [showFileNotification, setShowFileNotification] = useState(false);
   const [showObjectives, setShowObjectives] = useState(false);
   const [kpiData, setKPIData] = useState<KPIData>({
     avg_weekly_sales: null,
@@ -772,6 +773,17 @@ const RestaurantFindings = () => {
     setCleanupAttempted(true);
     deleteStuckFileIfAny();
   }, [id, cleanupAttempted]);
+
+  // Show file notification for 10 seconds after files are uploaded
+  useEffect(() => {
+    if (files && files.length > 0 && uploadingFiles.length === 0) {
+      setShowFileNotification(true);
+      const timer = setTimeout(() => {
+        setShowFileNotification(false);
+      }, 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [files, uploadingFiles]);
 
 
   // Fetch restaurant data and KPIs
@@ -2136,7 +2148,7 @@ const RestaurantFindings = () => {
               <div className="container mx-auto px-4 py-4 max-w-4xl">
                 <div className="space-y-2">
                   {/* Uploaded Files Indicator */}
-                  {(uploadingFiles.length > 0 || (files && files.length > 0)) && (
+                  {(uploadingFiles.length > 0 || showFileNotification) && (
                     <div className="bg-accent/10 border border-accent/30 rounded-lg p-3 animate-fade-in">
                       <div className="flex items-start gap-2">
                         <Paperclip className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
