@@ -148,6 +148,7 @@ const RestaurantFindings = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentInput, setCurrentInput] = useState("");
   const [notionMentioned, setNotionMentioned] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState<string[]>([]);
   const [showObjectives, setShowObjectives] = useState(false);
   const [kpiData, setKPIData] = useState<KPIData>({
     avg_weekly_sales: null,
@@ -489,6 +490,9 @@ const RestaurantFindings = () => {
   const handleFileUpload = async (fileList: FileList) => {
     if (!id) return;
 
+    const fileNames = Array.from(fileList).map(f => f.name);
+    setUploadingFiles(prev => [...prev, ...fileNames]);
+
     for (let i = 0; i < fileList.length; i++) {
       const file = fileList[i];
       // Sanitize filename: replace spaces and special characters with underscores
@@ -519,9 +523,11 @@ const RestaurantFindings = () => {
         if (dbError) throw dbError;
 
         toast.success(`${file.name} uploaded successfully`);
+        setUploadingFiles(prev => prev.filter(name => name !== file.name));
       } catch (error) {
         console.error("Error uploading file:", error);
         toast.error(`Failed to upload ${file.name}`);
+        setUploadingFiles(prev => prev.filter(name => name !== file.name));
       }
     }
 
@@ -2129,6 +2135,39 @@ const RestaurantFindings = () => {
             <div className="sticky bottom-0 z-10 border-t border-accent/20 bg-background/95 backdrop-blur-sm">
               <div className="container mx-auto px-4 py-4 max-w-4xl">
                 <div className="space-y-2">
+                  {/* Uploaded Files Indicator */}
+                  {(uploadingFiles.length > 0 || (files && files.length > 0)) && (
+                    <div className="bg-accent/10 border border-accent/30 rounded-lg p-3 animate-fade-in">
+                      <div className="flex items-start gap-2">
+                        <Paperclip className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-accent-foreground mb-1">
+                            {uploadingFiles.length > 0 ? 'Uploading files...' : 'Files attached'}
+                          </p>
+                          <div className="space-y-1">
+                            {uploadingFiles.map((fileName, idx) => (
+                              <div key={`uploading-${idx}`} className="flex items-center gap-2">
+                                <Loader2 className="w-3 h-3 animate-spin text-accent" />
+                                <span className="text-xs text-muted-foreground truncate">{fileName}</span>
+                              </div>
+                            ))}
+                            {files && files.slice(0, 3).map((file) => (
+                              <div key={file.id} className="flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                                <span className="text-xs text-muted-foreground truncate">{file.file_name}</span>
+                              </div>
+                            ))}
+                            {files && files.length > 3 && (
+                              <span className="text-xs text-muted-foreground">
+                                + {files.length - 3} more
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="flex gap-3">
                     <input
                       ref={fileInputRef}
