@@ -210,7 +210,6 @@ const RestaurantFindings = () => {
   const samplePrompts = [
     "I am here to...",
     "Check my settings...",
-    "WWAHD?",
     "Tips for using Shyloh"
   ];
 
