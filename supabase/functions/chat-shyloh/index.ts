@@ -270,6 +270,40 @@ serve(async (req) => {
       }
     }
 
+    // Fetch feedback stats for tone adjustment
+    let feedbackInsights = '';
+    if (restaurantId) {
+      try {
+        const { data: feedbackStats, error: feedbackError } = await supabase
+          .from('chat_message_feedback')
+          .select('rating, created_at')
+          .eq('restaurant_id', restaurantId)
+          .order('created_at', { ascending: false })
+          .limit(50);
+
+        if (!feedbackError && feedbackStats && feedbackStats.length > 0) {
+          const recentAverage = feedbackStats.slice(0, 10).reduce((sum, f) => sum + f.rating, 0) / Math.min(10, feedbackStats.length);
+          const overallAverage = feedbackStats.reduce((sum, f) => sum + f.rating, 0) / feedbackStats.length;
+          
+          feedbackInsights = `\n\n**TONE FEEDBACK DATA:**
+Recent feedback average: ${recentAverage.toFixed(1)}/5 (last 10 responses)
+Overall feedback average: ${overallAverage.toFixed(1)}/5 (${feedbackStats.length} total ratings)
+
+Interpretation guide:
+- 4.5-5.0: Users love your current tone - maintain it!
+- 3.5-4.4: Users find you helpful - good balance
+- 2.5-3.4: Users are neutral - consider adjusting tone
+- 1.0-2.4: Users are unhappy - significantly adjust your approach
+
+${recentAverage < 3.5 ? '⚠️ Recent feedback is below target. Adjust your tone to be more helpful, concise, and action-oriented.' : '✅ Feedback is positive. Continue with current tone and style.'}`;
+          
+          console.log(`Added feedback insights: recent=${recentAverage.toFixed(1)}, overall=${overallAverage.toFixed(1)}`);
+        }
+      } catch (error) {
+        console.error('Error fetching feedback stats:', error);
+      }
+    }
+
     // Fetch and parse uploaded documents
     let docsContext = '';
     if (restaurantId) {
@@ -582,7 +616,7 @@ When uploaded documents are available in the context above:
 - Reference specific documents by name when using their information
 - Synthesize insights across multiple documents when relevant
 - Quote or paraphrase key sections to ground your advice in their specific context
-- If a question can be answered more accurately with document context, prioritize that over general knowledge${customKnowledgeContext}${docsContext}${notionContext}${stateContext}`;
+- If a question can be answered more accurately with document context, prioritize that over general knowledge${customKnowledgeContext}${docsContext}${feedbackInsights}${notionContext}${stateContext}`;
 
     // Log total context size for monitoring
     const totalContextChars = docsContext.length + systemPrompt.length;

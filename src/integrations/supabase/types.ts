@@ -114,11 +114,60 @@ export type Database = {
           },
         ]
       }
+      chat_message_feedback: {
+        Row: {
+          conversation_id: string
+          created_at: string | null
+          feedback_note: string | null
+          id: string
+          message_id: string
+          rating: number
+          restaurant_id: string
+          user_id: string | null
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string | null
+          feedback_note?: string | null
+          id?: string
+          message_id: string
+          rating: number
+          restaurant_id: string
+          user_id?: string | null
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string | null
+          feedback_note?: string | null
+          id?: string
+          message_id?: string
+          rating?: number
+          restaurant_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_message_feedback_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_message_feedback_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_messages: {
         Row: {
           content: string
           conversation_id: string
           created_at: string | null
+          feedback_stats: Json | null
           id: string
           mentions: string[] | null
           role: string
@@ -128,6 +177,7 @@ export type Database = {
           content: string
           conversation_id: string
           created_at?: string | null
+          feedback_stats?: Json | null
           id?: string
           mentions?: string[] | null
           role: string
@@ -137,6 +187,7 @@ export type Database = {
           content?: string
           conversation_id?: string
           created_at?: string | null
+          feedback_stats?: Json | null
           id?: string
           mentions?: string[] | null
           role?: string
@@ -457,6 +508,7 @@ export type Database = {
           created_at: string | null
           id: string
           is_global: boolean | null
+          pinned: boolean
           prompt_text: string
           restaurant_id: string
           title: string | null
@@ -467,6 +519,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_global?: boolean | null
+          pinned?: boolean
           prompt_text: string
           restaurant_id: string
           title?: string | null
@@ -477,6 +530,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_global?: boolean | null
+          pinned?: boolean
           prompt_text?: string
           restaurant_id?: string
           title?: string | null

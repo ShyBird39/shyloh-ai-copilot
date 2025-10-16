@@ -171,6 +171,7 @@ const RestaurantFindings = () => {
   const [cleanupAttempted, setCleanupAttempted] = useState(false);
   const [showConversationSettings, setShowConversationSettings] = useState(false);
   const [currentConversationVisibility, setCurrentConversationVisibility] = useState("private");
+  const [messageFeedback, setMessageFeedback] = useState<Record<number, number>>({});
 
   // Conversation state tracking
   const [conversationState, setConversationState] = useState<{
@@ -222,6 +223,131 @@ const RestaurantFindings = () => {
 
   const handleRefreshChat = () => {
     handleNewConversation();
+  };
+
+  const updateMessageFeedbackStats = async (messageId: string) => {
+    try {
+      const { data: allFeedback, error } = await supabase
+        .from("chat_message_feedback")
+        .select("rating")
+        .eq("message_id", messageId);
+
+      if (error || !allFeedback) return;
+
+      const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+      let total = 0;
+      let sum = 0;
+
+      allFeedback.forEach(fb => {
+        distribution[fb.rating as keyof typeof distribution]++;
+        total++;
+        sum += fb.rating;
+      });
+
+      const average = total > 0 ? sum / total : 0;
+
+      await supabase
+        .from("chat_messages")
+        .update({
+          feedback_stats: { total, average, distribution }
+        })
+        .eq("id", messageId);
+    } catch (error) {
+      console.error("Error updating feedback stats:", error);
+    }
+  };
+
+  const handleMessageFeedback = async (messageIndex: number, rating: number) => {
+    if (!currentConversationId || !id || !user?.id) return;
+
+    setMessageFeedback(prev => ({ ...prev, [messageIndex]: rating }));
+
+    try {
+      const { data: msgs, error: fetchError } = await supabase
+        .from("chat_messages")
+        .select("id")
+        .eq("conversation_id", currentConversationId)
+        .order("created_at", { ascending: true });
+
+      if (fetchError) throw fetchError;
+      
+      const messageId = msgs?.[messageIndex]?.id;
+      if (!messageId) throw new Error("Message not found");
+
+      const { data: existingFeedback } = await supabase
+        .from("chat_message_feedback")
+        .select("id")
+        .eq("message_id", messageId)
+        .eq("user_id", user.id)
+        .single();
+
+      if (existingFeedback) {
+        const { error } = await supabase
+          .from("chat_message_feedback")
+          .update({ rating, created_at: new Date().toISOString() })
+          .eq("id", existingFeedback.id);
+        
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("chat_message_feedback")
+          .insert({
+            message_id: messageId,
+            conversation_id: currentConversationId,
+            restaurant_id: id,
+            user_id: user.id,
+            rating
+          });
+        
+        if (error) throw error;
+      }
+
+      await updateMessageFeedbackStats(messageId);
+      toast.success("Thanks for your feedback!");
+    } catch (error) {
+      console.error("Error saving feedback:", error);
+      toast.error("Failed to save feedback");
+      setMessageFeedback(prev => {
+        const newState = { ...prev };
+        delete newState[messageIndex];
+        return newState;
+      });
+    }
+  };
+
+  const FeedbackEmojis = ({ 
+    messageIndex, 
+    currentRating, 
+    onRate 
+  }: { 
+    messageIndex: number; 
+    currentRating?: number; 
+    onRate: (rating: number) => void;
+  }) => {
+    const emojis = [
+      { rating: 1, emoji: "😡", label: "Not helpful" },
+      { rating: 2, emoji: "😐", label: "Neutral" },
+      { rating: 3, emoji: "🙂", label: "Okay" },
+      { rating: 4, emoji: "😊", label: "Good" },
+      { rating: 5, emoji: "😍", label: "Excellent" }
+    ];
+
+    return (
+      <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        {emojis.map(({ rating, emoji, label }) => (
+          <button
+            key={rating}
+            onClick={() => onRate(rating)}
+            className={`text-lg hover:scale-125 transition-transform ${
+              currentRating === rating ? 'scale-125' : 'opacity-50 hover:opacity-100'
+            }`}
+            title={label}
+          >
+            {emoji}
+          </button>
+        ))}
+      </div>
+    );
   };
 
   const startOnboarding = () => {
@@ -306,6 +432,29 @@ const RestaurantFindings = () => {
         role: msg.role as "user" | "assistant",
         content: msg.content,
       })));
+
+      // Load feedback for this conversation
+      if (user?.id) {
+        const { data: feedbackData } = await supabase
+          .from("chat_message_feedback")
+          .select("message_id, rating")
+          .eq("conversation_id", conversationId)
+          .eq("user_id", user.id);
+        
+        if (feedbackData) {
+          const feedbackMap: Record<number, number> = {};
+          const messageIds = msgs.map(m => m.id);
+          
+          feedbackData.forEach(fb => {
+            const msgIndex = messageIds.indexOf(fb.message_id);
+            if (msgIndex !== -1) {
+              feedbackMap[msgIndex] = fb.rating;
+            }
+          });
+          
+          setMessageFeedback(feedbackMap);
+        }
+      }
     } catch (error) {
       console.error("Error loading conversation:", error);
       toast.error("Failed to load conversation");
@@ -1700,7 +1849,7 @@ const RestaurantFindings = () => {
                     return (
                       <div
                         key={idx}
-                        className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} animate-fade-in`}
+                        className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} animate-fade-in group`}
                       >
                         <div
                           className={`max-w-[75%] rounded-2xl p-4 ${
@@ -1712,6 +1861,14 @@ const RestaurantFindings = () => {
                           <p className="text-sm leading-relaxed whitespace-pre-wrap">
                             {renderMessageContent(message.content)}
                           </p>
+                          
+                          {message.role === "assistant" && !isOnboarding && (
+                            <FeedbackEmojis
+                              messageIndex={idx}
+                              currentRating={messageFeedback[idx]}
+                              onRate={(rating) => handleMessageFeedback(idx, rating)}
+                            />
+                          )}
                         </div>
                       </div>
                     );
