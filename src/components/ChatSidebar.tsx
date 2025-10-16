@@ -308,9 +308,19 @@ export function ChatSidebar({
                 AI-powered agents to help with specific tasks
               </p>
               
+              {/* Placeholder for Reservation Availability Agent */}
+              <Button
+                className="w-full justify-start"
+                variant="outline"
+                disabled
+              >
+                <Bot className="w-4 h-4 mr-2" />
+                Reservation Availability (Coming Soon)
+              </Button>
+              
               {agents.length === 0 ? (
                 <div className="text-center text-muted-foreground py-8 text-sm">
-                  No agents configured for this restaurant yet
+                  No other agents configured yet
                 </div>
               ) : (
                 agents.map((agent) => (
