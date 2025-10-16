@@ -885,36 +885,93 @@ const RestaurantFindings = () => {
 
   // Phase 1: The Hook - Auto-triggered messages for first-time users
   useEffect(() => {
-    if (!hasCompletedKPIs && messages.length === 0 && onboardingPhase === 'hook' && !loading) {
+    if (!hasCompletedKPIs && messages.length === 0 && onboardingPhase === 'hook' && !loading && id && user?.id) {
       setIsTyping(true);
       
-      // Message 1
-      setTimeout(() => {
-        setMessages([{
-          role: "assistant",
-          content: "Hey! We're the team behind Shy Bird—we run 3 restaurants in Boston. We built Shyloh because AI has helped us with stuff we never imagined.",
-        }]);
-        
-        // Message 2 - longer pause to feel more human
-        setTimeout(() => {
-          setMessages(prev => [...prev, {
-            role: "assistant",
-            content: "Things like cutting brunch ticket times, rethinking sidework, lowering food cost. We want to share what we've learned to make running restaurants a little easier.",
-          }]);
+      // Create conversation for onboarding
+      const createOnboardingConversation = async () => {
+        try {
+          const { data: newConv, error: convError } = await supabase
+            .from("chat_conversations")
+            .insert({
+              restaurant_id: id,
+              title: "Getting Started with Shyloh",
+              message_count: 0,
+              created_by: user.id,
+              visibility: 'private',
+            })
+            .select()
+            .single();
+
+          if (convError) throw convError;
           
-          // Message 3 - another human pause
-          setTimeout(() => {
-            setMessages(prev => [...prev, {
-              role: "assistant",
-              content: "But first, we need to prove AI can actually help *you*. What's 1-2 things you're working on right now or that are stressing you out?",
-            }]);
-            setOnboardingPhase('pain_point');
-            setIsTyping(false);
-          }, 2500);
-        }, 2500);
-      }, 1000);
+          setCurrentConversationId(newConv.id);
+          setCurrentConversationVisibility('private');
+
+          // Add creator as participant (owner)
+          await supabase
+            .from("chat_conversation_participants")
+            .insert({
+              conversation_id: newConv.id,
+              user_id: user.id,
+              role: 'owner',
+            });
+
+          // Save messages as they're added
+          const saveMessage = async (content: string, delay: number) => {
+            return new Promise<void>((resolve) => {
+              setTimeout(async () => {
+                setMessages(prev => [...prev, { role: "assistant", content }]);
+                
+                await supabase.from("chat_messages").insert({
+                  conversation_id: newConv.id,
+                  role: 'assistant',
+                  content,
+                  user_id: null,
+                });
+                
+                // Increment message count
+                const { data: currentConv } = await supabase
+                  .from("chat_conversations")
+                  .select('message_count')
+                  .eq('id', newConv.id)
+                  .single();
+                
+                if (currentConv) {
+                  await supabase
+                    .from("chat_conversations")
+                    .update({ message_count: (currentConv.message_count || 0) + 1 })
+                    .eq('id', newConv.id);
+                }
+                
+                resolve();
+              }, delay);
+            });
+          };
+
+          // Message 1
+          await saveMessage("Hey! We're the team behind Shy Bird—we run 3 restaurants in Boston. We built Shyloh because AI has helped us with stuff we never imagined.", 1000);
+          
+          // Message 2
+          await saveMessage("Things like cutting brunch ticket times, rethinking sidework, lowering food cost. We want to share what we've learned to make running restaurants a little easier.", 2500);
+          
+          // Message 3
+          await saveMessage("But first, we need to prove AI can actually help *you*. What's 1-2 things you're working on right now or that are stressing you out?", 2500);
+          
+          setOnboardingPhase('pain_point');
+          setIsTyping(false);
+          
+          // Reload conversations to show in left nav
+          loadConversations();
+        } catch (error) {
+          console.error('Error creating onboarding conversation:', error);
+          setIsTyping(false);
+        }
+      };
+
+      createOnboardingConversation();
     }
-  }, [hasCompletedKPIs, messages.length, onboardingPhase, loading]);
+  }, [hasCompletedKPIs, messages.length, onboardingPhase, loading, id, user]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
