@@ -308,7 +308,20 @@ export function ChatSidebar({
                 AI-powered agents to help with specific tasks
               </p>
               
-              {/* Placeholder for Reservation Availability Agent */}
+              {/* Active agents from database */}
+              {agents.map((agent) => (
+                <Button
+                  key={agent.id}
+                  onClick={() => window.open(agent.url, '_blank')}
+                  className="w-full justify-start"
+                  variant="outline"
+                >
+                  <Bot className="w-4 h-4 mr-2" />
+                  {agent.name}
+                </Button>
+              ))}
+              
+              {/* Coming Soon placeholder agents */}
               <Button
                 className="w-full justify-start"
                 variant="outline"
@@ -317,24 +330,6 @@ export function ChatSidebar({
                 <Bot className="w-4 h-4 mr-2" />
                 Reservation Availability (Coming Soon)
               </Button>
-              
-              {agents.length === 0 ? (
-                <div className="text-center text-muted-foreground py-8 text-sm">
-                  No other agents configured yet
-                </div>
-              ) : (
-                agents.map((agent) => (
-                  <Button
-                    key={agent.id}
-                    onClick={() => window.open(agent.url, '_blank')}
-                    className="w-full justify-start"
-                    variant="outline"
-                  >
-                    <Bot className="w-4 h-4 mr-2" />
-                    {agent.name}
-                  </Button>
-                ))
-              )}
             </div>
           </TabsContent>
         </Tabs>
