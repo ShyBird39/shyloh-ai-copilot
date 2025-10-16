@@ -60,20 +60,39 @@ export function NotificationBell({ restaurantId, onNavigate }: NotificationBellP
   }, [restaurantId]);
 
   const loadNotifications = async () => {
-    const { data, error } = await supabase
+    // Fetch notifications
+    const { data: notificationsData, error: notifError } = await supabase
       .from('notifications')
-      .select(`
-        *,
-        profiles:mentioned_by(display_name, email)
-      `)
+      .select('*')
       .eq('restaurant_id', restaurantId)
       .order('created_at', { ascending: false })
       .limit(20);
 
-    if (!error && data) {
-      setNotifications(data as any);
-      setUnreadCount(data.filter(n => !n.is_read).length);
+    if (notifError || !notificationsData) {
+      console.error('Error loading notifications:', notifError);
+      return;
     }
+
+    // Fetch profiles for mentioned users
+    const mentionedUserIds = [...new Set(notificationsData.map(n => n.mentioned_by))];
+    const { data: profilesData, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, display_name, email')
+      .in('id', mentionedUserIds);
+
+    if (profilesError) {
+      console.error('Error loading profiles:', profilesError);
+    }
+
+    // Merge profiles into notifications
+    const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
+    const enrichedNotifications = notificationsData.map(notif => ({
+      ...notif,
+      profiles: profilesMap.get(notif.mentioned_by)
+    }));
+
+    setNotifications(enrichedNotifications as any);
+    setUnreadCount(enrichedNotifications.filter(n => !n.is_read).length);
   };
 
   const markAsRead = async (notificationId: string) => {

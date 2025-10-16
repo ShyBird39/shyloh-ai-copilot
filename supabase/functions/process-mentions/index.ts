@@ -38,13 +38,10 @@ serve(async (req) => {
 
     console.log(`Found ${mentionNames.length} mentions: ${mentionNames.join(', ')}`);
 
-    // Look up mentioned users by display_name or email
+    // Look up mentioned users - fetch members and profiles separately
     const { data: members, error: memberError } = await supabase
       .from('restaurant_members')
-      .select(`
-        user_id,
-        profiles:user_id(id, email, display_name)
-      `)
+      .select('user_id')
       .eq('restaurant_id', restaurantId)
       .eq('status', 'active');
 
@@ -53,13 +50,36 @@ serve(async (req) => {
       throw memberError;
     }
 
+    if (!members || members.length === 0) {
+      console.log('No active members found for this restaurant');
+      return new Response(JSON.stringify({ 
+        mentionsFound: mentionNames.length,
+        notificationsCreated: 0,
+        message: 'No active members to mention'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Fetch profiles for these members
+    const memberUserIds = members.map(m => m.user_id);
+    const { data: profiles, error: profileError } = await supabase
+      .from('profiles')
+      .select('id, email, display_name')
+      .in('id', memberUserIds);
+
+    if (profileError) {
+      console.error('Error fetching profiles:', profileError);
+      throw profileError;
+    }
+
     const mentionedUserIds = new Set<string>();
     
     for (const name of mentionNames) {
       const lowerName = name.toLowerCase();
-      const matchedMember = (members as any[]).find(m => {
-        const displayName = m.profiles?.display_name?.toLowerCase() || '';
-        const email = m.profiles?.email?.toLowerCase() || '';
+      const matchedProfile = profiles?.find(p => {
+        const displayName = p.display_name?.toLowerCase() || '';
+        const email = p.email?.toLowerCase() || '';
         const emailPrefix = email.split('@')[0];
         
         return displayName === lowerName || 
@@ -67,8 +87,8 @@ serve(async (req) => {
                email === lowerName;
       });
       
-      if (matchedMember && matchedMember.user_id !== senderId) {
-        mentionedUserIds.add(matchedMember.user_id);
+      if (matchedProfile && matchedProfile.id !== senderId) {
+        mentionedUserIds.add(matchedProfile.id);
       }
     }
 
