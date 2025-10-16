@@ -612,8 +612,8 @@ const RestaurantFindings = () => {
       if (!isOnboarding && messages.length === 0) {
         const hasOnboarding = data?.some(conv => conv.conversation_type === 'onboarding');
         if (!hasOnboarding && data?.length === 0) {
-          // First time user - start onboarding
-          startOnboarding();
+          // First time user - Quick Win onboarding will be triggered by useEffect
+          // Do nothing here - let the Quick Win hook handle it
         }
       }
     } catch (error) {
