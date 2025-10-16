@@ -128,7 +128,10 @@ const RestaurantFindings = () => {
   
   // Prompt library state
   const [promptsOpen, setPromptsOpen] = useState(false);
+  const [myPromptsOpen, setMyPromptsOpen] = useState(true);
   const [savedPrompts, setSavedPrompts] = useState<any[]>([]);
+  const [globalPrompts, setGlobalPrompts] = useState<any[]>([]);
+  const [myPrompts, setMyPrompts] = useState<any[]>([]);
   const [showAddPrompt, setShowAddPrompt] = useState(false);
   const [editingPrompt, setEditingPrompt] = useState<string | null>(null);
   const [promptForm, setPromptForm] = useState({
@@ -486,14 +489,20 @@ const RestaurantFindings = () => {
     if (!id) return;
     
     try {
+      // Fetch all prompts (global + restaurant-specific)
       const { data, error } = await supabase
         .from("restaurant_saved_prompts")
         .select("*")
-        .eq("restaurant_id", id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setSavedPrompts(data || []);
+      
+      const allPrompts = data || [];
+      setSavedPrompts(allPrompts);
+      
+      // Separate global and restaurant-specific prompts
+      setGlobalPrompts(allPrompts.filter(p => p.is_global));
+      setMyPrompts(allPrompts.filter(p => !p.is_global && p.restaurant_id === id));
     } catch (error) {
       console.error("Error loading saved prompts:", error);
     }
@@ -1418,7 +1427,7 @@ const RestaurantFindings = () => {
         if (error) throw error;
         toast.success("Prompt updated");
       } else {
-        // Create new
+        // Create new (always restaurant-specific, never global)
         const { error } = await supabase
           .from("restaurant_saved_prompts")
           .insert({
@@ -1426,6 +1435,7 @@ const RestaurantFindings = () => {
             title: promptForm.title.trim() || null,
             prompt_text: promptForm.prompt_text.trim(),
             category: promptForm.category.trim() || null,
+            is_global: false, // Always create restaurant-specific prompts
           });
 
         if (error) throw error;
@@ -2413,125 +2423,182 @@ const RestaurantFindings = () => {
                 </CollapsibleTrigger>
                 
                 <CollapsibleContent>
-                  <div className="space-y-3">
-                    {/* Add New Prompt Button */}
-                    {!showAddPrompt && (
-                      <Button
-                        onClick={() => setShowAddPrompt(true)}
-                        size="sm"
-                        className="w-full bg-accent hover:bg-accent/90 text-xs h-8"
-                      >
-                        + Save a Prompt
-                      </Button>
-                    )}
-
-                    {/* Add/Edit Prompt Form */}
-                    {showAddPrompt && (
-                      <Card className="bg-background/50 border-accent/20 p-4 space-y-3">
-                        <Input
-                          placeholder="Title (optional, e.g., 'Cost Analysis')"
-                          value={promptForm.title}
-                          onChange={(e) => setPromptForm({ ...promptForm, title: e.target.value })}
-                          className="bg-background/20 border-accent/30 text-primary-foreground h-8 text-sm"
-                          disabled={saving}
-                        />
-                        <Input
-                          placeholder="Category (optional, e.g., 'Operations')"
-                          value={promptForm.category}
-                          onChange={(e) => setPromptForm({ ...promptForm, category: e.target.value })}
-                          className="bg-background/20 border-accent/30 text-primary-foreground h-8 text-sm"
-                          disabled={saving}
-                        />
-                        <Textarea
-                          placeholder="Paste or type your prompt here..."
-                          value={promptForm.prompt_text}
-                          onChange={(e) => setPromptForm({ ...promptForm, prompt_text: e.target.value })}
-                          className="bg-background/20 border-accent/30 text-primary-foreground min-h-[100px] text-sm"
-                          disabled={saving}
-                        />
-                        <div className="flex gap-2">
-                          <Button
-                            onClick={handleSavePrompt}
-                            disabled={saving || !promptForm.prompt_text.trim()}
-                            size="sm"
-                            className="bg-accent hover:bg-accent/90 text-xs h-7"
-                          >
-                            {saving ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : null}
-                            {editingPrompt ? "Update" : "Save"}
-                          </Button>
-                          <Button
-                            onClick={handleCancelPrompt}
-                            disabled={saving}
-                            size="sm"
-                            variant="outline"
-                            className="text-xs h-7 bg-background/10 border-primary-foreground/20"
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </Card>
-                    )}
-
-                    {/* Empty State */}
-                    {savedPrompts.length === 0 && !showAddPrompt && (
-                      <Card className="bg-background/50 border-accent/20 p-4">
-                        <p className="text-xs text-primary-foreground/60 text-center">
-                          No saved prompts yet. Save prompts you use often for quick access.
-                        </p>
-                      </Card>
-                    )}
-
-                    {/* Saved Prompts List */}
-                    {savedPrompts.map((prompt) => (
-                      <Card
-                        key={prompt.id}
-                        className="bg-background/50 border-accent/20 p-4 space-y-2 hover:border-accent/40 transition-colors cursor-pointer"
-                        onClick={() => handleCopyPromptToInput(prompt.prompt_text)}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1">
-                            {prompt.title && (
-                              <div className="flex items-center gap-2 mb-1">
-                                <h4 className="text-sm font-semibold text-primary-foreground">
-                                  {prompt.title}
-                                </h4>
-                                {prompt.category && (
-                                  <span className="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded">
-                                    {prompt.category}
-                                  </span>
-                                )}
+                  <div className="space-y-4">
+                    {/* Shyloh Quick Prompts (Global - Read-only) */}
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-semibold text-primary-foreground/80">🌟 Shyloh Quick Prompts</h4>
+                      {globalPrompts.length === 0 ? (
+                        <Card className="bg-background/30 border-accent/10 p-3">
+                          <p className="text-xs text-primary-foreground/40 text-center">
+                            No global prompts available.
+                          </p>
+                        </Card>
+                      ) : (
+                        <div className="space-y-2">
+                          {globalPrompts.map((prompt) => (
+                            <Card
+                              key={prompt.id}
+                              className="bg-background/30 border-accent/20 p-3 hover:border-accent/40 transition-colors cursor-pointer"
+                              onClick={() => handleCopyPromptToInput(prompt.prompt_text)}
+                            >
+                              <div className="flex items-start gap-2">
+                                <div className="flex-1">
+                                  {prompt.title && (
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <h5 className="text-sm font-medium text-primary-foreground">
+                                        {prompt.title}
+                                      </h5>
+                                      {prompt.category && (
+                                        <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">
+                                          {prompt.category}
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                  <p className="text-primary-foreground/60 text-xs leading-relaxed line-clamp-2">
+                                    {prompt.prompt_text}
+                                  </p>
+                                </div>
                               </div>
-                            )}
-                            <p className="text-primary-foreground/70 text-xs leading-relaxed line-clamp-3">
-                              {prompt.prompt_text}
-                            </p>
-                            <p className="text-primary-foreground/40 text-xs mt-2">
-                              Click to copy to input
-                            </p>
-                          </div>
-                          <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleEditPrompt(prompt)}
-                              className="text-accent hover:text-accent-foreground hover:bg-accent/20 h-6 w-6 p-0"
-                              title="Edit"
-                            >
-                              <Pencil className="w-3 h-3" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleDeletePrompt(prompt.id)}
-                              className="text-destructive hover:text-destructive-foreground hover:bg-destructive/20 h-6 w-6 p-0"
-                              title="Delete"
-                            >
-                              ×
-                            </Button>
-                          </div>
+                            </Card>
+                          ))}
                         </div>
-                      </Card>
-                    ))}
+                      )}
+                    </div>
+
+                    {/* My Quick Prompts (Restaurant-Specific - Editable) */}
+                    <Collapsible open={myPromptsOpen} onOpenChange={setMyPromptsOpen}>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <CollapsibleTrigger className="flex items-center gap-2 group">
+                            <h4 className="text-xs font-semibold text-primary-foreground/80">📝 My Quick Prompts</h4>
+                            {myPromptsOpen ? (
+                              <ChevronUp className="w-3 h-3 text-primary-foreground/40 group-hover:text-primary-foreground/60 transition-colors" />
+                            ) : (
+                              <ChevronDown className="w-3 h-3 text-primary-foreground/40 group-hover:text-primary-foreground/60 transition-colors" />
+                            )}
+                          </CollapsibleTrigger>
+                          {!showAddPrompt && (
+                            <Button
+                              onClick={() => setShowAddPrompt(true)}
+                              size="sm"
+                              className="bg-accent hover:bg-accent/90 text-xs h-6"
+                            >
+                              + Save
+                            </Button>
+                          )}
+                        </div>
+
+                        <CollapsibleContent>
+                          <div className="space-y-2">
+                            {/* Add/Edit Prompt Form */}
+                            {showAddPrompt && (
+                              <Card className="bg-background/50 border-accent/20 p-3 space-y-2">
+                                <Input
+                                  placeholder="Title (optional)"
+                                  value={promptForm.title}
+                                  onChange={(e) => setPromptForm({ ...promptForm, title: e.target.value })}
+                                  className="bg-background/20 border-accent/30 text-primary-foreground h-7 text-xs"
+                                  disabled={saving}
+                                />
+                                <Input
+                                  placeholder="Category (optional)"
+                                  value={promptForm.category}
+                                  onChange={(e) => setPromptForm({ ...promptForm, category: e.target.value })}
+                                  className="bg-background/20 border-accent/30 text-primary-foreground h-7 text-xs"
+                                  disabled={saving}
+                                />
+                                <Textarea
+                                  placeholder="Type your prompt..."
+                                  value={promptForm.prompt_text}
+                                  onChange={(e) => setPromptForm({ ...promptForm, prompt_text: e.target.value })}
+                                  className="bg-background/20 border-accent/30 text-primary-foreground min-h-[80px] text-xs"
+                                  disabled={saving}
+                                />
+                                <div className="flex gap-2">
+                                  <Button
+                                    onClick={handleSavePrompt}
+                                    disabled={saving || !promptForm.prompt_text.trim()}
+                                    size="sm"
+                                    className="bg-accent hover:bg-accent/90 text-xs h-6"
+                                  >
+                                    {saving ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : null}
+                                    {editingPrompt ? "Update" : "Save"}
+                                  </Button>
+                                  <Button
+                                    onClick={handleCancelPrompt}
+                                    disabled={saving}
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-xs h-6 bg-background/10 border-primary-foreground/20"
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </Card>
+                            )}
+
+                            {/* Empty State */}
+                            {myPrompts.length === 0 && !showAddPrompt && (
+                              <Card className="bg-background/30 border-accent/10 p-3">
+                                <p className="text-xs text-primary-foreground/40 text-center">
+                                  No custom prompts yet. Click "Save" to create one.
+                                </p>
+                              </Card>
+                            )}
+
+                            {/* My Prompts List */}
+                            {myPrompts.map((prompt) => (
+                              <Card
+                                key={prompt.id}
+                                className="bg-background/50 border-accent/20 p-3 hover:border-accent/40 transition-colors cursor-pointer"
+                                onClick={() => handleCopyPromptToInput(prompt.prompt_text)}
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1">
+                                    {prompt.title && (
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <h5 className="text-sm font-medium text-primary-foreground">
+                                          {prompt.title}
+                                        </h5>
+                                        {prompt.category && (
+                                          <span className="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded">
+                                            {prompt.category}
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
+                                    <p className="text-primary-foreground/60 text-xs leading-relaxed line-clamp-2">
+                                      {prompt.prompt_text}
+                                    </p>
+                                  </div>
+                                  <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => handleEditPrompt(prompt)}
+                                      className="text-accent hover:text-accent-foreground hover:bg-accent/20 h-6 w-6 p-0"
+                                      title="Edit"
+                                    >
+                                      <Pencil className="w-3 h-3" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => handleDeletePrompt(prompt.id)}
+                                      className="text-destructive hover:text-destructive-foreground hover:bg-destructive/20 h-6 w-6 p-0"
+                                      title="Delete"
+                                    >
+                                      ×
+                                    </Button>
+                                  </div>
+                                </div>
+                              </Card>
+                            ))}
+                          </div>
+                        </CollapsibleContent>
+                      </div>
+                    </Collapsible>
                   </div>
                 </CollapsibleContent>
               </div>

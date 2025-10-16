@@ -456,6 +456,7 @@ export type Database = {
           category: string | null
           created_at: string | null
           id: string
+          is_global: boolean | null
           prompt_text: string
           restaurant_id: string
           title: string | null
@@ -465,6 +466,7 @@ export type Database = {
           category?: string | null
           created_at?: string | null
           id?: string
+          is_global?: boolean | null
           prompt_text: string
           restaurant_id: string
           title?: string | null
@@ -474,6 +476,7 @@ export type Database = {
           category?: string | null
           created_at?: string | null
           id?: string
+          is_global?: boolean | null
           prompt_text?: string
           restaurant_id?: string
           title?: string | null
