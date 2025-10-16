@@ -47,28 +47,48 @@ export function TeamManagement({ restaurantId }: TeamManagementProps) {
 
   const loadMembers = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch members with profiles
+      const { data: membersData, error: membersError } = await supabase
         .from("restaurant_members")
         .select(`
           id,
           user_id,
           invited_at,
-          profiles!restaurant_members_user_id_fkey(email, display_name),
-          user_roles!user_roles_user_id_fkey(role)
+          profiles!restaurant_members_user_id_fkey(email, display_name)
         `)
         .eq("restaurant_id", restaurantId)
         .eq("status", "active");
 
-      if (error) throw error;
+      if (membersError) throw membersError;
 
-      const formattedMembers = data?.map((member: any) => ({
+      if (!membersData || membersData.length === 0) {
+        setMembers([]);
+        return;
+      }
+
+      // Fetch roles for these users
+      const userIds = membersData.map(m => m.user_id);
+      const { data: rolesData, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("user_id, role")
+        .eq("restaurant_id", restaurantId)
+        .in("user_id", userIds);
+
+      if (rolesError) {
+        console.error("Error fetching roles:", rolesError);
+      }
+
+      // Create a map of user_id to role
+      const rolesMap = new Map(rolesData?.map(r => [r.user_id, r.role]) || []);
+
+      const formattedMembers = membersData.map((member: any) => ({
         id: member.id,
         user_id: member.user_id,
-        email: member.profiles.email,
-        display_name: member.profiles.display_name || member.profiles.email,
-        role: member.user_roles[0]?.role || "member",
+        email: member.profiles?.email,
+        display_name: member.profiles?.display_name || member.profiles?.email,
+        role: rolesMap.get(member.user_id) || "member",
         invited_at: member.invited_at,
-      })) || [];
+      }));
 
       setMembers(formattedMembers);
     } catch (error: any) {
