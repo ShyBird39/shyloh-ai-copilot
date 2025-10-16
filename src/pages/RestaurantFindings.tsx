@@ -208,6 +208,11 @@ const RestaurantFindings = () => {
     { id: 'rules', label: 'Rules', completed: false, active: false },
   ]);
 
+  // Quick Win onboarding state
+  const [onboardingPhase, setOnboardingPhase] = useState<'hook' | 'pain_point' | 'quick_win' | 'data_collection'>('hook');
+  const [userPainPoint, setUserPainPoint] = useState<string>('');
+  const [quickWinExchangeCount, setQuickWinExchangeCount] = useState<number>(0);
+
   const samplePrompts = [
     "I am here to...",
     "Check my settings...",
@@ -858,6 +863,39 @@ const RestaurantFindings = () => {
     fetchRestaurant();
   }, [id, navigate]);
 
+  // Phase 1: The Hook - Auto-triggered messages for first-time users
+  useEffect(() => {
+    if (!hasCompletedKPIs && messages.length === 0 && onboardingPhase === 'hook' && !loading) {
+      setIsTyping(true);
+      
+      // Message 1
+      setTimeout(() => {
+        setMessages([{
+          role: "assistant",
+          content: "Hey! We're the team behind Shy Bird—we run 3 restaurants in Boston. We built Shyloh because AI has helped us with stuff we never imagined.",
+        }]);
+        
+        // Message 2
+        setTimeout(() => {
+          setMessages(prev => [...prev, {
+            role: "assistant",
+            content: "Things like cutting brunch ticket times, rethinking sidework, lowering food cost. We want to share what we've learned to make running restaurants a little easier.",
+          }]);
+          
+          // Message 3
+          setTimeout(() => {
+            setMessages(prev => [...prev, {
+              role: "assistant",
+              content: "But first, we need to prove AI can actually help *you*. What's 1-2 things you're working on right now or that are stressing you out?",
+            }]);
+            setOnboardingPhase('pain_point');
+            setIsTyping(false);
+          }, 1500);
+        }, 1500);
+      }, 500);
+    }
+  }, [hasCompletedKPIs, messages.length, onboardingPhase, loading]);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -1117,6 +1155,180 @@ const RestaurantFindings = () => {
 
     // Route to onboarding handler if in onboarding mode
     if (isOnboarding) {
+      return handleOnboardingMessage(messageText);
+    }
+
+    // PHASE 2: Capture pain point
+    if (onboardingPhase === 'pain_point') {
+      const userMessage: ChatMessage = { role: "user", content: messageText };
+      setMessages((prev) => [...prev, userMessage]);
+      setCurrentInput("");
+      setIsTyping(true);
+      
+      setUserPainPoint(messageText);
+      setOnboardingPhase('quick_win');
+      setQuickWinExchangeCount(1);
+      
+      // Build REGGI summary for context (implicit use)
+      const reggiSummary = [
+        data?.culinary_beverage_description,
+        data?.time_occasion_description,
+        data?.operational_execution_description
+      ].filter(Boolean).join(', ');
+      
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-shyloh`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            },
+            body: JSON.stringify({
+              messages: [...messages, userMessage],
+              restaurantData: data,
+              kpiData: kpiData,
+              restaurantId: id,
+              conversationId: currentConversationId,
+              onboarding_mode: 'quick_win',
+              pain_point: messageText,
+              reggi_summary: reggiSummary,
+            }),
+          }
+        );
+
+        if (!response.ok) throw new Error('Failed to get AI response');
+
+        const reader = response.body?.getReader();
+        if (!reader) throw new Error('No response stream');
+
+        const decoder = new TextDecoder();
+        let assistantMessage = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          assistantMessage += chunk;
+
+          setMessages((prev) => {
+            const lastMsg = prev[prev.length - 1];
+            if (lastMsg?.role === 'assistant') {
+              return [...prev.slice(0, -1), { ...lastMsg, content: assistantMessage }];
+            }
+            return [...prev, { role: 'assistant', content: assistantMessage }];
+          });
+        }
+      } catch (error) {
+        console.error('Error in Quick Win phase:', error);
+        toast.error('Something went wrong. Please try again.');
+      } finally {
+        setIsTyping(false);
+      }
+      return;
+    }
+
+    // PHASE 3: Quick Win conversation (3-4 exchanges)
+    if (onboardingPhase === 'quick_win') {
+      const userMessage: ChatMessage = { role: "user", content: messageText };
+      setMessages((prev) => [...prev, userMessage]);
+      setCurrentInput("");
+      setIsTyping(true);
+      
+      setQuickWinExchangeCount(prev => prev + 1);
+      
+      // Build REGGI summary
+      const reggiSummary = [
+        data?.culinary_beverage_description,
+        data?.time_occasion_description,
+        data?.operational_execution_description
+      ].filter(Boolean).join(', ');
+      
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-shyloh`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            },
+            body: JSON.stringify({
+              messages: [...messages, userMessage],
+              restaurantData: data,
+              kpiData: kpiData,
+              restaurantId: id,
+              conversationId: currentConversationId,
+              onboarding_mode: 'quick_win',
+              pain_point: userPainPoint,
+              reggi_summary: reggiSummary,
+            }),
+          }
+        );
+
+        if (!response.ok) throw new Error('Failed to get AI response');
+
+        const reader = response.body?.getReader();
+        if (!reader) throw new Error('No response stream');
+
+        const decoder = new TextDecoder();
+        let assistantMessage = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          assistantMessage += chunk;
+
+          setMessages((prev) => {
+            const lastMsg = prev[prev.length - 1];
+            if (lastMsg?.role === 'assistant') {
+              return [...prev.slice(0, -1), { ...lastMsg, content: assistantMessage }];
+            }
+            return [...prev, { role: 'assistant', content: assistantMessage }];
+          });
+        }
+
+        // After 4-5 total exchanges, transition to data collection
+        if (quickWinExchangeCount >= 4) {
+          // Check if user wants to continue or move to data collection
+          const continueSignals = /yes|more|tell me|explain|how|walk me through/i.test(messageText);
+          
+          if (continueSignals) {
+            // Let them continue Quick Win for 1-2 more exchanges
+            setQuickWinExchangeCount(prev => prev + 1);
+          } else if (quickWinExchangeCount >= 5) {
+            // After 5 exchanges, gently transition
+            setTimeout(() => {
+              setMessages(prev => [...prev, {
+                role: "assistant",
+                content: "This is helpful. To give you insights this specific all the time, I need to understand your restaurant better. Got 5 minutes to walk through your setup?",
+              }]);
+              setOnboardingPhase('data_collection');
+            }, 1000);
+          }
+        }
+      } catch (error) {
+        console.error('Error in Quick Win conversation:', error);
+        toast.error('Something went wrong. Please try again.');
+      } finally {
+        setIsTyping(false);
+      }
+      return;
+    }
+
+    // PHASE 4: Data collection (existing REGGI/KPI flow)
+    if (onboardingPhase === 'data_collection') {
+      // Transition to existing onboarding flow
+      setIsOnboarding(true);
+      setOnboardingStep(1);
+      setCurrentReggiDimension(0);
+      setOnboardingPhase('hook'); // Reset for future
+      
+      // Continue with existing onboarding logic
       return handleOnboardingMessage(messageText);
     }
 

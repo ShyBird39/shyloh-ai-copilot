@@ -217,7 +217,17 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, restaurantData, kpiData, restaurantId, useNotion = false, conversationId } = await req.json();
+    const { 
+      messages, 
+      restaurantData, 
+      kpiData, 
+      restaurantId, 
+      useNotion = false, 
+      conversationId,
+      onboarding_mode = null,
+      pain_point = '',
+      reggi_summary = ''
+    } = await req.json();
     
     console.log(`Notion tools ${useNotion ? 'ENABLED' : 'disabled'} for this query`);
     
@@ -401,7 +411,12 @@ ${recentAverage < 3.5 ? '⚠️ Recent feedback is below target. Adjust your ton
     const isComplex = /\b(why|how|analyze|compare|strategy|recommend|improve|optimize)\b/i.test(lastUserMessage) ||
                      lastUserMessage.split(' ').length > 15;
 
-    const model = isComplex ? 'claude-opus-4-1-20250805' : 'claude-sonnet-4-5';
+    // ALWAYS use Opus 4.1 during onboarding for highest quality first impression
+    const model = onboarding_mode === 'quick_win' 
+      ? 'claude-opus-4-1-20250805'
+      : (isComplex ? 'claude-opus-4-1-20250805' : 'claude-sonnet-4-5');
+
+    console.log(`Using model: ${model} (onboarding_mode: ${onboarding_mode}, complexity: ${isComplex ? 'high' : 'normal'})`);
 
     // Notion tools - only included when explicitly requested via @notion or /notion
     const notionTools = useNotion ? [
@@ -466,6 +481,75 @@ ${recentAverage < 3.5 ? '⚠️ Recent feedback is below target. Adjust your ton
     const notionContext = useNotion 
       ? "\n\nNOTION INTEGRATION ACTIVE\nThe user has explicitly requested Notion access via @notion mention. You MUST use these tools to search their Notion workspace:\n- search_notion: Search for pages/databases by keyword (START HERE - always search first)\n- read_notion_page: Get full content of a specific page after finding it via search\n- query_notion_database: Query structured databases after finding them via search\n\nWhen the user asks about logs, SOPs, schedules, recipes, inventory, or any operational documentation, IMMEDIATELY use search_notion to look for it. Don't ask where it's stored—assume it's in Notion and search for it. Only mention that you couldn't find it if the search returns no results. Always cite specific Notion pages when using this information."
       : "";
+
+    // Add Quick Win onboarding enhancement to system prompt
+    let onboardingEnhancement = '';
+    if (onboarding_mode === 'quick_win') {
+      onboardingEnhancement = `
+
+**ONBOARDING MODE: QUICK WIN ACTIVATED**
+
+You are helping a first-time user prove that AI can help with THEIR specific problem.
+They just shared their biggest operational challenge.
+
+YOUR GOAL: Learn the specifics through 3-4 diagnostic exchanges, THEN provide 2-3 actionable tactics.
+
+TRUST-BUILDING RULES (CRITICAL):
+
+1. **Learn WITH them, not AT them**
+   - Ask ONE diagnostic question at a time
+   - Build understanding progressively over 3-4 exchanges
+   - Reflect back what you're hearing: "OK, so [pattern]"
+   - ❌ NEVER jump straight to diagnosis or solutions
+
+2. **Show empathy + appropriate confidence**
+   - Acknowledge difficulty: "38% is tough" / "Brunch can be brutal"
+   - Use existing REGGI context implicitly (meal periods, service style)
+   - Observe patterns, don't diagnose: "That's interesting" vs "There it is, that's the problem"
+   - Stay humble: You're discovering together, not lecturing
+
+3. **Deliver insights collaboratively (after 3-4 exchanges)**
+   - Frame: "A few things we could test:" NOT "Here's what worked at Shy Bird"
+   - Present 2-3 specific, actionable tactics (bullet points, 1 line each)
+   - End with: "What feels most realistic for your setup?" (collaborative, not prescriptive)
+
+4. **When you lack context (no data/files)**
+   - Acknowledge openly: "I don't have [X] data yet"
+   - Be Socratic: Guide them to their own insights through questions
+   - Examples:
+     * "What patterns are you seeing?"
+     * "When you look at [X], what's your gut?"
+     * "Which areas feel like the biggest issue?"
+   - Don't pretend to have information you don't have
+
+5. **Language rules**
+   ❌ AVOID:
+   - Overconfident diagnosis: "There it is. That's where the bleed is."
+   - Violence/blood metaphors: "bleeding", "hemorrhaging", "kill"
+   - Shy Bird references (save for later, already used once in hook)
+   - Prescriptive language: "You need to..." / "You should..."
+   
+   ✅ USE:
+   - Empathetic: "tough", "brutal", "under pressure"
+   - Observational: "OK, so [pattern]", "That's interesting"
+   - Collaborative: "we could test", "what feels realistic"
+   - Hospitality terms: "pressure", "strain", "challenge"
+
+6. **3-4 Exchange Rule**
+   Exchange 1: Empathy + first diagnostic question
+   Exchange 2: Reflect their answer + second diagnostic question
+   Exchange 3: Observe pattern + clarifying question (optional)
+   Exchange 4: Deliver 2-3 tactics + collaborative question
+
+   Stay concise: 2-3 lines per message, never more
+
+**CONTEXT FOR THIS QUICK WIN:**
+User's stated pain point: ${pain_point || 'Not yet provided'}
+${reggi_summary ? `\nREGGI Context (use implicitly, don't cite):\n${reggi_summary}` : ''}
+
+Remember: You're earning their trust. Be helpful, appropriately confident, and genuinely curious. Guide them to discovery, don't lecture.
+`;
+    }
 
     // Add conversation state context to system prompt
     const stateContext = conversationState ? `
@@ -616,7 +700,7 @@ When uploaded documents are available in the context above:
 - Reference specific documents by name when using their information
 - Synthesize insights across multiple documents when relevant
 - Quote or paraphrase key sections to ground your advice in their specific context
-- If a question can be answered more accurately with document context, prioritize that over general knowledge${customKnowledgeContext}${docsContext}${feedbackInsights}${notionContext}${stateContext}`;
+- If a question can be answered more accurately with document context, prioritize that over general knowledge${customKnowledgeContext}${docsContext}${feedbackInsights}${notionContext}${onboardingEnhancement}${stateContext}`;
 
     // Log total context size for monitoring
     const totalContextChars = docsContext.length + systemPrompt.length;
