@@ -1376,24 +1376,16 @@ const RestaurantFindings = () => {
           });
         }
 
-        // After 4-5 total exchanges, transition to data collection
-        if (quickWinExchangeCount >= 4) {
-          // Check if user wants to continue or move to data collection
-          const continueSignals = /yes|more|tell me|explain|how|walk me through/i.test(messageText);
-          
-          if (continueSignals) {
-            // Let them continue Quick Win for 1-2 more exchanges
-            setQuickWinExchangeCount(prev => prev + 1);
-          } else if (quickWinExchangeCount >= 5) {
-            // After 5 exchanges, gently transition
-            setTimeout(() => {
-              setMessages(prev => [...prev, {
-                role: "assistant",
-                content: "This is helpful. To give you insights this specific all the time, I need to understand your restaurant better. Got 5 minutes to walk through your setup?",
-              }]);
-              setOnboardingPhase('data_collection');
-            }, 1000);
-          }
+        // Only transition to setup when the user explicitly asks
+        const setupSignals = /\b(set ?up|setup|walk.?through|configure|onboarding|start (setup|onboarding)|get me set up|let'?s (do|start)|yes.*(setup|walk)|sure.*(setup|walk)|ok.*(setup|walk))\b/i.test(messageText);
+        if (setupSignals) {
+          setTimeout(() => {
+            setMessages(prev => [...prev, {
+              role: "assistant",
+              content: "Great — I'll walk you through a quick setup so I can tailor insights. Sound good?",
+            }]);
+            setOnboardingPhase('data_collection');
+          }, 500);
         }
       } catch (error) {
         console.error('Error in Quick Win conversation:', error);
