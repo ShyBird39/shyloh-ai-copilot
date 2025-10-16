@@ -56,8 +56,11 @@ serve(async (req) => {
       `${TOAST_API_BASE}/config/v2/restaurants/${restaurantGuid}`,
       { headers }
     );
+    
+    let configError = null;
     if (!configResponse.ok) {
       const errorText = await configResponse.text();
+      configError = `Config API Error (${configResponse.status}): ${errorText}`;
       console.error('Config error:', configResponse.status, errorText);
     }
 
@@ -67,8 +70,11 @@ serve(async (req) => {
       `${TOAST_API_BASE}/config/v2/menus`,
       { headers }
     );
+    
+    let menusError = null;
     if (!menusResponse.ok) {
       const errorText = await menusResponse.text();
+      menusError = `Menus API Error (${menusResponse.status}): ${errorText}`;
       console.error('Menus error:', menusResponse.status, errorText);
     }
 
@@ -81,14 +87,20 @@ serve(async (req) => {
       `${TOAST_API_BASE}/orders/v2/ordersBulk?businessDate=${businessDate}`,
       { headers }
     );
+    
+    let ordersError = null;
     if (!ordersResponse.ok) {
       const errorText = await ordersResponse.text();
+      ordersError = `Orders API Error (${ordersResponse.status}): ${errorText}`;
       console.error('Orders error:', ordersResponse.status, errorText);
     }
 
     const config = configResponse.ok ? await configResponse.json() : null;
     const menus = menusResponse.ok ? await menusResponse.json() : null;
     const orders = ordersResponse.ok ? await ordersResponse.json() : null;
+    
+    // Collect all API errors
+    const apiErrors = [configError, menusError, ordersError].filter(Boolean);
 
     console.log('Orders response status:', ordersResponse.status);
     console.log('Orders response data:', JSON.stringify(orders).substring(0, 500));
@@ -211,6 +223,8 @@ serve(async (req) => {
       },
       menuHighlights,
       lastSync: new Date().toISOString(),
+      apiErrors: apiErrors.length > 0 ? apiErrors : undefined,
+      restaurantGuid,
     };
 
     return new Response(

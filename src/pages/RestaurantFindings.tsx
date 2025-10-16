@@ -1873,7 +1873,22 @@ const RestaurantFindings = () => {
 
                     {toastError && (
                       <Card className="bg-destructive/10 border-destructive/20 p-4">
+                        <p className="text-xs text-destructive font-semibold mb-2">Error fetching data</p>
                         <p className="text-xs text-destructive">{toastError}</p>
+                      </Card>
+                    )}
+
+                    {toastData?.apiErrors && toastData.apiErrors.length > 0 && (
+                      <Card className="bg-warning/10 border-warning/20 p-4">
+                        <p className="text-xs font-semibold text-warning mb-2">⚠️ API Warnings</p>
+                        <div className="space-y-1">
+                          {toastData.apiErrors.map((error: string, idx: number) => (
+                            <p key={idx} className="text-xs text-warning/90">{error}</p>
+                          ))}
+                        </div>
+                        <p className="text-xs text-warning/70 mt-2">
+                          Restaurant GUID: {toastData.restaurantGuid}
+                        </p>
                       </Card>
                     )}
 
