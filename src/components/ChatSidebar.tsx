@@ -38,6 +38,7 @@ interface ChatSidebarProps {
   onDeleteConversation: (id: string) => void;
   onFileUpload: (files: FileList) => void;
   onDeleteFile: (id: string) => void;
+  onMoveToKnowledgeBase?: (fileId: string, fileName: string) => void;
   onRefreshConversations: () => void;
   onRefreshFiles: () => void;
 }
@@ -48,6 +49,7 @@ export function ChatSidebar({
   files,
   currentConversationId,
   onNewConversation,
+  onMoveToKnowledgeBase,
   onLoadConversation,
   onDeleteConversation,
   onFileUpload,
@@ -278,6 +280,9 @@ export function ChatSidebar({
                                 ✓ {file.embeddings_generated ? "Ready for RAG" : "Processed"}
                               </p>
                             )}
+                            <p className="text-xs text-muted-foreground/70 italic mt-1">
+                              Temporary file
+                            </p>
                             {!file.processed && (
                               <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
                                 Processing...
@@ -285,15 +290,27 @@ export function ChatSidebar({
                             )}
                           </div>
                         </div>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => onDeleteFile(file.id)}
-                          className="w-full"
-                        >
-                          <Trash2 className="w-3 h-3 mr-1" />
-                          Delete File
-                        </Button>
+                        <div className="flex gap-2">
+                          {onMoveToKnowledgeBase && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => onMoveToKnowledgeBase(file.id, file.file_name)}
+                              className="flex-1"
+                            >
+                              Move to KB
+                            </Button>
+                          )}
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => onDeleteFile(file.id)}
+                            className="flex-1"
+                          >
+                            <Trash2 className="w-3 h-3 mr-1" />
+                            Delete
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}

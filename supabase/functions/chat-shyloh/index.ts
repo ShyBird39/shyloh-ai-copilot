@@ -314,22 +314,43 @@ ${recentAverage < 3.5 ? '⚠️ Recent feedback is below target. Adjust your ton
       }
     }
 
-    // Fetch and parse uploaded documents
+    // Fetch and parse uploaded documents - prioritize permanent files
     let docsContext = '';
     if (restaurantId) {
       try {
-        const { data: files, error: filesError } = await supabase
+        // Fetch permanent files (Knowledge Base) first - always included
+        const { data: permanentFiles, error: permError } = await supabase
           .from('restaurant_files')
           .select('*')
           .eq('restaurant_id', restaurantId)
-          .order('uploaded_at', { ascending: false })
-          .limit(10);
+          .eq('storage_type', 'permanent')
+          .order('uploaded_at', { ascending: false });
 
-        if (!filesError && files && files.length > 0) {
-          console.log(`Found ${files.length} files for restaurant ${restaurantId}`);
+        // Fetch recent temporary files - conditionally included
+        const { data: tempFiles, error: tempError } = await supabase
+          .from('restaurant_files')
+          .select('*')
+          .eq('restaurant_id', restaurantId)
+          .eq('storage_type', 'temporary')
+          .order('uploaded_at', { ascending: false })
+          .limit(5);
+
+        // Combine: permanent files first (higher priority), then temp files
+        const allFiles = [
+          ...(permanentFiles || []),
+          ...(tempFiles || [])
+        ];
+
+        if (!permError && !tempError && allFiles.length > 0) {
+          console.log(`Found ${permanentFiles?.length || 0} permanent files and ${tempFiles?.length || 0} temporary files`);
           const fileTexts: string[] = [];
 
-          for (const file of files) {
+          for (const file of allFiles) {
+            // Add storage type and description metadata
+            const isPermanent = file.storage_type === 'permanent';
+            const fileHeader = isPermanent 
+              ? `--- KNOWLEDGE BASE: ${file.file_name}${file.description ? ` (${file.description})` : ''} ---`
+              : `--- TEMP FILE: ${file.file_name} ---`;
             try {
               const { data: blob, error: downloadError } = await supabase.storage
                 .from('restaurant-documents')
@@ -385,10 +406,11 @@ ${recentAverage < 3.5 ? '⚠️ Recent feedback is below target. Adjust your ton
               }
 
               if (extractedText) {
-                // Expanded limit: 50k chars per file for comprehensive context
-                const trimmed = extractedText.slice(0, 50000).trim();
-                fileTexts.push(`--- ${file.file_name} ---\n${trimmed}`);
-                console.log(`Extracted ${trimmed.length} chars from ${file.file_name}`);
+                // Expanded limit: 50k chars for permanent files, 25k for temporary
+                const charLimit = file.storage_type === 'permanent' ? 50000 : 25000;
+                const trimmed = extractedText.slice(0, charLimit).trim();
+                fileTexts.push(`${fileHeader}\n${trimmed}`);
+                console.log(`Extracted ${trimmed.length} chars from ${file.storage_type} file: ${file.file_name}`);
               }
             } catch (parseError) {
               console.error(`Error parsing ${file.file_name}:`, parseError);
@@ -396,7 +418,13 @@ ${recentAverage < 3.5 ? '⚠️ Recent feedback is below target. Adjust your ton
           }
 
           if (fileTexts.length > 0) {
-            docsContext = `\n\nRESTAURANT DOCUMENTS CONTEXT\nThe following documents have been uploaded for this restaurant. When referencing information from these documents, cite the specific document name. Use this context to provide deeply informed, specific answers:\n\n${fileTexts.join('\n\n')}`;
+            docsContext = `\n\nRESTAURANT DOCUMENTS CONTEXT
+Files marked as "KNOWLEDGE BASE" are permanent reference materials for this restaurant - prioritize them as source of truth.
+Files marked as "TEMP FILE" are temporary session files - use only if relevant to current conversation.
+
+When referencing information, cite the specific document name and prioritize Knowledge Base files. Use this context to provide deeply informed, specific answers:
+
+${fileTexts.join('\n\n')}`;
             console.log(`Added ${fileTexts.length} documents to context (${docsContext.length} total chars)`);
           }
         }

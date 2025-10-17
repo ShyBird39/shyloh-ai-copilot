@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, ChevronDown, ChevronUp, RotateCcw, Paperclip, UtensilsCrossed, Sparkles, Users, Clock, Settings, Heart, UserCog } from "lucide-react";
+import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, ChevronDown, ChevronUp, RotateCcw, Paperclip, UtensilsCrossed, Sparkles, Users, Clock, Settings, Heart, UserCog, Trash2 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -95,9 +95,13 @@ const RestaurantFindings = () => {
   const [dimensionsOpen, setDimensionsOpen] = useState(false);
   const [reggiOpen, setReggiOpen] = useState(false);
   const [knowledgeOpen, setKnowledgeOpen] = useState(false);
+  const [knowledgeBaseOpen, setKnowledgeBaseOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
   const [editingKPI, setEditingKPI] = useState<string | null>(null);
   const [kpiEditValue, setKpiEditValue] = useState("");
+  const [permanentFiles, setPermanentFiles] = useState<any[]>([]);
+  const [editingFileDescription, setEditingFileDescription] = useState<string | null>(null);
+  const [fileDescriptionValue, setFileDescriptionValue] = useState("");
   
   // REGGI editing state
   const [editingReggi, setEditingReggi] = useState<string | null>(null);
@@ -488,7 +492,7 @@ const RestaurantFindings = () => {
     }
   };
 
-  const handleFileUpload = async (fileList: FileList) => {
+  const handleFileUpload = async (fileList: FileList, storageType: 'temporary' | 'permanent' = 'temporary', description?: string) => {
     if (!id) return;
 
     const fileNames = Array.from(fileList).map(f => f.name);
@@ -517,13 +521,15 @@ const RestaurantFindings = () => {
             file_path: fileName,
             file_size: file.size,
             file_type: file.type,
+            storage_type: storageType,
+            description: description || null,
             processed: true,
             embeddings_generated: false,
           });
 
         if (dbError) throw dbError;
 
-        toast.success(`${file.name} uploaded successfully`);
+        toast.success(storageType === 'permanent' ? `${file.name} added to Knowledge Base` : `${file.name} uploaded successfully`);
         setUploadingFiles(prev => prev.filter(name => name !== file.name));
       } catch (error) {
         console.error("Error uploading file:", error);
@@ -533,6 +539,47 @@ const RestaurantFindings = () => {
     }
 
     loadFiles();
+  };
+
+  const handleMoveToKnowledgeBase = async (fileId: string, fileName: string) => {
+    const description = prompt(`Add a description for "${fileName}" (optional):`);
+    
+    try {
+      const { error } = await supabase
+        .from("restaurant_files")
+        .update({ 
+          storage_type: 'permanent',
+          description: description || null
+        })
+        .eq("id", fileId);
+
+      if (error) throw error;
+
+      toast.success("File moved to Knowledge Base");
+      loadFiles();
+    } catch (error) {
+      console.error("Error moving file:", error);
+      toast.error("Failed to move file");
+    }
+  };
+
+  const handleUpdateFileDescription = async (fileId: string, description: string) => {
+    try {
+      const { error } = await supabase
+        .from("restaurant_files")
+        .update({ description })
+        .eq("id", fileId);
+
+      if (error) throw error;
+
+      toast.success("Description updated");
+      setEditingFileDescription(null);
+      setFileDescriptionValue("");
+      loadFiles();
+    } catch (error) {
+      console.error("Error updating description:", error);
+      toast.error("Failed to update description");
+    }
   };
 
   const handleDeleteFile = async (fileId: string) => {
@@ -634,14 +681,27 @@ const RestaurantFindings = () => {
     if (!id) return;
 
     try {
-      const { data, error } = await supabase
+      // Load temporary files for left sidebar
+      const { data: tempData, error: tempError } = await supabase
         .from("restaurant_files")
         .select("*")
         .eq("restaurant_id", id)
+        .eq("storage_type", "temporary")
         .order("uploaded_at", { ascending: false });
 
-      if (error) throw error;
-      setFiles(data || []);
+      if (tempError) throw tempError;
+      setFiles(tempData || []);
+
+      // Load permanent files for Knowledge Base
+      const { data: permData, error: permError } = await supabase
+        .from("restaurant_files")
+        .select("*")
+        .eq("restaurant_id", id)
+        .eq("storage_type", "permanent")
+        .order("uploaded_at", { ascending: false});
+
+      if (permError) throw permError;
+      setPermanentFiles(permData || []);
     } catch (error) {
       console.error("Error loading files:", error);
     }
@@ -1991,6 +2051,7 @@ const RestaurantFindings = () => {
                 onDeleteConversation={handleDeleteConversation}
                 onFileUpload={handleFileUpload}
                 onDeleteFile={handleDeleteFile}
+                onMoveToKnowledgeBase={handleMoveToKnowledgeBase}
                 onRefreshConversations={loadConversations}
                 onRefreshFiles={loadFiles}
               />
@@ -2880,6 +2941,116 @@ const RestaurantFindings = () => {
                         </div>
                       </Card>
                     ))}
+                  </div>
+                </CollapsibleContent>
+              </div>
+            </Collapsible>
+
+            {/* Knowledge Base Section */}
+            <Collapsible open={knowledgeBaseOpen} onOpenChange={setKnowledgeBaseOpen}>
+              <div className="space-y-3">
+                <CollapsibleTrigger className="flex items-center justify-between w-full group">
+                  <h3 className="text-sm font-semibold text-primary-foreground uppercase tracking-wide">Knowledge Base</h3>
+                  {knowledgeBaseOpen ? <ChevronUp className="w-4 h-4 text-primary-foreground/60 group-hover:text-primary-foreground transition-colors" /> : <ChevronDown className="w-4 h-4 text-primary-foreground/60 group-hover:text-primary-foreground transition-colors" />}
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="space-y-3">
+                    <Button
+                      onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.onchange = (e) => {
+                          const target = e.target as HTMLInputElement;
+                          if (target.files) {
+                            const description = prompt("Add a description for this file (optional):");
+                            handleFileUpload(target.files, 'permanent', description || undefined);
+                          }
+                        };
+                        input.click();
+                      }}
+                      className="w-full bg-accent hover:bg-accent/90 text-xs h-8"
+                    >
+                      Upload to Knowledge Base
+                    </Button>
+                    
+                    {permanentFiles.length === 0 ? (
+                      <Card className="bg-background/50 border-accent/20 p-4">
+                        <p className="text-xs text-primary-foreground/60">No permanent files yet. Upload files here to include them in all conversations.</p>
+                      </Card>
+                    ) : (
+                      <div className="space-y-2">
+                        {permanentFiles.map((file) => (
+                          <Card key={file.id} className="bg-background/50 border-accent/20 p-3 space-y-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium text-primary-foreground truncate">{file.file_name}</p>
+                                <p className="text-xs text-primary-foreground/50">{(file.file_size / 1024).toFixed(1)} KB • {new Date(file.uploaded_at).toLocaleDateString()}</p>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleDeleteFile(file.id)}
+                                className="text-destructive hover:text-destructive-foreground hover:bg-destructive/20 h-6 text-xs p-1"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                            
+                            {editingFileDescription === file.id ? (
+                              <div className="space-y-2">
+                                <Textarea
+                                  value={fileDescriptionValue}
+                                  onChange={(e) => setFileDescriptionValue(e.target.value)}
+                                  placeholder="Add a description..."
+                                  className="bg-background/20 border-accent/30 text-primary-foreground text-xs min-h-[60px]"
+                                  autoFocus
+                                />
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleUpdateFileDescription(file.id, fileDescriptionValue)}
+                                    className="bg-accent hover:bg-accent/90 text-xs h-6"
+                                  >
+                                    Save
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setEditingFileDescription(null);
+                                      setFileDescriptionValue("");
+                                    }}
+                                    className="text-xs h-6 bg-background/10 border-primary-foreground/20"
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="space-y-1">
+                                {file.description ? (
+                                  <p className="text-xs text-primary-foreground/70">{file.description}</p>
+                                ) : (
+                                  <p className="text-xs text-primary-foreground/40 italic">No description</p>
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    setEditingFileDescription(file.id);
+                                    setFileDescriptionValue(file.description || "");
+                                  }}
+                                  className="text-accent hover:text-accent-foreground hover:bg-accent/20 h-6 text-xs p-1"
+                                >
+                                  <Pencil className="w-3 h-3 mr-1" />
+                                  Edit Description
+                                </Button>
+                              </div>
+                            )}
+                          </Card>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </CollapsibleContent>
               </div>

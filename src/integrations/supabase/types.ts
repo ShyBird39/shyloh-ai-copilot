@@ -355,6 +355,7 @@ export type Database = {
       }
       restaurant_files: {
         Row: {
+          description: string | null
           embeddings: Json | null
           embeddings_generated: boolean | null
           file_name: string
@@ -364,9 +365,11 @@ export type Database = {
           id: string
           processed: boolean | null
           restaurant_id: string
+          storage_type: string
           uploaded_at: string | null
         }
         Insert: {
+          description?: string | null
           embeddings?: Json | null
           embeddings_generated?: boolean | null
           file_name: string
@@ -376,9 +379,11 @@ export type Database = {
           id?: string
           processed?: boolean | null
           restaurant_id: string
+          storage_type?: string
           uploaded_at?: string | null
         }
         Update: {
+          description?: string | null
           embeddings?: Json | null
           embeddings_generated?: boolean | null
           file_name?: string
@@ -388,6 +393,7 @@ export type Database = {
           id?: string
           processed?: boolean | null
           restaurant_id?: string
+          storage_type?: string
           uploaded_at?: string | null
         }
         Relationships: [
