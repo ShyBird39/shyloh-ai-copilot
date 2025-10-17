@@ -293,6 +293,7 @@ export type Database = {
           is_active: boolean | null
           name: string
           restaurant_id: string
+          sort_order: number | null
           updated_at: string
           url: string
         }
@@ -304,6 +305,7 @@ export type Database = {
           is_active?: boolean | null
           name: string
           restaurant_id: string
+          sort_order?: number | null
           updated_at?: string
           url: string
         }
@@ -315,6 +317,7 @@ export type Database = {
           is_active?: boolean | null
           name?: string
           restaurant_id?: string
+          sort_order?: number | null
           updated_at?: string
           url?: string
         }

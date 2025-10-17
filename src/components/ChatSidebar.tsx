@@ -59,6 +59,7 @@ export function ChatSidebar({
 }: ChatSidebarProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [agents, setAgents] = useState<any[]>([]);
+  const [draggedAgent, setDraggedAgent] = useState<any>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -71,13 +72,67 @@ export function ChatSidebar({
         .from("restaurant_agents")
         .select("*")
         .eq("restaurant_id", restaurantId)
-        .order("created_at", { ascending: true });
+        .order("sort_order", { ascending: true });
 
       if (error) throw error;
       setAgents(data || []);
     } catch (error) {
       console.error("Error loading agents:", error);
     }
+  };
+
+  const handleAgentDragStart = (e: React.DragEvent, agent: any) => {
+    setDraggedAgent(agent);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleAgentDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleAgentDrop = async (e: React.DragEvent, targetAgent: any) => {
+    e.preventDefault();
+    if (!draggedAgent || draggedAgent.id === targetAgent.id) return;
+
+    const draggedIndex = agents.findIndex(a => a.id === draggedAgent.id);
+    const targetIndex = agents.findIndex(a => a.id === targetAgent.id);
+
+    // Reorder locally
+    const newAgents = [...agents];
+    newAgents.splice(draggedIndex, 1);
+    newAgents.splice(targetIndex, 0, draggedAgent);
+
+    // Update sort_order for all affected agents
+    const updates = newAgents.map((agent, index) => ({
+      id: agent.id,
+      sort_order: index + 1
+    }));
+
+    setAgents(newAgents);
+
+    try {
+      for (const update of updates) {
+        await supabase
+          .from("restaurant_agents")
+          .update({ sort_order: update.sort_order })
+          .eq("id", update.id);
+      }
+      toast({
+        title: "Order updated",
+        description: "Agent order saved successfully",
+      });
+    } catch (error) {
+      console.error("Error updating agent order:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save agent order",
+        variant: "destructive",
+      });
+      loadAgents(); // Reload on error
+    }
+
+    setDraggedAgent(null);
   };
 
   const formatFileSize = (bytes: number) => {
@@ -321,40 +376,25 @@ export function ChatSidebar({
           <TabsContent value="agents" className="mt-4 px-4">
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground mb-4">
-                AI-powered agents to help with specific tasks
+                AI-powered agents to help with specific tasks. Drag to reorder.
               </p>
               
-              {/* Active agents from database */}
               {agents.map((agent) => (
                 <Button
                   key={agent.id}
-                  onClick={() => window.open(agent.url, '_blank')}
-                  className="w-full justify-start"
+                  onClick={() => agent.is_active && agent.url && window.open(agent.url, '_blank')}
+                  className={`w-full justify-start cursor-move ${!agent.is_active ? 'opacity-50' : ''}`}
                   variant="outline"
+                  disabled={!agent.is_active}
+                  draggable
+                  onDragStart={(e) => handleAgentDragStart(e, agent)}
+                  onDragOver={handleAgentDragOver}
+                  onDrop={(e) => handleAgentDrop(e, agent)}
                 >
                   <Bot className="w-4 h-4 mr-2" />
                   {agent.name}
                 </Button>
               ))}
-              
-              {/* Unavailable agents */}
-              <Button
-                className="w-full justify-start opacity-50"
-                variant="outline"
-                disabled
-              >
-                <Bot className="w-4 h-4 mr-2" />
-                Reservation Availability
-              </Button>
-              
-              <Button
-                className="w-full justify-start opacity-50"
-                variant="outline"
-                disabled
-              >
-                <Bot className="w-4 h-4 mr-2" />
-                Labor Cost Analyst
-              </Button>
             </div>
           </TabsContent>
         </Tabs>
