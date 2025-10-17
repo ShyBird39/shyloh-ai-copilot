@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MessageSquare, Upload, Trash2, FileText, Plus, Bot, LogOut, Lock, Users as UsersIcon, Globe } from "lucide-react";
+import { MessageSquare, Upload, Trash2, FileText, Plus, Bot, LogOut, Lock, Users as UsersIcon, Globe, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -60,6 +60,7 @@ export function ChatSidebar({
   const [isDragging, setIsDragging] = useState(false);
   const [agents, setAgents] = useState<any[]>([]);
   const [draggedAgent, setDraggedAgent] = useState<any>(null);
+  const [dragOverAgent, setDragOverAgent] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -86,14 +87,24 @@ export function ChatSidebar({
     e.dataTransfer.effectAllowed = 'move';
   };
 
-  const handleAgentDragOver = (e: React.DragEvent) => {
+  const handleAgentDragOver = (e: React.DragEvent, agent: any) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
+    setDragOverAgent(agent.id);
+  };
+
+  const handleAgentDragLeave = () => {
+    setDragOverAgent(null);
   };
 
   const handleAgentDrop = async (e: React.DragEvent, targetAgent: any) => {
     e.preventDefault();
-    if (!draggedAgent || draggedAgent.id === targetAgent.id) return;
+    setDragOverAgent(null);
+    
+    if (!draggedAgent || draggedAgent.id === targetAgent.id) {
+      setDraggedAgent(null);
+      return;
+    }
 
     const draggedIndex = agents.findIndex(a => a.id === draggedAgent.id);
     const targetIndex = agents.findIndex(a => a.id === targetAgent.id);
@@ -374,26 +385,39 @@ export function ChatSidebar({
           </TabsContent>
 
           <TabsContent value="agents" className="mt-4 px-4">
-            <div className="space-y-3">
+            <div className="space-y-2">
               <p className="text-sm text-muted-foreground mb-4">
                 AI-powered agents to help with specific tasks. Drag to reorder.
               </p>
               
               {agents.map((agent) => (
-                <Button
+                <div
                   key={agent.id}
-                  onClick={() => agent.is_active && agent.url && window.open(agent.url, '_blank')}
-                  className={`w-full justify-start cursor-move ${!agent.is_active ? 'opacity-50' : ''}`}
-                  variant="outline"
-                  disabled={!agent.is_active}
                   draggable
                   onDragStart={(e) => handleAgentDragStart(e, agent)}
-                  onDragOver={handleAgentDragOver}
+                  onDragOver={(e) => handleAgentDragOver(e, agent)}
+                  onDragLeave={handleAgentDragLeave}
                   onDrop={(e) => handleAgentDrop(e, agent)}
+                  className={`
+                    flex items-center gap-2 p-3 rounded-md border
+                    transition-all cursor-move
+                    ${!agent.is_active ? 'opacity-50 bg-muted/30' : 'bg-background hover:bg-accent/50'}
+                    ${dragOverAgent === agent.id ? 'border-primary border-2' : 'border-border'}
+                    ${draggedAgent?.id === agent.id ? 'opacity-30' : ''}
+                  `}
+                  onClick={() => agent.is_active && agent.url && window.open(agent.url, '_blank')}
                 >
-                  <Bot className="w-4 h-4 mr-2" />
-                  {agent.name}
-                </Button>
+                  <GripVertical className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <Bot className="w-4 h-4 flex-shrink-0" />
+                  <span className={`text-sm flex-1 ${agent.is_active ? '' : 'text-muted-foreground'}`}>
+                    {agent.name}
+                  </span>
+                  {!agent.is_active && (
+                    <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+                      Coming soon
+                    </span>
+                  )}
+                </div>
               ))}
             </div>
           </TabsContent>
