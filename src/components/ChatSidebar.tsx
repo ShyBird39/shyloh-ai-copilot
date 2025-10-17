@@ -296,7 +296,7 @@ export function ChatSidebar({
                               variant="outline"
                               size="sm"
                               onClick={() => onMoveToKnowledgeBase(file.id, file.file_name)}
-                              className="flex-1"
+                              className="flex-1 text-primary-foreground hover:text-primary-foreground"
                             >
                               Move to KB
                             </Button>
