@@ -101,8 +101,6 @@ const RestaurantFindings = () => {
   const [editingKPI, setEditingKPI] = useState<string | null>(null);
   const [kpiEditValue, setKpiEditValue] = useState("");
   const [permanentFiles, setPermanentFiles] = useState<any[]>([]);
-  const [editingFileDescription, setEditingFileDescription] = useState<string | null>(null);
-  const [fileDescriptionValue, setFileDescriptionValue] = useState("");
   const [editingFileTags, setEditingFileTags] = useState<string | null>(null);
   const [fileTagsValue, setFileTagsValue] = useState<string[]>([]);
   const [customTags, setCustomTags] = useState<string[]>([]);
@@ -565,25 +563,6 @@ const RestaurantFindings = () => {
     } catch (error) {
       console.error("Error moving file:", error);
       toast.error("Failed to move file");
-    }
-  };
-
-  const handleUpdateFileDescription = async (fileId: string, description: string) => {
-    try {
-      const { error } = await supabase
-        .from("restaurant_files")
-        .update({ description })
-        .eq("id", fileId);
-
-      if (error) throw error;
-
-      toast.success("Description updated");
-      setEditingFileDescription(null);
-      setFileDescriptionValue("");
-      loadFiles();
-    } catch (error) {
-      console.error("Error updating description:", error);
-      toast.error("Failed to update description");
     }
   };
 
@@ -3059,30 +3038,29 @@ const RestaurantFindings = () => {
                               </Button>
                             </div>
                             
-                            {editingFileDescription === file.id ? (
+                            {/* Tags Section */}
+                            {editingFileTags === file.id ? (
                               <div className="space-y-2">
-                                <Textarea
-                                  value={fileDescriptionValue}
-                                  onChange={(e) => setFileDescriptionValue(e.target.value)}
-                                  placeholder="Add a description..."
-                                  className="bg-background/20 border-accent/30 text-primary-foreground text-xs min-h-[60px]"
-                                  autoFocus
+                                <TagSelector
+                                  selectedTags={fileTagsValue}
+                                  onTagsChange={setFileTagsValue}
+                                  customTags={customTags}
+                                  onAddCustomTag={handleAddCustomTag}
+                                  newTagInput={newTagInput}
+                                  setNewTagInput={setNewTagInput}
                                 />
                                 <div className="flex gap-2">
                                   <Button
                                     size="sm"
-                                    onClick={() => handleUpdateFileDescription(file.id, fileDescriptionValue)}
+                                    onClick={() => handleUpdateFileTags(file.id, fileTagsValue)}
                                     className="bg-accent hover:bg-accent/90 text-xs h-6"
                                   >
-                                    Save
+                                    Save Tags
                                   </Button>
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    onClick={() => {
-                                      setEditingFileDescription(null);
-                                      setFileDescriptionValue("");
-                                    }}
+                                    onClick={() => setEditingFileTags(null)}
                                     className="text-xs h-6 bg-background/10 border-primary-foreground/20"
                                   >
                                     Cancel
@@ -3090,84 +3068,30 @@ const RestaurantFindings = () => {
                                 </div>
                               </div>
                             ) : (
-                              <div className="space-y-2">
-                                {/* Description Section */}
-                                <div className="space-y-1">
-                                  {file.description ? (
-                                    <p className="text-xs text-primary-foreground/70">{file.description}</p>
+                              <div>
+                                <div className="flex flex-wrap gap-1 mb-2">
+                                  {file.tags && file.tags.length > 0 ? (
+                                    file.tags.map((tag: string) => (
+                                      <span key={tag} className="text-xs px-2 py-0.5 bg-accent/20 text-accent rounded-full">
+                                        {tag}
+                                      </span>
+                                    ))
                                   ) : (
-                                    <p className="text-xs text-primary-foreground/40 italic">No description</p>
+                                    <span className="text-xs text-primary-foreground/40 italic">No tags</span>
                                   )}
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => {
-                                      setEditingFileDescription(file.id);
-                                      setFileDescriptionValue(file.description || "");
-                                    }}
-                                    className="text-accent hover:text-accent-foreground hover:bg-accent/20 h-6 text-xs p-1"
-                                  >
-                                    <Pencil className="w-3 h-3 mr-1" />
-                                    Edit Description
-                                  </Button>
                                 </div>
-
-                                {/* Tags Section */}
-                                {editingFileTags === file.id ? (
-                                  <div className="space-y-2 pt-2 border-t border-primary-foreground/10">
-                                    <TagSelector
-                                      selectedTags={fileTagsValue}
-                                      onTagsChange={setFileTagsValue}
-                                      customTags={customTags}
-                                      onAddCustomTag={handleAddCustomTag}
-                                      newTagInput={newTagInput}
-                                      setNewTagInput={setNewTagInput}
-                                    />
-                                    <div className="flex gap-2">
-                                      <Button
-                                        size="sm"
-                                        onClick={() => handleUpdateFileTags(file.id, fileTagsValue)}
-                                        className="bg-accent hover:bg-accent/90 text-xs h-6"
-                                      >
-                                        Save Tags
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => setEditingFileTags(null)}
-                                        className="text-xs h-6 bg-background/10 border-primary-foreground/20"
-                                      >
-                                        Cancel
-                                      </Button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="pt-2 border-t border-primary-foreground/10">
-                                    <div className="flex flex-wrap gap-1 mb-2">
-                                      {file.tags && file.tags.length > 0 ? (
-                                        file.tags.map((tag: string) => (
-                                          <span key={tag} className="text-xs px-2 py-0.5 bg-accent/20 text-accent rounded-full">
-                                            {tag}
-                                          </span>
-                                        ))
-                                      ) : (
-                                        <span className="text-xs text-primary-foreground/40 italic">No tags</span>
-                                      )}
-                                    </div>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => {
-                                        setEditingFileTags(file.id);
-                                        setFileTagsValue(file.tags || []);
-                                      }}
-                                      className="text-accent hover:text-accent-foreground hover:bg-accent/20 h-6 text-xs p-1"
-                                    >
-                                      <Tag className="w-3 h-3 mr-1" />
-                                      Edit Tags
-                                    </Button>
-                                  </div>
-                                )}
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    setEditingFileTags(file.id);
+                                    setFileTagsValue(file.tags || []);
+                                  }}
+                                  className="text-accent hover:text-accent-foreground hover:bg-accent/20 h-6 text-xs p-1"
+                                >
+                                  <Tag className="w-3 h-3 mr-1" />
+                                  Edit Tags
+                                </Button>
                               </div>
                             )}
                           </Card>
