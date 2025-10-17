@@ -13,7 +13,8 @@ const PREDEFINED_TAGS = [
   "Beverage",
   "Management",
   "Leadership",
-  "Financial"
+  "Financial",
+  "WWAHD"
 ];
 
 interface TagSelectorProps {
