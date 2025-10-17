@@ -401,7 +401,7 @@ export function ChatSidebar({
                   className={`
                     flex items-center gap-2 p-3 rounded-md border
                     transition-all cursor-move
-                    ${!agent.is_active ? 'opacity-50 bg-muted/30' : 'bg-background hover:bg-accent/50'}
+                    ${!agent.is_active ? 'opacity-50 bg-card' : 'bg-card hover:bg-accent/50'}
                     ${dragOverAgent === agent.id ? 'border-primary border-2' : 'border-border'}
                     ${draggedAgent?.id === agent.id ? 'opacity-30' : ''}
                   `}
@@ -409,14 +409,9 @@ export function ChatSidebar({
                 >
                   <GripVertical className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                   <Bot className="w-4 h-4 flex-shrink-0" />
-                  <span className={`text-sm flex-1 ${agent.is_active ? '' : 'text-muted-foreground'}`}>
+                  <span className="text-sm flex-1">
                     {agent.name}
                   </span>
-                  {!agent.is_active && (
-                    <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-                      Coming soon
-                    </span>
-                  )}
                 </div>
               ))}
             </div>
