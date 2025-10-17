@@ -778,11 +778,6 @@ const RestaurantFindings = () => {
   };
 
   const handlePromptClick = async (promptText: string) => {
-    if (promptText === "I am here to...") {
-      setShowObjectives(true);
-      return;
-    }
-    
     // Handle WWAHD prompt with specific two-part response
     if (promptText === "WWAHD?") {
       if (!hasCompletedKPIs) return;
