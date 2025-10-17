@@ -399,17 +399,19 @@ export function ChatSidebar({
                   onDragLeave={handleAgentDragLeave}
                   onDrop={(e) => handleAgentDrop(e, agent)}
                   className={`
-                    flex items-center gap-2 p-3 rounded-md border
+                    flex items-center gap-3 p-3 rounded-lg
                     transition-all cursor-move
-                    ${!agent.is_active ? 'opacity-50 bg-card' : 'bg-card hover:bg-accent/50'}
-                    ${dragOverAgent === agent.id ? 'border-primary border-2' : 'border-border'}
-                    ${draggedAgent?.id === agent.id ? 'opacity-30' : ''}
+                    ${!agent.is_active 
+                      ? 'bg-primary/60 text-primary-foreground/70 border border-primary/40' 
+                      : 'bg-primary text-primary-foreground border border-primary hover:bg-primary/90'}
+                    ${dragOverAgent === agent.id ? 'ring-2 ring-primary-foreground/50' : ''}
+                    ${draggedAgent?.id === agent.id ? 'opacity-40' : ''}
                   `}
                   onClick={() => agent.is_active && agent.url && window.open(agent.url, '_blank')}
                 >
-                  <GripVertical className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <GripVertical className="w-4 h-4 flex-shrink-0 opacity-70" />
                   <Bot className="w-4 h-4 flex-shrink-0" />
-                  <span className="text-sm flex-1">
+                  <span className="text-sm flex-1 font-medium">
                     {agent.name}
                   </span>
                 </div>
