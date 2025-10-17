@@ -338,14 +338,23 @@ export function ChatSidebar({
                 </Button>
               ))}
               
-              {/* Coming Soon placeholder agents */}
+              {/* Unavailable agents */}
               <Button
-                className="w-full justify-start"
+                className="w-full justify-start opacity-50"
                 variant="outline"
                 disabled
               >
                 <Bot className="w-4 h-4 mr-2" />
-                Reservation Availability (Coming Soon)
+                Reservation Availability
+              </Button>
+              
+              <Button
+                className="w-full justify-start opacity-50"
+                variant="outline"
+                disabled
+              >
+                <Bot className="w-4 h-4 mr-2" />
+                Labor Cost Analyst
               </Button>
             </div>
           </TabsContent>
