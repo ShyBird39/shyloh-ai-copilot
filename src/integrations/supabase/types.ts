@@ -353,6 +353,30 @@ export type Database = {
         }
         Relationships: []
       }
+      restaurant_custom_tags: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          restaurant_id: string
+          tag_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          restaurant_id: string
+          tag_name: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          restaurant_id?: string
+          tag_name?: string
+        }
+        Relationships: []
+      }
       restaurant_files: {
         Row: {
           description: string | null
@@ -366,6 +390,7 @@ export type Database = {
           processed: boolean | null
           restaurant_id: string
           storage_type: string
+          tags: string[] | null
           uploaded_at: string | null
         }
         Insert: {
@@ -380,6 +405,7 @@ export type Database = {
           processed?: boolean | null
           restaurant_id: string
           storage_type?: string
+          tags?: string[] | null
           uploaded_at?: string | null
         }
         Update: {
@@ -394,6 +420,7 @@ export type Database = {
           processed?: boolean | null
           restaurant_id?: string
           storage_type?: string
+          tags?: string[] | null
           uploaded_at?: string | null
         }
         Relationships: [
