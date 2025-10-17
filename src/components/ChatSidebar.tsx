@@ -71,7 +71,6 @@ export function ChatSidebar({
         .from("restaurant_agents")
         .select("*")
         .eq("restaurant_id", restaurantId)
-        .eq("is_active", true)
         .order("created_at", { ascending: true });
 
       if (error) throw error;
