@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, ChevronDown, ChevronUp, RotateCcw, Paperclip, UtensilsCrossed, Sparkles, Users, Clock, Settings, Heart, UserCog, Trash2 } from "lucide-react";
+import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, ChevronDown, ChevronUp, RotateCcw, Paperclip, UtensilsCrossed, Sparkles, Users, Clock, Settings, Heart, UserCog, Trash2, Brain } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -146,6 +146,8 @@ const RestaurantFindings = () => {
     prompt_text: "",
     category: "",
   });
+  const [advancedSettingsOpen, setAdvancedSettingsOpen] = useState(false);
+  const [tuningOpen, setTuningOpen] = useState(false);
   
   // Chat state
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
@@ -3307,6 +3309,37 @@ const RestaurantFindings = () => {
                           </div>
                         </CollapsibleContent>
                       </div>
+                    </Collapsible>
+                  </div>
+                </CollapsibleContent>
+              </div>
+            </Collapsible>
+
+            {/* Advanced Settings Section */}
+            <Collapsible open={advancedSettingsOpen} onOpenChange={setAdvancedSettingsOpen}>
+              <div className="space-y-3">
+                <CollapsibleTrigger className="flex items-center justify-between w-full group">
+                  <div className="flex items-center gap-2">
+                    <Brain className="w-4 h-4 text-primary-foreground/60" />
+                    <h3 className="text-sm font-semibold text-primary-foreground uppercase tracking-wide">Advanced Settings</h3>
+                  </div>
+                  {advancedSettingsOpen ? <ChevronUp className="w-4 h-4 text-primary-foreground/60 group-hover:text-primary-foreground transition-colors" /> : <ChevronDown className="w-4 h-4 text-primary-foreground/60 group-hover:text-primary-foreground transition-colors" />}
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="space-y-2">
+                    {/* Tuning Sub-section */}
+                    <Collapsible open={tuningOpen} onOpenChange={setTuningOpen}>
+                      <Card className="bg-background/50 border-accent/20 p-3">
+                        <CollapsibleTrigger className="flex items-center justify-between w-full group">
+                          <h4 className="text-sm font-medium text-primary-foreground">Tuning</h4>
+                          {tuningOpen ? <ChevronUp className="w-3 h-3 text-primary-foreground/60 group-hover:text-primary-foreground transition-colors" /> : <ChevronDown className="w-3 h-3 text-primary-foreground/60 group-hover:text-primary-foreground transition-colors" />}
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="mt-3">
+                          <p className="text-xs text-primary-foreground/60">
+                            Tuning options will be available soon.
+                          </p>
+                        </CollapsibleContent>
+                      </Card>
                     </Collapsible>
                   </div>
                 </CollapsibleContent>
