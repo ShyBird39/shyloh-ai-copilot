@@ -778,6 +778,25 @@ const RestaurantFindings = () => {
   };
 
   const handlePromptClick = async (promptText: string) => {
+    // Handle "I am here to..." prompt with thinking delay
+    if (promptText === "I am here to...") {
+      const userMessage: ChatMessage = { role: "user", content: promptText };
+      setMessages((prev) => [...prev, userMessage]);
+      setShowObjectives(false);
+      setIsTyping(true);
+
+      // Show thinking animation for 2500ms
+      setTimeout(() => {
+        setMessages((prev) => [...prev, {
+          role: "assistant",
+          content: "Don't overthink this...just tell me what you want. I am not a magician, I might not be able to do it but I can promise I'll try to be helpful and I won't waste your time!"
+        }]);
+        setIsTyping(false);
+      }, 2500);
+      
+      return;
+    }
+
     // Handle WWAHD prompt with specific two-part response
     if (promptText === "WWAHD?") {
       if (!hasCompletedKPIs) return;
