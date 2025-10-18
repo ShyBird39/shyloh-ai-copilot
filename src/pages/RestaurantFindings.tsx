@@ -226,7 +226,7 @@ const RestaurantFindings = () => {
 
   const samplePrompts = [
     "I am here to...",
-    "Coach",
+    "Coaching Session",
     "Tips for using Shyloh"
   ];
 
