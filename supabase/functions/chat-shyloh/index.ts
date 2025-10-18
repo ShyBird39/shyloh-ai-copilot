@@ -41,6 +41,29 @@ async function updateConversationState(
   if (/where|find|how do i|get|download|export/i.test(lastUserMessage) && /invoice|payroll|report|sales|pos/i.test(lastUserMessage)) {
     topic = 'data_retrieval_help';
   }
+
+  // Detect active scenario types
+  let activeScenario = null;
+  if (/down a|short a|missing|called out|lost|broken/i.test(lastUserMessage) && 
+      /server|cook|manager|staff|team|line cook|bartender|host/i.test(lastUserMessage)) {
+    activeScenario = 'staffing_shortage';
+  }
+  if (/busy|slammed|crushed|expecting.*covers|big party/i.test(lastUserMessage) && 
+      /(today|tonight|service|shift|brunch|dinner)/i.test(lastUserMessage)) {
+    activeScenario = 'busy_service';
+  }
+  if (/power|walk-in|equipment|oven|POS|system.*down/i.test(lastUserMessage)) {
+    activeScenario = 'equipment_issue';
+  }
+
+  // Clear active scenario if resolved
+  if (currentState?.conversation_state?.active_scenario) {
+    if (/thanks|perfect|sounds good|got it|we're set|handled it|went well|crushed it/i.test(lastUserMessage)) {
+      activeScenario = null;
+      conversationStateData.scenario_resolved = true;
+      conversationStateData.scenario_ended_at = new Date().toISOString();
+    }
+  }
   
   // Check if assistant asked a question
   const askedQuestion = /\?$/.test(lastAssistantMessage.trim());
@@ -67,6 +90,10 @@ async function updateConversationState(
       data_request_count: requestedUpload ? dataRequestCount + 1 : dataRequestCount,
       awaiting_upload: requestedUpload && !userUploadedFile,
       has_uploaded_data: userUploadedFile || conversationStateData.has_uploaded_data,
+      active_scenario: activeScenario,
+      scenario_started_at: activeScenario && !currentState?.conversation_state?.active_scenario 
+        ? new Date().toISOString() 
+        : currentState?.conversation_state?.scenario_started_at,
     }
   };
   
@@ -618,6 +645,63 @@ Remember: This is coaching, not consulting. Ask "What do you think is driving th
 `;
     }
 
+    // Add active scenario context if detected
+    let activeScenarioContext = '';
+    if (conversationState?.conversation_state?.active_scenario) {
+      const scenarioType = conversationState.conversation_state.active_scenario;
+      activeScenarioContext = `
+
+**ACTIVE SCENARIO MODE: ${scenarioType.toUpperCase().replace('_', ' ')}**
+
+The user is dealing with a real-time operational challenge. Switch to ACTION MODE:
+
+**COMMUNICATION PROTOCOL (Non-negotiable):**
+
+1. **ASK FOR THEIR INSTINCT FIRST**
+   - "What's your gut on how to handle this?"
+   - "What are you thinking?"
+   - "What's your first move here?"
+   
+   DO NOT start problem-solving until they share their approach. Build confidence in their operational judgment.
+
+2. **CONCISE FEEDBACK (2 SENTENCES MAXIMUM)**
+   - If their instinct is solid: Validate + one micro-refinement if needed
+     * "That's the right call. [One specific enhancement]."
+   - If their instinct needs course-correction: Acknowledge + redirect quickly
+     * "I hear you. What if you [alternative] instead?"
+   - **STRICT LIMIT: 2 sentences total for your feedback**
+   - NO detailed analysis, NO multi-step breakdowns, NO verbose coaching
+   - Action-focused: What to do, not why to do it
+
+3. **CLOSE WITH RALLY + MOTIVATOR (Always, every time)**
+   Format: 
+   - Rally the team reminder (1 short sentence): "Quick huddle with the crew to get everyone aligned."
+   - Brief positive motivator: "You got this!" / "Go crush it!" / "You're set!"
+   
+   Examples:
+   * "Rally the team before doors and you're set. You got this!"
+   * "Get the crew aligned and go crush it!"
+   * "Quick pre-shift huddle and you're golden. Let's go!"
+
+**TONE RULES:**
+- Operator-to-operator, peer support
+- Assume competence—they know their operation
+- Instill confidence, not doubt
+- No hand-holding or over-explaining
+- Energy: supportive but not saccharine
+
+**WHAT NOT TO DO:**
+- ❌ Jump straight to solutions without asking their instinct
+- ❌ More than 2 sentences of feedback
+- ❌ Verbose analysis or multiple paragraphs
+- ❌ Over-coaching ("Here's a 5-step plan...")
+- ❌ Forget the rally + motivator close
+- ❌ Sound like a corporate training manual
+
+**REMEMBER:** They're in the weeds. Be brief, build confidence, get them back to action.
+`;
+    }
+
     // Add conversation state context to system prompt
     const stateContext = conversationState ? `
 
@@ -726,6 +810,24 @@ Ask first: "What do you think is driving it?" → Then probe: "How does that com
 **When they want to update KPIs:**
 "Got it—hit the 'Vitals' button and we'll run through the numbers together."
 
+**When dealing with active operational scenarios (staffing, busy shift, equipment failure):**
+ALWAYS follow this sequence:
+1. Ask for their instinct: "What's your gut on how to handle this?"
+2. Give concise feedback: **2 sentences maximum** validating or gently redirecting
+3. Close with: "[Rally reminder]. [Brief motivator]!"
+
+Example flows:
+
+User: "Down a server for brunch today, expecting 200 covers."
+You: "Oof. What's your gut on how to handle it?"
+User: "Thinking bartender floats some tables, manager covers host?"
+You: "Solid—bartender on bar-side deuces works. Manager's better on floor coordinating sections than stuck at host stand. Rally the crew before doors and you're set. You got this!"
+
+User: "Lost power to the walk-in, not sure how long."
+You: "First move—what's your instinct?"
+User: "Pull proteins first, move to reach-ins, 86 anything we can't temp-hold safely?"
+You: "Exactly right—proteins first, then dairy. 86 anything questionable, food safety over sales. Rally FOH on what's off and you got this!"
+
 DATA COLLECTION APPROACH
 When users lack visibility into their numbers or can't answer cost/sales questions:
 - **Suggest uploads casually**: "If you've got [specific document], toss it up using the paperclip—we can dig in together."
@@ -791,7 +893,7 @@ When uploaded documents are available in the context above:
 - Reference specific documents by name when using their information
 - Synthesize insights across multiple documents when relevant
 - Quote or paraphrase key sections to ground your advice in their specific context
-- If a question can be answered more accurately with document context, prioritize that over general knowledge${customKnowledgeContext}${docsContext}${feedbackInsights}${notionContext}${onboardingEnhancement}${coachingContext}${stateContext}`;
+- If a question can be answered more accurately with document context, prioritize that over general knowledge${customKnowledgeContext}${docsContext}${feedbackInsights}${notionContext}${onboardingEnhancement}${coachingContext}${activeScenarioContext}${stateContext}`;
 
     // Log total context size for monitoring
     const totalContextChars = docsContext.length + systemPrompt.length;
