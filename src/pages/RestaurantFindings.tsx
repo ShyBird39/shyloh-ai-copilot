@@ -206,6 +206,10 @@ const RestaurantFindings = () => {
     conversation_state: {},
   });
 
+  // Coaching session state
+  const [showCoachingOptions, setShowCoachingOptions] = useState(false);
+  const [selectedCoachingAreas, setSelectedCoachingAreas] = useState<string[]>([]);
+
 
   // Onboarding state
   const [isOnboarding, setIsOnboarding] = useState(false);
@@ -799,6 +803,53 @@ const RestaurantFindings = () => {
       return;
     }
 
+    // Handle Coaching Session prompt with framework and interactive options
+    if (promptText === "Coaching Session") {
+      const userMessage: ChatMessage = { role: "user", content: promptText };
+      setMessages((prev) => [...prev, userMessage]);
+      setShowObjectives(false);
+      setSelectedCoachingAreas([]);
+      setIsTyping(true);
+
+      // Mark conversation as coaching session
+      if (currentConversationId) {
+        await supabase
+          .from('chat_conversations')
+          .update({ 
+            current_topic: 'coaching_session',
+            intent_classification: 'seek_coaching',
+            conversation_state: {
+              coaching_mode: true,
+              coaching_areas: []
+            }
+          })
+          .eq('id', currentConversationId);
+
+        setConversationState(prev => ({ 
+          ...prev, 
+          current_topic: 'coaching_session',
+          intent_classification: 'seek_coaching',
+          conversation_state: {
+            ...prev.conversation_state,
+            coaching_mode: true,
+            coaching_areas: []
+          }
+        }));
+      }
+
+      // Show coaching framework message
+      setTimeout(() => {
+        setMessages((prev) => [...prev, {
+          role: "assistant",
+          content: "Hey! So when we're looking at using tech in the restaurant, I've found it usually comes down to one of four things: growing sales, cutting costs, making it a better place for guests to eat, or making it a better place for the team to work. If what you're working on doesn't fit into one of these buckets, you might honestly be better off just jumping into service and helping the team directly. But if it does fit - which of these areas are you focused on? Pick up to two."
+        }]);
+        setIsTyping(false);
+        setShowCoachingOptions(true);
+      }, 1200);
+      
+      return;
+    }
+
     // Handle WWAHD prompt with specific two-part response
     if (promptText === "WWAHD?") {
       if (!hasCompletedKPIs) return;
@@ -857,6 +908,57 @@ const RestaurantFindings = () => {
         handleSendMessage(promptText);
       }
     }, 100);
+  };
+
+  const handleCoachingAreaToggle = (area: string) => {
+    setSelectedCoachingAreas(prev => {
+      if (prev.includes(area)) {
+        return prev.filter(a => a !== area);
+      } else if (prev.length < 2) {
+        return [...prev, area];
+      }
+      return prev;
+    });
+  };
+
+  const handleCoachingAreasSubmit = async () => {
+    if (selectedCoachingAreas.length === 0) return;
+
+    setShowCoachingOptions(false);
+    
+    // Add user message with selected areas
+    const areasText = selectedCoachingAreas.join(" and ");
+    const userMessage: ChatMessage = { 
+      role: "user", 
+      content: `I'm focused on: ${areasText}` 
+    };
+    setMessages((prev) => [...prev, userMessage]);
+
+    // Update conversation state with coaching areas
+    if (currentConversationId) {
+      await supabase
+        .from('chat_conversations')
+        .update({ 
+          conversation_state: {
+            coaching_mode: true,
+            coaching_areas: selectedCoachingAreas
+          }
+        })
+        .eq('id', currentConversationId);
+
+      setConversationState(prev => ({ 
+        ...prev, 
+        conversation_state: {
+          ...prev.conversation_state,
+          coaching_mode: true,
+          coaching_areas: selectedCoachingAreas
+        }
+      }));
+    }
+
+    // Continue conversation with AI
+    setIsTyping(true);
+    await handleSendMessage(`I'm focused on: ${areasText}`);
   };
 
 
@@ -2309,6 +2411,43 @@ const RestaurantFindings = () => {
                             </button>
                           ))}
                         </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Coaching Session Area Selection */}
+                  {showCoachingOptions && (
+                    <div className="flex justify-start animate-fade-in">
+                      <div className="bg-background/50 backdrop-blur-sm border border-accent/20 rounded-2xl p-4 max-w-md">
+                        <p className="text-sm text-primary-foreground/80 mb-3">Select up to 2 areas:</p>
+                        <div className="space-y-2">
+                          {[
+                            { id: "grow_sales", label: "Grow my sales" },
+                            { id: "lower_costs", label: "Lower my costs" },
+                            { id: "better_dining", label: "Make this a better place to eat" },
+                            { id: "better_workplace", label: "Make this a better place to work" }
+                          ].map((area) => (
+                            <button
+                              key={area.id}
+                              onClick={() => handleCoachingAreaToggle(area.id)}
+                              className={`w-full px-4 py-3 rounded-lg text-sm transition-all text-left ${
+                                selectedCoachingAreas.includes(area.id)
+                                  ? "bg-accent text-accent-foreground"
+                                  : "bg-accent/10 hover:bg-accent/20 text-primary-foreground"
+                              }`}
+                            >
+                              {area.label}
+                            </button>
+                          ))}
+                        </div>
+                        {selectedCoachingAreas.length > 0 && (
+                          <button
+                            onClick={handleCoachingAreasSubmit}
+                            className="w-full mt-3 px-4 py-2 bg-accent hover:bg-accent/90 text-accent-foreground rounded-lg text-sm font-medium transition-all"
+                          >
+                            Continue with {selectedCoachingAreas.length} area{selectedCoachingAreas.length > 1 ? 's' : ''}
+                          </button>
+                        )}
                       </div>
                     </div>
                   )}

@@ -589,6 +589,35 @@ Remember: You're earning their trust. Be helpful, appropriately confident, and g
 `;
     }
 
+    // Add coaching session context if active
+    let coachingContext = '';
+    if (conversationState?.conversation_state?.coaching_mode && conversationState?.conversation_state?.coaching_areas) {
+      const areas = conversationState.conversation_state.coaching_areas as string[];
+      const areaLabels = areas.map(a => {
+        if (a === 'grow_sales') return 'Growing Sales';
+        if (a === 'lower_costs') return 'Lowering Costs';
+        if (a === 'better_dining') return 'Better Guest Experience';
+        if (a === 'better_workplace') return 'Better Team Experience';
+        return a;
+      }).join(' and ');
+
+      coachingContext = `
+
+**COACHING SESSION ACTIVE**
+Focus Areas: ${areaLabels}
+
+You're in a strategic coaching session. The user has identified their priority area(s) for using technology in their restaurant. Your goal is to:
+1. Ask probing questions to understand their specific challenges and goals within these areas
+2. Help them think through strategies and approaches rather than just providing answers
+3. Guide them toward their own insights through Socratic questioning
+4. Be a thought partner who helps them develop their critical thinking
+5. When appropriate, share tactical insights based on their REGGI profile and KPIs
+6. Keep the conversation focused on the selected area(s) but be flexible if related topics emerge naturally
+
+Remember: This is coaching, not consulting. Ask "What do you think is driving that?" before diagnosing. Help them discover solutions rather than prescribing them.
+`;
+    }
+
     // Add conversation state context to system prompt
     const stateContext = conversationState ? `
 
@@ -762,7 +791,7 @@ When uploaded documents are available in the context above:
 - Reference specific documents by name when using their information
 - Synthesize insights across multiple documents when relevant
 - Quote or paraphrase key sections to ground your advice in their specific context
-- If a question can be answered more accurately with document context, prioritize that over general knowledge${customKnowledgeContext}${docsContext}${feedbackInsights}${notionContext}${onboardingEnhancement}${stateContext}`;
+- If a question can be answered more accurately with document context, prioritize that over general knowledge${customKnowledgeContext}${docsContext}${feedbackInsights}${notionContext}${onboardingEnhancement}${coachingContext}${stateContext}`;
 
     // Log total context size for monitoring
     const totalContextChars = docsContext.length + systemPrompt.length;
