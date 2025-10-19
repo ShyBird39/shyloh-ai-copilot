@@ -128,7 +128,14 @@ export function TeamManagement({ restaurantId }: TeamManagementProps) {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Edge function error:", error);
+        throw new Error(error.message || "Failed to send invitation");
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       toast({
         title: "Invitation sent!",
