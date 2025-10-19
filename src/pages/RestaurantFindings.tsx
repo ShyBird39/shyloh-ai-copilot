@@ -18,6 +18,7 @@ import { ConversationSettings } from "@/components/ConversationSettings";
 import { MentionInput } from "@/components/MentionInput";
 import { NotificationBell } from "@/components/NotificationBell";
 import { TuningSheet } from "@/components/TuningSheet";
+import { PinInput } from "@/components/PinInput";
 import { useAuth } from "@/hooks/useAuth";
 
 interface KPIData {
@@ -150,6 +151,9 @@ const RestaurantFindings = () => {
   const [advancedSettingsOpen, setAdvancedSettingsOpen] = useState(false);
   const [tuningOpen, setTuningOpen] = useState(false);
   const [tuningSheetOpen, setTuningSheetOpen] = useState(false);
+  const [pinDialogOpen, setPinDialogOpen] = useState(false);
+  const [pinMode, setPinMode] = useState<"set" | "verify">("verify");
+  const [pinLoading, setPinLoading] = useState(false);
   
   // Chat state
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
@@ -2151,6 +2155,42 @@ const RestaurantFindings = () => {
     setPromptForm({ title: "", prompt_text: "", category: "" });
   };
 
+  const handlePinSubmit = async (pin: string) => {
+    if (!id) return;
+
+    setPinLoading(true);
+    try {
+      if (pinMode === "set") {
+        // Set new PIN
+        const { error } = await supabase
+          .from("restaurants")
+          .update({ tuning_pin: pin })
+          .eq("id", id);
+
+        if (error) throw error;
+
+        setData(prev => prev ? { ...prev, tuning_pin: pin } : null);
+        toast.success("PIN set successfully!");
+        setPinDialogOpen(false);
+        setTuningSheetOpen(true);
+      } else {
+        // Verify PIN
+        if (data?.tuning_pin === pin) {
+          toast.success("PIN verified!");
+          setPinDialogOpen(false);
+          setTuningSheetOpen(true);
+        } else {
+          toast.error("Incorrect PIN");
+        }
+      }
+    } catch (error) {
+      console.error("Error with PIN:", error);
+      toast.error("Failed to process PIN");
+    } finally {
+      setPinLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-hero flex items-center justify-center">
@@ -3477,7 +3517,15 @@ const RestaurantFindings = () => {
                         </CollapsibleTrigger>
                         <CollapsibleContent className="mt-3">
                           <Button
-                            onClick={() => setTuningSheetOpen(true)}
+                            onClick={() => {
+                              // Check if PIN exists
+                              if (data?.tuning_pin) {
+                                setPinMode("verify");
+                              } else {
+                                setPinMode("set");
+                              }
+                              setPinDialogOpen(true);
+                            }}
                             variant="outline"
                             size="sm"
                             className="w-full text-xs border-accent/40 hover:bg-accent/10 hover:border-accent text-primary-foreground"
@@ -3507,6 +3555,14 @@ const RestaurantFindings = () => {
           </>
         )}
       </ResizablePanelGroup>
+      
+      <PinInput
+        open={pinDialogOpen}
+        onOpenChange={setPinDialogOpen}
+        onPinSubmit={handlePinSubmit}
+        mode={pinMode}
+        isLoading={pinLoading}
+      />
       
       <TuningSheet 
         open={tuningSheetOpen} 
