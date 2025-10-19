@@ -173,18 +173,18 @@ const TuningSettings = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary via-primary-glow to-accent p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="max-w-[900px] mx-auto">
         <Button
           variant="ghost"
           onClick={() => navigate(`/restaurant/${id}`)}
-          className="mb-6 text-foreground hover:bg-foreground/10"
+          className="mb-6 text-foreground hover:bg-accent/10"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Dashboard
         </Button>
 
-        <Card className="bg-card border-secondary p-12 rounded-2xl shadow-glow">
+        <Card className="bg-card border-border p-12 rounded-2xl shadow-card">
           {/* Header */}
           <div className="mb-12 text-center">
             <h1 className="text-[42px] font-bold text-primary mb-3">
@@ -219,7 +219,7 @@ const TuningSettings = () => {
                     <span className="text-sm text-card-foreground/80">
                       {getLabel(slider, values[slider.id])}
                     </span>
-                    <span className="text-2xl font-bold text-accent min-w-[60px] text-right">
+                    <span className="text-2xl font-bold text-primary min-w-[60px] text-right">
                       {values[slider.id]}
                     </span>
                   </div>
@@ -251,7 +251,7 @@ const TuningSettings = () => {
                     onTouchEnd={() => setActiveSlider(null)}
                     className="w-full h-2 rounded-full appearance-none cursor-pointer transition-all duration-300"
                     style={{
-                      background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--accent)) ${values[slider.id]}%, hsl(var(--muted)) ${values[slider.id]}%, hsl(var(--muted)) 100%)`,
+                      background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${values[slider.id]}%, hsl(var(--muted)) ${values[slider.id]}%, hsl(var(--muted)) 100%)`,
                     }}
                   />
                   <style>{`
@@ -260,8 +260,8 @@ const TuningSettings = () => {
                       width: 32px;
                       height: 32px;
                       border-radius: 50%;
-                      background: hsl(var(--accent));
-                      border: 3px solid white;
+                      background: hsl(var(--primary));
+                      border: 3px solid hsl(var(--background));
                       cursor: pointer;
                       transition: transform 0.2s ease;
                       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
@@ -271,14 +271,14 @@ const TuningSettings = () => {
                     }
                     input[type="range"]::-webkit-slider-thumb:active {
                       transform: scale(1.2);
-                      box-shadow: 0 0 0 8px hsla(var(--accent-glow) / 0.2);
+                      box-shadow: 0 0 0 8px hsla(var(--primary-glow) / 0.2);
                     }
                     input[type="range"]::-moz-range-thumb {
                       width: 32px;
                       height: 32px;
                       border-radius: 50%;
-                      background: hsl(var(--accent));
-                      border: 3px solid white;
+                      background: hsl(var(--primary));
+                      border: 3px solid hsl(var(--background));
                       cursor: pointer;
                       transition: transform 0.2s ease;
                       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
@@ -288,7 +288,7 @@ const TuningSettings = () => {
                     }
                     input[type="range"]::-moz-range-thumb:active {
                       transform: scale(1.2);
-                      box-shadow: 0 0 0 8px hsla(var(--accent-glow) / 0.2);
+                      box-shadow: 0 0 0 8px hsla(var(--primary-glow) / 0.2);
                     }
                   `}</style>
                 </div>
@@ -306,14 +306,15 @@ const TuningSettings = () => {
             <Button
               variant="outline"
               onClick={handleReset}
-              className="px-8 py-6 text-accent border-2 border-accent bg-card hover:bg-muted"
+              className="px-8 py-6"
             >
               Reset to Neutral
             </Button>
             <Button
               onClick={handleSave}
               disabled={saving}
-              className="px-8 py-6 bg-gradient-to-r from-accent to-accent-glow text-foreground hover:shadow-glow"
+              variant="hero"
+              className="px-8 py-6"
             >
               {saving ? "Saving..." : "Save My Profile"}
             </Button>
@@ -321,7 +322,7 @@ const TuningSettings = () => {
 
           {/* Summary Panel */}
           {showSummary && (
-            <Card className="mt-8 bg-muted border-secondary p-6 animate-fade-in">
+            <Card className="mt-8 bg-muted border-border p-6 animate-fade-in">
               <h3 className="text-xl font-semibold text-card-foreground mb-4 text-center">
                 Your Tuning Profile
               </h3>
@@ -332,7 +333,7 @@ const TuningSettings = () => {
                       <span>{slider.emoji}</span>
                       <span>{slider.title}:</span>
                     </span>
-                    <span className="text-sm font-semibold text-accent">
+                    <span className="text-sm font-semibold text-primary">
                       {values[slider.id]} - {getLabel(slider, values[slider.id])}
                     </span>
                   </div>
