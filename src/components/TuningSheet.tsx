@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -125,6 +125,33 @@ export const TuningSheet = ({ open, onOpenChange, restaurantId }: TuningSheetPro
   const [saving, setSaving] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [activeSlider, setActiveSlider] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  // Load existing tuning profile when sheet opens
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!open || !restaurantId) return;
+      
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('restaurants')
+          .select('tuning_profile')
+          .eq('id', restaurantId)
+          .single();
+        
+        if (!error && data?.tuning_profile) {
+          setValues(data.tuning_profile);
+        }
+      } catch (error) {
+        console.error('Error loading tuning profile:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadProfile();
+  }, [open, restaurantId]);
 
   const handleSliderChange = (id: string, value: number) => {
     setValues(prev => ({ ...prev, [id]: value }));
@@ -148,7 +175,7 @@ export const TuningSheet = ({ open, onOpenChange, restaurantId }: TuningSheetPro
       const { error } = await supabase
         .from("restaurants")
         .update({ tuning_profile: values })
-        .eq("restaurant_id", restaurantId);
+        .eq("id", restaurantId);
 
       if (error) throw error;
 

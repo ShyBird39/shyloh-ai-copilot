@@ -1728,6 +1728,7 @@ const RestaurantFindings = () => {
             restaurantId: id,
             useNotion: useNotion,
             conversationId: convId,
+            tuningProfile: data?.tuning_profile,
           }),
         }
       );

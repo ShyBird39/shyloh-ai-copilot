@@ -648,6 +648,7 @@ export type Database = {
           time_occasion_code: string | null
           time_occasion_description: string | null
           tuning_pin: string | null
+          tuning_profile: Json | null
           updated_at: string | null
           vibe_energy_code: string | null
           vibe_energy_description: string | null
@@ -673,6 +674,7 @@ export type Database = {
           time_occasion_code?: string | null
           time_occasion_description?: string | null
           tuning_pin?: string | null
+          tuning_profile?: Json | null
           updated_at?: string | null
           vibe_energy_code?: string | null
           vibe_energy_description?: string | null
@@ -698,6 +700,7 @@ export type Database = {
           time_occasion_code?: string | null
           time_occasion_description?: string | null
           tuning_pin?: string | null
+          tuning_profile?: Json | null
           updated_at?: string | null
           vibe_energy_code?: string | null
           vibe_energy_description?: string | null

@@ -258,7 +258,8 @@ serve(async (req) => {
       conversationId,
       onboarding_mode = null,
       pain_point = '',
-      reggi_summary = ''
+      reggi_summary = '',
+      tuningProfile = null
     } = await req.json();
     
     console.log(`Notion tools ${useNotion ? 'ENABLED' : 'disabled'} for this query`);
@@ -720,8 +721,148 @@ Data Request Status: ${conversationState.conversation_state?.data_requested ? `A
 Awaiting File Upload: ${conversationState.conversation_state?.awaiting_upload ? 'YES - User has been asked to upload data' : 'NO'}
 Has Uploaded Data: ${conversationState.conversation_state?.has_uploaded_data ? 'YES' : 'NO'}
 
-Use this state to maintain coherent conversation flow. If you asked a question last time, interpret the user's response in that context. Do NOT request uploads more than once—check data_request_count before suggesting files.
+Use this state to maintain coherent conversation flow. If you asked a question last time, interpret the user's response in that context. DO NOT request uploads more than once—check data_request_count before suggesting files.
 ` : '';
+
+    // Helper function to interpret individual tuning dimensions
+    const interpretDimension = (dimension: string, value: number): string => {
+      const interpretations: Record<string, Record<string, string>> = {
+        profit_motivation: {
+          low: 'Mission-First: Values-driven, community impact focus',
+          mid: 'Balanced: Mission and margins both important',
+          high: 'Margin-First: Revenue optimization priority'
+        },
+        service_philosophy: {
+          low: 'Efficiency-Focused: Quick service, high throughput',
+          mid: 'Balanced: Balance pace with experience quality',
+          high: 'Experience-Focused: Memorable moments, unhurried pace'
+        },
+        revenue_strategy: {
+          low: 'Volume-Driven: Accessible pricing, high turnover',
+          mid: 'Mid-Market: Solid check averages with good volume',
+          high: 'Premium-Driven: Exclusive positioning, higher check'
+        },
+        market_position: {
+          low: 'Local Anchor: Community hub for regulars',
+          mid: 'Balanced: Known locally, draw from nearby areas',
+          high: 'Destination Draw: Worth traveling to experience'
+        },
+        team_philosophy: {
+          low: 'Systems-First: Standardized, minimal training required',
+          mid: 'Balanced: Invest in core team while keeping systems learnable',
+          high: 'Development-First: Career hospitality professionals'
+        },
+        innovation_appetite: {
+          low: 'Tradition-Focused: Consistent classics, proven methods',
+          mid: 'Balanced: Evolve thoughtfully, test new ideas carefully',
+          high: 'Innovation-Focused: Creative evolution, boundary-pushing'
+        }
+      };
+
+      const dimInterpretations = interpretations[dimension];
+      if (!dimInterpretations) return 'Unknown dimension';
+
+      if (value <= 33) return dimInterpretations.low;
+      if (value <= 66) return dimInterpretations.mid;
+      return dimInterpretations.high;
+    };
+
+    // Helper function to analyze profile coherence
+    const analyzeProfileCoherence = (profile: any): string => {
+      const values = [
+        profile.profit_motivation || 50,
+        profile.service_philosophy || 50,
+        profile.revenue_strategy || 50,
+        profile.market_position || 50,
+        profile.team_philosophy || 50,
+        profile.innovation_appetite || 50
+      ];
+
+      const lowCount = values.filter(v => v <= 33).length;
+      const highCount = values.filter(v => v >= 67).length;
+      const midCount = values.filter(v => v > 33 && v < 67).length;
+
+      if (lowCount >= 5) {
+        return '**COHERENT TRADITIONAL PROFILE**: Nearly all dimensions lean toward efficiency/volume/systems. Frame advice around operational scalability and consistency.';
+      }
+      if (highCount >= 5) {
+        return '**COHERENT PREMIUM PROFILE**: Nearly all dimensions lean toward experience/craft/development. Frame advice around differentiation and excellence.';
+      }
+      if (midCount >= 5) {
+        return '**NEUTRAL PROFILE**: All settings near 50—operator may be finding their identity or trying to balance everything. Push for clarity through specific scenarios.';
+      }
+
+      const tensions = [];
+      if (profile.market_position <= 33 && profile.revenue_strategy >= 67) {
+        tensions.push('Local Anchor + Premium pricing = "neighborhood splurge" positioning');
+      }
+      if (profile.profit_motivation <= 33 && profile.service_philosophy >= 67) {
+        tensions.push('Mission-first + Experience-focused requires Development-first team (check Team Philosophy)');
+      }
+      if (profile.service_philosophy <= 33 && profile.team_philosophy >= 67) {
+        tensions.push('Efficiency-focused service with Development-first team = potential mismatch');
+      }
+
+      if (tensions.length > 0) {
+        return `**TENSION PROFILE**: ${tensions.join('; ')}. These contradictions can be productive—explore how they're navigating them.`;
+      }
+
+      return '**MIXED PROFILE**: Some dimensions balanced, others leaning. Look for dominant themes in their questions to understand priorities.';
+    };
+
+    // Build tuning context if profile exists
+    let tuningContext = '';
+    if (tuningProfile && typeof tuningProfile === 'object') {
+      const {
+        profit_motivation = 50,
+        service_philosophy = 50,
+        revenue_strategy = 50,
+        market_position = 50,
+        team_philosophy = 50,
+        innovation_appetite = 50
+      } = tuningProfile;
+
+      tuningContext = `
+
+**RESTAURANT TUNING PROFILE**
+
+The operator has configured their operational philosophy across six dimensions (0-100 scale):
+
+1. **Profit Motivation: ${profit_motivation}**
+   ${interpretDimension('profit_motivation', profit_motivation)}
+
+2. **Service Philosophy: ${service_philosophy}**
+   ${interpretDimension('service_philosophy', service_philosophy)}
+
+3. **Revenue Strategy: ${revenue_strategy}**
+   ${interpretDimension('revenue_strategy', revenue_strategy)}
+
+4. **Market Position: ${market_position}**
+   ${interpretDimension('market_position', market_position)}
+
+5. **Team Philosophy: ${team_philosophy}**
+   ${interpretDimension('team_philosophy', team_philosophy)}
+
+6. **Innovation Appetite: ${innovation_appetite}**
+   ${interpretDimension('innovation_appetite', innovation_appetite)}
+
+**PROFILE COHERENCE ANALYSIS:**
+${analyzeProfileCoherence(tuningProfile)}
+
+**HOW TO USE THIS PROFILE:**
+
+1. **Frame all advice through their stated philosophy** - If they're Mission-First (20) but asking about raising prices, explore the tension explicitly
+2. **Surface contradictions gently** - "You're tuned Local Anchor (30) but Premium-driven (75)—that's the 'neighborhood splurge' position. How's that playing out?"
+3. **Adapt diagnostic approach** - Volume operators need efficiency questions; Experience operators need craft questions
+4. **Never discuss price in absolute terms** - Always relative to their existing menu and positioning
+5. **Challenge drift, not identity** - If a question conflicts with tuning, ask: "That's interesting—does this represent a shift in how you're thinking about [dimension]?"
+
+CRITICAL: All tuning values are 0-100 integers. Interpret thresholds:
+- 0-33: Strongly left-leaning (e.g., Mission-First, Efficiency-Focused)
+- 34-66: Balanced/Neutral
+- 67-100: Strongly right-leaning (e.g., Margin-First, Experience-Focused)
+`;
+    }
 
     // Build system prompt with restaurant context
     const systemPrompt = `IDENTITY
@@ -763,7 +904,7 @@ Current KPIs:
 - Food Cost Goal: ${kpiData?.food_cost_goal || 'Not set'}%
 - Labor Cost Goal: ${kpiData?.labor_cost_goal || 'Not set'}%
 - Sales Mix → Food: ${kpiData?.sales_mix_food || 'Not set'}% | Liquor: ${kpiData?.sales_mix_liquor || 'Not set'}% | Beer: ${kpiData?.sales_mix_beer || 'Not set'}% | Wine: ${kpiData?.sales_mix_wine || 'Not set'}% | NA Bev: ${kpiData?.sales_mix_na_beverage || 'Not set'}%
-
+${tuningContext}
 YOUR ROLE
 - Learn their restaurant through dialogue
 - Develop trust through delivering meaningful, actionable insight
