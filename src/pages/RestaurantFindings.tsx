@@ -512,6 +512,7 @@ const RestaurantFindings = () => {
 
     const fileNames = Array.from(fileList).map(f => f.name);
     setUploadingFiles(prev => [...prev, ...fileNames]);
+    setShowFileNotification(true);
 
     for (let i = 0; i < fileList.length; i++) {
       const file = fileList[i];
@@ -1000,16 +1001,15 @@ const RestaurantFindings = () => {
     deleteStuckFileIfAny();
   }, [id, cleanupAttempted]);
 
-  // Show file notification for 10 seconds after files are uploaded
+  // Show file notification only when files finish uploading (not on page load)
   useEffect(() => {
-    if (files && files.length > 0 && uploadingFiles.length === 0) {
-      setShowFileNotification(true);
+    if (files && files.length > 0 && uploadingFiles.length === 0 && showFileNotification) {
       const timer = setTimeout(() => {
         setShowFileNotification(false);
       }, 10000);
       return () => clearTimeout(timer);
     }
-  }, [files, uploadingFiles]);
+  }, [files, uploadingFiles, showFileNotification]);
 
 
   // Fetch restaurant data and KPIs
