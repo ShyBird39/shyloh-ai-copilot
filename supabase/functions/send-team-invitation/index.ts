@@ -48,6 +48,19 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Sending invitation to:", email, "for restaurant:", restaurantId);
 
+    // Delete any existing pending invitations for this email/restaurant combo
+    const { error: deleteError } = await supabase
+      .from("restaurant_invitations")
+      .delete()
+      .eq("restaurant_id", restaurantId)
+      .eq("email", email)
+      .eq("status", "pending");
+
+    if (deleteError) {
+      console.error("Error deleting old invitations:", deleteError);
+      // Continue anyway - the insert will fail if there's a non-pending one
+    }
+
     // Create invitation in database
     const { data: invitation, error: inviteError } = await supabase
       .from("restaurant_invitations")
@@ -62,6 +75,11 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (inviteError) {
       console.error("Error creating invitation:", inviteError);
+      
+      // Provide user-friendly error messages
+      if (inviteError.code === "23505") {
+        throw new Error("An active invitation already exists for this email. Please wait for them to accept or contact support.");
+      }
       throw new Error(inviteError.message);
     }
 
@@ -100,6 +118,15 @@ const handler = async (req: Request): Promise<Response> => {
     if (!emailResponse.ok) {
       const errorData = await emailResponse.text();
       console.error("Resend API error:", errorData);
+      
+      // Provide helpful error for domain verification
+      if (errorData.includes("verify a domain") || errorData.includes("validation_error")) {
+        throw new Error(
+          "Email service requires domain verification. For testing, invitations can only be sent to eli@shybird.com. " +
+          "To send to other addresses, please verify your domain at resend.com/domains."
+        );
+      }
+      
       throw new Error(`Failed to send email: ${errorData}`);
     }
 
