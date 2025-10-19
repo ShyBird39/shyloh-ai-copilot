@@ -17,6 +17,7 @@ import { TeamManagement } from "@/components/TeamManagement";
 import { ConversationSettings } from "@/components/ConversationSettings";
 import { MentionInput } from "@/components/MentionInput";
 import { NotificationBell } from "@/components/NotificationBell";
+import { TuningSheet } from "@/components/TuningSheet";
 import { useAuth } from "@/hooks/useAuth";
 
 interface KPIData {
@@ -148,6 +149,7 @@ const RestaurantFindings = () => {
   });
   const [advancedSettingsOpen, setAdvancedSettingsOpen] = useState(false);
   const [tuningOpen, setTuningOpen] = useState(false);
+  const [tuningSheetOpen, setTuningSheetOpen] = useState(false);
   
   // Chat state
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
@@ -3475,7 +3477,7 @@ const RestaurantFindings = () => {
                         </CollapsibleTrigger>
                         <CollapsibleContent className="mt-3">
                           <Button
-                            onClick={() => navigate(`/restaurant/${id}/tuning`)}
+                            onClick={() => setTuningSheetOpen(true)}
                             variant="outline"
                             size="sm"
                             className="w-full text-xs border-accent/40 hover:bg-accent/10 hover:border-accent text-primary-foreground"
@@ -3505,6 +3507,12 @@ const RestaurantFindings = () => {
           </>
         )}
       </ResizablePanelGroup>
+      
+      <TuningSheet 
+        open={tuningSheetOpen} 
+        onOpenChange={setTuningSheetOpen}
+        restaurantId={id!}
+      />
     </SidebarProvider>
   );
 };
