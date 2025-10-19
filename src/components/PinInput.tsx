@@ -15,9 +15,17 @@ export const PinInput = ({ open, onOpenChange, onPinSubmit, mode, isLoading }: P
   const [pin, setPin] = useState<string[]>(["", "", "", "", "", ""]);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
+  // Focus first input when opening
   useEffect(() => {
     if (open && inputRefs.current[0]) {
       inputRefs.current[0]?.focus();
+    }
+  }, [open]);
+
+  // Clear PIN when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setPin(["", "", "", "", "", ""]);
     }
   }, [open]);
 
