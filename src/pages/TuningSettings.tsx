@@ -203,8 +203,11 @@ const TuningSettings = () => {
             {sliders.map((slider, index) => (
               <div
                 key={slider.id}
-                className="opacity-0 animate-fade-in"
-                style={{ animationDelay: `${index * 100}ms`, animationFillMode: "forwards" }}
+                className="animate-fade-in"
+                style={{ 
+                  animationDelay: `${index * 100}ms`,
+                  opacity: 1
+                }}
               >
                 {/* Slider Title & Value */}
                 <div className="flex items-center justify-between mb-3">
