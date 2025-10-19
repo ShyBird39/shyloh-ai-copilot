@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MessageSquare, Upload, Trash2, FileText, Plus, Bot, LogOut, Lock, Users as UsersIcon, Globe, GripVertical } from "lucide-react";
+import { MessageSquare, Upload, Trash2, FileText, Plus, Bot, Lock, Users as UsersIcon, Globe, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -180,15 +180,10 @@ export function ChatSidebar({
     }
   };
 
-  const { signOut } = useAuth();
-
   return (
     <div className="h-full flex flex-col border-r border-border bg-background">
-      <div className="border-b border-border p-4 flex flex-row items-center justify-between">
+      <div className="border-b border-border p-4">
         <h2 className="text-lg font-semibold">Chat & Files</h2>
-        <Button variant="ghost" size="sm" onClick={signOut}>
-          <LogOut className="w-4 h-4" />
-        </Button>
       </div>
 
       <div className="flex-1 overflow-hidden">
