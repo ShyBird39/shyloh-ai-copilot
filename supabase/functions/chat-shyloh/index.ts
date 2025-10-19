@@ -42,8 +42,22 @@ async function updateConversationState(
     topic = 'data_retrieval_help';
   }
 
+  // Check if assistant asked a question
+  const askedQuestion = /\?$/.test(lastAssistantMessage.trim());
+  const questionMatch = lastAssistantMessage.match(/([^.!]+\?)/);
+  
+  // Track data collection state
+  const requestedUpload = /upload|share|send|paperclip|📎|attach/i.test(lastAssistantMessage);
+  const userUploadedFile = /uploaded|attached|here('s| is)/i.test(lastUserMessage);
+  
+  const conversationStateData = currentState?.conversation_state || {};
+  const dataRequestCount = conversationStateData.data_request_count || 0;
+
   // Detect active scenario types
   let activeScenario = null;
+  let scenarioResolved = false;
+  let scenarioEndedAt = null;
+  
   if (/down a|short a|missing|called out|lost|broken/i.test(lastUserMessage) && 
       /server|cook|manager|staff|team|line cook|bartender|host/i.test(lastUserMessage)) {
     activeScenario = 'staffing_shortage';
@@ -60,21 +74,10 @@ async function updateConversationState(
   if (currentState?.conversation_state?.active_scenario) {
     if (/thanks|perfect|sounds good|got it|we're set|handled it|went well|crushed it/i.test(lastUserMessage)) {
       activeScenario = null;
-      conversationStateData.scenario_resolved = true;
-      conversationStateData.scenario_ended_at = new Date().toISOString();
+      scenarioResolved = true;
+      scenarioEndedAt = new Date().toISOString();
     }
   }
-  
-  // Check if assistant asked a question
-  const askedQuestion = /\?$/.test(lastAssistantMessage.trim());
-  const questionMatch = lastAssistantMessage.match(/([^.!]+\?)/);
-  
-  // Track data collection state
-  const requestedUpload = /upload|share|send|paperclip|📎|attach/i.test(lastAssistantMessage);
-  const userUploadedFile = /uploaded|attached|here('s| is)/i.test(lastUserMessage);
-  
-  const conversationStateData = currentState?.conversation_state || {};
-  const dataRequestCount = conversationStateData.data_request_count || 0;
   
   // Update conversation state with data tracking
   const updates: any = {
@@ -94,6 +97,8 @@ async function updateConversationState(
       scenario_started_at: activeScenario && !currentState?.conversation_state?.active_scenario 
         ? new Date().toISOString() 
         : currentState?.conversation_state?.scenario_started_at,
+      scenario_resolved: scenarioResolved || conversationStateData.scenario_resolved,
+      scenario_ended_at: scenarioEndedAt || conversationStateData.scenario_ended_at,
     }
   };
   
