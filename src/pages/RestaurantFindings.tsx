@@ -3474,8 +3474,16 @@ const RestaurantFindings = () => {
                           {tuningOpen ? <ChevronUp className="w-3 h-3 text-primary-foreground/60 group-hover:text-primary-foreground transition-colors" /> : <ChevronDown className="w-3 h-3 text-primary-foreground/60 group-hover:text-primary-foreground transition-colors" />}
                         </CollapsibleTrigger>
                         <CollapsibleContent className="mt-3">
-                          <p className="text-xs text-primary-foreground/60">
-                            Tuning options will be available soon.
+                          <Button
+                            onClick={() => navigate(`/restaurant/${id}/tuning`)}
+                            variant="outline"
+                            size="sm"
+                            className="w-full text-xs border-accent/40 hover:bg-accent/10 hover:border-accent text-primary-foreground"
+                          >
+                            Set Your Priorities
+                          </Button>
+                          <p className="text-xs text-primary-foreground/60 mt-2">
+                            Help Shyloh understand what matters most to your restaurant through visual sliders
                           </p>
                         </CollapsibleContent>
                       </Card>
