@@ -104,63 +104,44 @@ export function TeamManagement({ restaurantId }: TeamManagementProps) {
 
   const handleInviteMember = async () => {
     try {
-      // First, check if user exists with this email
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("email", inviteEmail)
-        .maybeSingle();
+      // Get restaurant name
+      const { data: restaurant, error: restaurantError } = await supabase
+        .from("restaurants")
+        .select("name")
+        .eq("id", restaurantId)
+        .single();
 
-      if (profileError) throw profileError;
+      if (restaurantError) throw restaurantError;
 
-      if (!profile) {
-        // User doesn't exist yet - show signup link
-        const link = `${window.location.origin}/auth`;
-        setInviteLink(link);
-        setInviteDialogOpen(false);
-        setShowLinkDialog(true);
-        return;
-      }
-
-      // User exists - add them directly
-      const { data: { user } } = await supabase.auth.getUser();
+      // Send invitation email via edge function
+      const { data: { session } } = await supabase.auth.getSession();
       
-      // Add to restaurant_members
-      const { error: memberError } = await supabase
-        .from("restaurant_members")
-        .insert({
-          restaurant_id: restaurantId,
-          user_id: profile.id,
-          invited_by: user?.id,
-          status: "active",
-        });
-
-      if (memberError) throw memberError;
-
-      // Add to user_roles
-      const { error: roleError } = await supabase
-        .from("user_roles")
-        .insert({
-          user_id: profile.id,
-          restaurant_id: restaurantId,
+      const { data, error } = await supabase.functions.invoke('send-team-invitation', {
+        body: {
+          email: inviteEmail,
+          restaurantId,
+          restaurantName: restaurant.name,
           role: inviteRole,
-        });
+        },
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+      });
 
-      if (roleError) throw roleError;
+      if (error) throw error;
 
       toast({
-        title: "Team member added",
-        description: `${inviteEmail} has been added to your team.`,
+        title: "Invitation sent!",
+        description: `An invitation email has been sent to ${inviteEmail}.`,
       });
 
       setInviteDialogOpen(false);
       setInviteEmail("");
       setInviteRole("member");
-      setInviteLink(null);
       loadMembers();
     } catch (error: any) {
       toast({
-        title: "Error adding team member",
+        title: "Error sending invitation",
         description: error.message,
         variant: "destructive",
       });
