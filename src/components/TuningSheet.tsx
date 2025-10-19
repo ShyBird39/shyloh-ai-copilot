@@ -176,17 +176,17 @@ export const TuningSheet = ({ open, onOpenChange, restaurantId }: TuningSheetPro
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-[900px] overflow-y-auto p-0">
+      <SheetContent side="right" className="w-full sm:max-w-[900px] overflow-y-auto p-0 bg-card">
         <div className="sticky top-0 z-10 bg-card border-b border-border px-8 py-6">
           <div className="flex items-start justify-between">
             <SheetHeader className="flex-1">
-              <SheetTitle className="text-[42px] font-bold text-primary mb-2">
+              <SheetTitle className="text-[32px] font-bold text-primary mb-2">
                 Set Your Priorities
               </SheetTitle>
-              <p className="text-card-foreground text-lg">
+              <p className="text-card-foreground text-base">
                 Help Shyloh understand what matters most to your restaurant
               </p>
-              <p className="text-card-foreground/70 text-sm">
+              <p className="text-muted-foreground text-sm">
                 Drag each slider to match your philosophy
               </p>
             </SheetHeader>
@@ -215,15 +215,15 @@ export const TuningSheet = ({ open, onOpenChange, restaurantId }: TuningSheetPro
               >
                 {/* Slider Title & Value */}
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
+                  <h3 className="text-base font-semibold text-card-foreground flex items-center gap-2">
                     <span>{slider.emoji}</span>
                     <span>{slider.title}</span>
                   </h3>
                   <div className="flex items-center gap-3">
-                    <span className="text-sm text-card-foreground/80">
+                    <span className="text-sm text-muted-foreground">
                       {getLabel(slider, values[slider.id])}
                     </span>
-                    <span className="text-2xl font-bold text-primary min-w-[60px] text-right">
+                    <span className="text-xl font-bold text-primary min-w-[50px] text-right">
                       {values[slider.id]}
                     </span>
                   </div>
@@ -233,11 +233,11 @@ export const TuningSheet = ({ open, onOpenChange, restaurantId }: TuningSheetPro
                 <div className="flex justify-between mb-2 text-sm">
                   <div className="text-card-foreground">
                     <span className="font-medium">{slider.leftLabel}</span>
-                    <span className="text-primary/60 italic ml-2">({slider.leftExample})</span>
+                    <span className="text-muted-foreground italic ml-2">({slider.leftExample})</span>
                   </div>
                   <div className="text-card-foreground text-right">
                     <span className="font-medium">{slider.rightLabel}</span>
-                    <span className="text-primary/60 italic ml-2">({slider.rightExample})</span>
+                    <span className="text-muted-foreground italic ml-2">({slider.rightExample})</span>
                   </div>
                 </div>
 
@@ -298,7 +298,7 @@ export const TuningSheet = ({ open, onOpenChange, restaurantId }: TuningSheetPro
                 </div>
 
                 {/* Hint */}
-                <p className="text-sm text-card-foreground/70 mt-2 min-h-[40px] transition-all duration-300">
+                <p className="text-sm text-muted-foreground mt-2 min-h-[40px] transition-all duration-300">
                   {getHint(slider, values[slider.id])}
                 </p>
               </div>
