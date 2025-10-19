@@ -191,12 +191,13 @@ export const TuningSheet = ({ open, onOpenChange, restaurantId }: TuningSheetPro
               </p>
             </SheetHeader>
             <Button
-              variant="ghost"
+              variant="secondary"
               size="icon"
               onClick={() => onOpenChange(false)}
-              className="h-8 w-8 rounded-full text-foreground hover:bg-muted"
+              aria-label="Close"
+              className="h-9 w-9 rounded-full hover:bg-secondary/80 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             >
-              <X className="h-4 w-4" />
+              <X className="h-5 w-5" />
             </Button>
           </div>
         </div>
