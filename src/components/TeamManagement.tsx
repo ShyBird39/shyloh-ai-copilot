@@ -147,9 +147,12 @@ export function TeamManagement({ restaurantId }: TeamManagementProps) {
       setInviteRole("member");
       loadMembers();
     } catch (error: any) {
+      const friendlyMessage = (error?.message || "").includes("non-2xx")
+        ? "Invitation couldn't be emailed because the email service domain isn't verified yet. For testing, only eli@shybird.com is allowed. Please verify your domain at resend.com/domains or invite that address."
+        : error.message;
       toast({
         title: "Error sending invitation",
-        description: error.message,
+        description: friendlyMessage,
         variant: "destructive",
       });
     }
@@ -214,6 +217,9 @@ export function TeamManagement({ restaurantId }: TeamManagementProps) {
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
                 />
+                <p className="text-xs text-muted-foreground">
+                  Note: Until email domain is verified, only invitations to eli@shybird.com will send. Verify your domain to invite others.
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="role">Role</Label>
