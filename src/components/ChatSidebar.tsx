@@ -381,9 +381,10 @@ export function ChatSidebar({
 
           <TabsContent value="agents" className="mt-4 px-4 flex flex-col h-full">
             <div className="space-y-2 flex-1">
-              <p className="text-sm text-muted-foreground mb-4">
+              <p className="text-sm text-muted-foreground mb-2">
                 AI-powered agents to help with specific tasks. Drag to reorder.
               </p>
+              <p className="text-xs text-muted-foreground/60 mb-4">*powered by Agent.ai</p>
               
               {agents.map((agent) => (
                 <div
@@ -411,9 +412,6 @@ export function ChatSidebar({
                   </span>
                 </div>
               ))}
-            </div>
-            <div className="flex justify-end mt-4 pb-2">
-              <p className="text-xs text-muted-foreground/60">*powered by Agent.ai</p>
             </div>
           </TabsContent>
         </Tabs>
