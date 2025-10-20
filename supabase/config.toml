@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.process-mentions]
 verify_jwt = false
+
+[functions.claim-restaurant]
+verify_jwt = true

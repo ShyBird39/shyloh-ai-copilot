@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, ChevronDown, ChevronUp, RotateCcw, Paperclip, UtensilsCrossed, Sparkles, Users, Clock, Settings, Heart, UserCog, Trash2, Brain } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState, useRef, useEffect } from "react";
@@ -41,7 +42,11 @@ interface ChatMessage {
 const RestaurantFindings = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const [isMember, setIsMember] = useState<boolean | null>(null);
+  const [showClaimDialog, setShowClaimDialog] = useState(false);
+  const [claimPin, setClaimPin] = useState("");
+  const [claiming, setClaiming] = useState(false);
   
   // REGGI dimensions configuration
   const reggiDimensions = [
@@ -1020,6 +1025,33 @@ const RestaurantFindings = () => {
         return;
       }
 
+      // Check authentication and membership first
+      if (!authLoading && user) {
+        try {
+          const { data: memberData, error: memberError } = await supabase
+            .from('restaurant_members')
+            .select('id')
+            .eq('restaurant_id', id)
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          if (memberError) console.error('Error checking membership:', memberError);
+          
+          setIsMember(!!memberData);
+
+          // Check for pending claim
+          const pendingClaim = sessionStorage.getItem('pending_claim');
+          if (pendingClaim && !memberData) {
+            const claimData = JSON.parse(pendingClaim);
+            if (claimData.restaurant_id === id) {
+              setShowClaimDialog(true);
+            }
+          }
+        } catch (error) {
+          console.error('Error checking membership:', error);
+        }
+      }
+
       try {
         // Fetch restaurant data
         const { data: restaurant, error: restaurantError } = await supabase
@@ -1029,85 +1061,101 @@ const RestaurantFindings = () => {
           .single();
 
         if (restaurantError) throw restaurantError;
-
-        if (!restaurant) {
-          toast.error("Restaurant not found");
-          navigate('/');
-          return;
-        }
-
         setData(restaurant);
 
-        // Check if KPIs exist
-        const { data: existingKPIs, error: kpisError } = await supabase
-          .from('restaurant_kpis')
-          .select('*')
-          .eq('restaurant_id', id)
-          .maybeSingle();
-
-        if (kpisError) {
-          console.error('Error fetching KPIs:', kpisError);
-        }
-
-        // Check if tools exist
-        const { data: existingTools, error: toolsError } = await supabase
+        // Fetch tools data
+        const { data: tools, error: toolsError } = await supabase
           .from('restaurant_tools')
           .select('*')
           .eq('restaurant_id', id)
           .maybeSingle();
 
-        if (toolsError) {
-          console.error('Error fetching tools:', toolsError);
+        if (toolsError && toolsError.code !== 'PGRST116') {
+          throw toolsError;
+        }
+        
+        if (tools) {
+          setToolsData(tools);
         }
 
-        if (existingTools) {
-          setToolsData({
-            pos_system: existingTools.pos_system,
-            reservation_system: existingTools.reservation_system,
-            payroll_system: existingTools.payroll_system,
-            accounting_system: existingTools.accounting_system,
-            inventory_system: existingTools.inventory_system,
-            scheduling_system: existingTools.scheduling_system,
-            marketing_tools: existingTools.marketing_tools,
-          });
+        // Fetch KPIs
+        const { data: kpis, error: kpisError } = await supabase
+          .from('restaurant_kpis')
+          .select('*')
+          .eq('restaurant_id', id)
+          .maybeSingle();
+
+        if (kpisError && kpisError.code !== 'PGRST116') {
+          throw kpisError;
         }
 
-        if (existingKPIs) {
-          // Returning user - has KPIs
-          setHasCompletedKPIs(true);
+        if (kpis) {
           setKPIData({
-            avg_weekly_sales: existingKPIs.avg_weekly_sales,
-            food_cost_goal: existingKPIs.food_cost_goal,
-            labor_cost_goal: existingKPIs.labor_cost_goal,
-            sales_mix_food: existingKPIs.sales_mix_food,
-            sales_mix_liquor: existingKPIs.sales_mix_liquor,
-            sales_mix_wine: existingKPIs.sales_mix_wine,
-            sales_mix_beer: existingKPIs.sales_mix_beer,
-            sales_mix_na_bev: existingKPIs.sales_mix_na_bev,
+            avg_weekly_sales: kpis.avg_weekly_sales,
+            food_cost_goal: kpis.food_cost_goal,
+            labor_cost_goal: kpis.labor_cost_goal,
+            sales_mix_food: kpis.sales_mix_food,
+            sales_mix_liquor: kpis.sales_mix_liquor,
+            sales_mix_wine: kpis.sales_mix_wine,
+            sales_mix_beer: kpis.sales_mix_beer,
+            sales_mix_na_bev: kpis.sales_mix_na_bev,
           });
-          setMessages([
-            {
-              role: "assistant",
-              content: "Welcome back! I'm here to help you explore your restaurant's data and insights. What would you like to know?",
-              type: "question",
-            },
-          ]);
+
+          const allKPIsCompleted = Boolean(
+            kpis.avg_weekly_sales &&
+            kpis.food_cost_goal &&
+            kpis.labor_cost_goal &&
+            kpis.sales_mix_food !== null &&
+            kpis.sales_mix_liquor !== null &&
+            kpis.sales_mix_wine !== null &&
+            kpis.sales_mix_beer !== null &&
+            kpis.sales_mix_na_bev !== null
+          );
+          setHasCompletedKPIs(allKPIsCompleted);
         } else {
-          // First-time user - no KPIs - start onboarding
           setHasCompletedKPIs(false);
-          // Onboarding will be triggered by loadConversations
         }
       } catch (error) {
         console.error('Error fetching restaurant:', error);
-        toast.error("Failed to load restaurant data");
-        navigate('/');
+        toast.error('Failed to load restaurant data');
       } finally {
         setLoading(false);
       }
     };
 
     fetchRestaurant();
-  }, [id, navigate]);
+  }, [id, navigate, user, authLoading]);
+
+  const handleClaimRestaurant = async () => {
+    if (!id || !user || !claimPin.trim()) {
+      toast.error("Please enter a PIN");
+      return;
+    }
+
+    setClaiming(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('claim-restaurant', {
+        body: { restaurant_id: id, pin: claimPin }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast.success(data.message);
+        sessionStorage.removeItem('pending_claim');
+        setShowClaimDialog(false);
+        setClaimPin("");
+        setIsMember(true);
+      } else {
+        throw new Error(data.error || 'Failed to claim restaurant');
+      }
+    } catch (error: any) {
+      console.error('Claim error:', error);
+      toast.error(error.message || 'Invalid PIN or failed to claim restaurant');
+    } finally {
+      setClaiming(false);
+    }
+  };
 
   // Phase 1: The Hook - Auto-triggered messages for first-time users
   useEffect(() => {
@@ -3556,6 +3604,46 @@ const RestaurantFindings = () => {
           </>
         )}
       </ResizablePanelGroup>
+      
+      {/* Claim Restaurant Dialog */}
+      <Dialog open={showClaimDialog} onOpenChange={setShowClaimDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Claim Restaurant</DialogTitle>
+            <DialogDescription>
+              Enter the PIN to claim ownership of {data?.name || 'this restaurant'}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <Input
+              type="text"
+              placeholder="Enter PIN"
+              value={claimPin}
+              onChange={(e) => setClaimPin(e.target.value)}
+              disabled={claiming}
+            />
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowClaimDialog(false);
+                  sessionStorage.removeItem('pending_claim');
+                  navigate('/');
+                }}
+                disabled={claiming}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleClaimRestaurant}
+                disabled={claiming || !claimPin.trim()}
+              >
+                {claiming ? <Loader2 className="w-4 h-4 animate-spin" /> : "Claim Restaurant"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
       
       <PinInput
         open={pinDialogOpen}

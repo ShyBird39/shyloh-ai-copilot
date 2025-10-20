@@ -64,6 +64,15 @@ const Hero = () => {
     setMultipleResults([]);
   };
 
+  const handleClaimRestaurant = (restaurant: any) => {
+    // Store restaurant info and navigate to claim flow
+    sessionStorage.setItem('pending_claim', JSON.stringify({
+      restaurant_id: restaurant.id,
+      restaurant_name: restaurant.name
+    }));
+    navigate('/auth');
+  };
+
   // Show selection UI if multiple results
   if (multipleResults.length > 0) {
     return (
@@ -86,18 +95,33 @@ const Hero = () => {
             
             <div className="grid gap-4">
               {multipleResults.map((restaurant) => (
-                <button
+                <div
                   key={restaurant.id}
-                  onClick={() => handleSelectRestaurant(restaurant)}
-                  className="bg-background/10 backdrop-blur-sm border border-primary-foreground/20 rounded-lg p-6 text-left hover:bg-background/20 transition-all"
+                  className="bg-background/10 backdrop-blur-sm border border-primary-foreground/20 rounded-lg p-6"
                 >
                   <h3 className="text-xl font-semibold text-primary-foreground mb-2">
                     {restaurant.name}
                   </h3>
-                  <p className="text-primary-foreground/80">
+                  <p className="text-primary-foreground/80 mb-4">
                     {restaurant.location}{restaurant.zip_code ? ` (${restaurant.zip_code})` : ''} • {restaurant.category}
                   </p>
-                </button>
+                  <div className="flex gap-3">
+                    <Button
+                      variant="hero"
+                      onClick={() => handleSelectRestaurant(restaurant)}
+                      className="flex-1"
+                    >
+                      View Restaurant
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleClaimRestaurant(restaurant)}
+                      className="flex-1 bg-background/5 border-primary-foreground/30 text-primary-foreground hover:bg-background/20"
+                    >
+                      Claim Restaurant
+                    </Button>
+                  </div>
+                </div>
               ))}
             </div>
           </div>

@@ -21,6 +21,14 @@ export default function Auth() {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
+        // Check for pending claim first
+        const pendingClaim = sessionStorage.getItem('pending_claim');
+        if (pendingClaim) {
+          const { restaurant_id } = JSON.parse(pendingClaim);
+          navigate(`/restaurant/${restaurant_id}`);
+          return;
+        }
+
         // Check if user has restaurant memberships
         const { data: memberships } = await supabase
           .from("restaurant_members")
@@ -59,6 +67,14 @@ export default function Auth() {
 
         if (error) throw error;
 
+        // Check for pending claim first
+        const pendingClaim = sessionStorage.getItem('pending_claim');
+        if (pendingClaim) {
+          const { restaurant_id } = JSON.parse(pendingClaim);
+          navigate(`/restaurant/${restaurant_id}`);
+          return;
+        }
+
         // Check for pending invitation
         const pendingInvitation = sessionStorage.getItem('pending_invitation');
         if (pendingInvitation) {
@@ -96,6 +112,14 @@ export default function Auth() {
         });
 
         if (error) throw error;
+
+        // Check for pending claim first
+        const pendingClaim = sessionStorage.getItem('pending_claim');
+        if (pendingClaim && data.user) {
+          const { restaurant_id } = JSON.parse(pendingClaim);
+          navigate(`/restaurant/${restaurant_id}`);
+          return;
+        }
 
         // Check for pending invitation
         const pendingInvitation = sessionStorage.getItem('pending_invitation');
