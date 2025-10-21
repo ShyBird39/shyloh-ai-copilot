@@ -397,8 +397,30 @@ ${recentAverage < 3.5 ? '⚠️ Recent feedback is below target. Adjust your ton
               let extractedText = '';
 
               // Extract text based on file type
+              // Add fallback file type detection if file_type is missing
+              let effectiveFileType = file.file_type;
+              
+              if (!effectiveFileType || effectiveFileType === '') {
+                const ext = file.file_name.split('.').pop()?.toLowerCase();
+                const mimeMap: Record<string, string> = {
+                  'md': 'text/markdown',
+                  'txt': 'text/plain',
+                  'csv': 'text/csv',
+                  'pdf': 'application/pdf',
+                  'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                  'doc': 'application/msword',
+                  'jpg': 'image/jpeg',
+                  'jpeg': 'image/jpeg',
+                  'png': 'image/png',
+                  'gif': 'image/gif',
+                  'webp': 'image/webp',
+                };
+                effectiveFileType = mimeMap[ext || ''] || '';
+                console.warn(`Missing file_type for ${file.file_name}, inferred: ${effectiveFileType}`);
+              }
+
               try {
-                if (file.file_type === 'application/pdf') {
+                if (effectiveFileType === 'application/pdf') {
                   const arrayBuffer = await blob.arrayBuffer();
                   const typedArray = new Uint8Array(arrayBuffer);
                   const loadingTask = getDocument({ data: typedArray });
@@ -414,21 +436,21 @@ ${recentAverage < 3.5 ? '⚠️ Recent feedback is below target. Adjust your ton
                   }
                   extractedText = textParts.join('\n\n');
                   console.log(`Successfully parsed PDF ${file.file_name} - ${numPages} pages`);
-                } else if (file.file_type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+                } else if (effectiveFileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
                   const arrayBuffer = await blob.arrayBuffer();
                   const result = await mammoth.extractRawText({ arrayBuffer });
                   extractedText = result.value || '';
                   console.log(`Extracted ${extractedText.length} chars from Word docx ${file.file_name}`);
-                } else if (file.file_type === 'application/msword') {
+                } else if (effectiveFileType === 'application/msword') {
                   // .doc (binary) not supported by mammoth; skipping text extraction
                   console.warn(`.doc format not supported for text extraction: ${file.file_name}`);
                   extractedText = '';
-                } else if (file.file_type === 'text/csv' || 
-                           file.file_type === 'text/plain' || 
-                           file.file_type === 'text/markdown') {
+                } else if (effectiveFileType === 'text/csv' || 
+                           effectiveFileType === 'text/plain' || 
+                           effectiveFileType === 'text/markdown') {
                   extractedText = await blob.text();
                   console.log(`Extracted ${extractedText.length} chars from text file ${file.file_name}`);
-                } else if (file.file_type?.startsWith('image/')) {
+                } else if (effectiveFileType?.startsWith('image/')) {
                   // Images are uploaded but text extraction would require OCR
                   console.log(`Image file ${file.file_name} uploaded (OCR not implemented)`);
                   extractedText = `[Image file: ${file.file_name}]`;

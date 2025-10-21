@@ -512,6 +512,30 @@ const RestaurantFindings = () => {
     }
   };
 
+  // Helper function to detect file type with fallback to extension
+  const getFileType = (file: File): string => {
+    // First try the browser's MIME type
+    if (file.type) return file.type;
+    
+    // Fallback: detect from extension
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    const mimeMap: Record<string, string> = {
+      'md': 'text/markdown',
+      'txt': 'text/plain',
+      'csv': 'text/csv',
+      'pdf': 'application/pdf',
+      'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'doc': 'application/msword',
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'png': 'image/png',
+      'gif': 'image/gif',
+      'webp': 'image/webp',
+    };
+    
+    return mimeMap[ext || ''] || 'application/octet-stream';
+  };
+
   const handleFileUpload = async (fileList: FileList, storageType: 'temporary' | 'permanent' = 'temporary', description?: string) => {
     if (!id) return;
 
@@ -533,6 +557,9 @@ const RestaurantFindings = () => {
 
         if (uploadError) throw uploadError;
 
+        // Detect file type with fallback
+        const fileType = getFileType(file);
+
         // Create database record
         const { error: dbError } = await supabase
           .from("restaurant_files")
@@ -541,7 +568,7 @@ const RestaurantFindings = () => {
             file_name: file.name,
             file_path: fileName,
             file_size: file.size,
-            file_type: file.type,
+            file_type: fileType,
             storage_type: storageType,
             description: description || null,
             processed: true,
