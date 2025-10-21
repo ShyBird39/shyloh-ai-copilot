@@ -156,6 +156,7 @@ const RestaurantFindings = () => {
   });
   const [advancedSettingsOpen, setAdvancedSettingsOpen] = useState(false);
   const [tuningOpen, setTuningOpen] = useState(false);
+  const [teamOpen, setTeamOpen] = useState(false);
   const [tuningSheetOpen, setTuningSheetOpen] = useState(false);
   const [pinDialogOpen, setPinDialogOpen] = useState(false);
   const [pinMode, setPinMode] = useState<"set" | "verify">("verify");
@@ -3734,6 +3735,24 @@ What would you like to work on today?`
               </div>
             </Collapsible>
 
+            {/* Team Section */}
+            <Collapsible open={teamOpen} onOpenChange={setTeamOpen}>
+              <div className="space-y-3">
+                <CollapsibleTrigger className="flex items-center justify-between w-full group">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-primary-foreground/60" />
+                    <h3 className="text-sm font-semibold text-primary-foreground uppercase tracking-wide">Team</h3>
+                  </div>
+                  {teamOpen ? <ChevronUp className="w-4 h-4 text-primary-foreground/60 group-hover:text-primary-foreground transition-colors" /> : <ChevronDown className="w-4 h-4 text-primary-foreground/60 group-hover:text-primary-foreground transition-colors" />}
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="space-y-2">
+                    <TeamManagement restaurantId={id!} />
+                  </div>
+                </CollapsibleContent>
+              </div>
+            </Collapsible>
+
             {/* Advanced Settings Section */}
             <Collapsible open={advancedSettingsOpen} onOpenChange={setAdvancedSettingsOpen}>
               <div className="space-y-3">
@@ -3780,12 +3799,6 @@ What would you like to work on today?`
                 </CollapsibleContent>
               </div>
             </Collapsible>
-
-            {/* Team Section */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-primary-foreground uppercase tracking-wide">Team</h3>
-              <TeamManagement restaurantId={id!} />
-            </div>
           </div>
         </div>
               </div>

@@ -198,15 +198,11 @@ export function TeamManagement({ restaurantId }: TeamManagementProps) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Users className="h-5 w-5" />
-          <h3 className="text-lg font-semibold">Team Members</h3>
-        </div>
         <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" variant="outline">
+            <Button size="sm" variant="outline" className="w-full">
               <UserPlus className="h-4 w-4 mr-2" />
-              Invite
+              Invite Team Member
             </Button>
           </DialogTrigger>
           <DialogContent>
