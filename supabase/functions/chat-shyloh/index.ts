@@ -320,10 +320,15 @@ serve(async (req) => {
       }
     }
 
+    // Track API calls for debug mode
+    const apiCallsDebug: string[] = [];
+
     // Fetch custom knowledge/rules
     let customKnowledgeContext = '';
     if (restaurantId) {
       try {
+        apiCallsDebug.push('Supabase DB - restaurant_custom_knowledge table');
+        
         const { data: knowledge, error: knowledgeError } = await supabase
           .from('restaurant_custom_knowledge')
           .select('*')
@@ -332,15 +337,20 @@ serve(async (req) => {
           .order('created_at', { ascending: true });
 
         if (!knowledgeError && knowledge && knowledge.length > 0) {
+          apiCallsDebug.push(`✅ Custom Knowledge - Retrieved ${knowledge.length} entries`);
+          
           const knowledgeTexts = knowledge.map(k => 
             `**${k.title}**${k.category ? ` (${k.category})` : ''}\n${k.content}`
           ).join('\n\n');
           
           customKnowledgeContext = `\n\nRESTAURANT-SPECIFIC RULES & KNOWLEDGE\nThe operator has provided the following custom rules, concepts, and knowledge specific to their restaurant. Always prioritize and reference these when relevant to the conversation:\n\n${knowledgeTexts}`;
           console.log(`Added ${knowledge.length} custom knowledge entries to context`);
+        } else {
+          apiCallsDebug.push('⚠️ Custom Knowledge - No entries found');
         }
       } catch (error) {
         console.error('Error fetching custom knowledge:', error);
+        apiCallsDebug.push('❌ Custom Knowledge - Error fetching');
       }
     }
 
@@ -400,6 +410,8 @@ ${recentAverage < 3.5 ? '⚠️ Recent feedback is below target. Adjust your ton
         
         if (restaurantGuid) {
           console.log('Calling toast-reporting function...');
+          apiCallsDebug.push('Toast ERA v1 Analytics API - /era/v1/metrics/day');
+          
           // Call toast-reporting function to get today's metrics
           const toastResponse = await fetch(`${supabaseUrl}/functions/v1/toast-reporting`, {
             method: 'POST',
@@ -424,6 +436,7 @@ ${recentAverage < 3.5 ? '⚠️ Recent feedback is below target. Adjust your ton
             console.log('Toast data received:', JSON.stringify(toastData).substring(0, 200));
             
             if (toastData.success && toastData.data && toastData.data.length > 0) {
+              apiCallsDebug.push('✅ Toast API - SUCCESS - Retrieved metrics data');
               const metrics = toastData.data[0];
               const netSales = Number(metrics.netSalesAmount || 0);
               const covers = Number(metrics.guestCount || 0);
@@ -463,24 +476,41 @@ Then proceed with your normal response. This is temporary debugging to confirm t
               console.log('✅ Toast POS context added successfully with live metrics');
             } else {
               console.log('❌ Toast data structure unexpected:', toastData);
+              apiCallsDebug.push('❌ Toast API - FAILED - Invalid data structure');
             }
           } else {
             const errorText = await toastResponse.text();
             console.log('❌ Toast data fetch failed:', toastResponse.status, errorText);
+            
+            if (toastResponse.status === 403) {
+              apiCallsDebug.push('❌ Toast API - FAILED - 403 Forbidden (Missing enterprise-metrics:read scope)');
+            } else {
+              apiCallsDebug.push(`❌ Toast API - FAILED - ${toastResponse.status} ${errorText.substring(0, 100)}`);
+            }
           }
         } else {
           console.log('❌ TOAST_RESTAURANT_GUID not configured, skipping Toast data fetch');
+          apiCallsDebug.push('⚠️ Toast API - SKIPPED - TOAST_RESTAURANT_GUID not configured');
         }
       } catch (error) {
         console.error('❌ Error fetching Toast data:', error);
+        apiCallsDebug.push(`❌ Toast API - ERROR - ${error instanceof Error ? error.message : 'Unknown error'}`);
         // Continue without Toast context - don't let this break the conversation
       }
     }
+
+    // Build API calls summary for debug mode
+    const apiCallsSummary = apiCallsDebug.length > 0 
+      ? `\n\n**DEBUG MODE - API CALLS MADE:**\n${apiCallsDebug.map(call => `- ${call}`).join('\n')}\n\nIMPORTANT: Include this API calls summary in your FIRST response to show which data sources were checked.`
+      : '';
 
     // Fetch and parse uploaded documents - prioritize permanent files
     let docsContext = '';
     if (restaurantId) {
       try {
+        apiCallsDebug.push('Supabase DB - restaurant_files table');
+        apiCallsDebug.push('Supabase Storage - restaurant-documents bucket');
+        
         // Fetch permanent files (Knowledge Base) first - always included
         const { data: permanentFiles, error: permError } = await supabase
           .from('restaurant_files')
@@ -1191,7 +1221,7 @@ When uploaded documents are available in the context above:
 - Reference specific documents by name when using their information
 - Synthesize insights across multiple documents when relevant
 - Quote or paraphrase key sections to ground your advice in their specific context
-- If a question can be answered more accurately with document context, prioritize that over general knowledge${customKnowledgeContext}${toastContext}${docsContext}${feedbackInsights}${notionContext}${onboardingEnhancement}${coachingContext}${activeScenarioContext}${stateContext}`;
+- If a question can be answered more accurately with document context, prioritize that over general knowledge${customKnowledgeContext}${toastContext}${apiCallsSummary}${docsContext}${feedbackInsights}${notionContext}${onboardingEnhancement}${coachingContext}${activeScenarioContext}${stateContext}`;
 
     // Log total context size for monitoring
     const totalContextChars = docsContext.length + systemPrompt.length;
