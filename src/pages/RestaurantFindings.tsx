@@ -21,6 +21,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { TuningSheet } from "@/components/TuningSheet";
 import { PinInput } from "@/components/PinInput";
 import { useAuth } from "@/hooks/useAuth";
+import ReactMarkdown from "react-markdown";
 
 interface KPIData {
   avg_weekly_sales: number | null;
@@ -2593,19 +2594,45 @@ What would you like to work on today?`
 
                 <div className="space-y-6">
                   {messages.map((message, idx) => {
-                    // Render message with @mention highlighting
+                    // Render message with @mention highlighting and markdown
                     const renderMessageContent = (content: string) => {
-                      const parts = content.split(/(@[A-Za-z0-9\s\-_.]+?)(?=\s|$|[.,!?])/g);
-                      return parts.map((part, i) => {
-                        if (part.startsWith('@')) {
-                          return (
-                            <span key={i} className="bg-primary/10 text-primary px-1 rounded">
-                              {part}
-                            </span>
-                          );
-                        }
-                        return part;
-                      });
+                      // Process @mentions to add custom styling
+                      const processedContent = content.replace(
+                        /(@[A-Za-z0-9\s\-_.]+?)(?=\s|$|[.,!?])/g,
+                        '<span class="bg-primary/10 text-primary px-1 rounded">$1</span>'
+                      );
+                      
+                      return (
+                        <ReactMarkdown
+                          components={{
+                            // Custom styling for markdown elements
+                            p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                            strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                            em: ({ children }) => <em className="italic">{children}</em>,
+                            h1: ({ children }) => <h1 className="text-xl font-bold mb-2">{children}</h1>,
+                            h2: ({ children }) => <h2 className="text-lg font-bold mb-2">{children}</h2>,
+                            h3: ({ children }) => <h3 className="text-base font-bold mb-2">{children}</h3>,
+                            ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
+                            ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
+                            li: ({ children }) => <li className="ml-2">{children}</li>,
+                            code: ({ children, className }) => {
+                              const isInline = !className;
+                              return isInline ? (
+                                <code className="bg-accent/50 px-1 py-0.5 rounded text-xs">{children}</code>
+                              ) : (
+                                <code className="block bg-accent/50 p-2 rounded text-xs overflow-x-auto">{children}</code>
+                              );
+                            },
+                            a: ({ children, href }) => (
+                              <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">
+                                {children}
+                              </a>
+                            ),
+                          }}
+                        >
+                          {processedContent}
+                        </ReactMarkdown>
+                      );
                     };
 
                     return (
@@ -2620,9 +2647,9 @@ What would you like to work on today?`
                               : "bg-background/50 backdrop-blur-sm border border-accent/20 text-primary-foreground"
                           }`}
                         >
-                          <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                          <div className="text-sm leading-relaxed">
                             {renderMessageContent(message.content)}
-                          </p>
+                          </div>
                           
                           {message.role === "assistant" && !isOnboarding && (
                             <FeedbackEmojis
