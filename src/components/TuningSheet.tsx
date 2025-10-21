@@ -112,9 +112,10 @@ interface TuningSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   restaurantId: string;
+  onSave?: () => void;
 }
 
-export const TuningSheet = ({ open, onOpenChange, restaurantId }: TuningSheetProps) => {
+export const TuningSheet = ({ open, onOpenChange, restaurantId, onSave }: TuningSheetProps) => {
   const [values, setValues] = useState<Record<string, number>>(() => {
     const initial: Record<string, number> = {};
     sliders.forEach(slider => {
@@ -181,6 +182,7 @@ export const TuningSheet = ({ open, onOpenChange, restaurantId }: TuningSheetPro
 
       console.log("Tuning Profile Saved:", values);
       toast.success("Your profile has been saved!");
+      onSave?.();
     } catch (error) {
       console.error("Error saving tuning profile:", error);
       toast.error("Failed to save profile");

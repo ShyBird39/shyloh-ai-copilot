@@ -1073,6 +1073,24 @@ What would you like to work on today?`
     }
   }, [files, uploadingFiles, showFileNotification]);
 
+  // Function to refresh restaurant data
+  const refreshRestaurantData = async () => {
+    if (!id) return;
+    
+    try {
+      const { data: restaurant, error: restaurantError } = await supabase
+        .from('restaurants')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (restaurantError) throw restaurantError;
+      setData(restaurant);
+      console.log('Restaurant data refreshed:', restaurant);
+    } catch (error) {
+      console.error('Error refreshing restaurant data:', error);
+    }
+  };
 
   // Fetch restaurant data and KPIs
   useEffect(() => {
@@ -3759,6 +3777,7 @@ What would you like to work on today?`
         open={tuningSheetOpen} 
         onOpenChange={setTuningSheetOpen}
         restaurantId={id!}
+        onSave={refreshRestaurantData}
       />
     </SidebarProvider>
   );
