@@ -80,24 +80,43 @@ export function ConversationSettings({
     if (!conversationId) return;
 
     try {
-      const { data, error } = await supabase
+      // Get participants
+      const { data: participantData, error: participantError } = await supabase
         .from("chat_conversation_participants")
-        .select(`
-          id,
-          user_id,
-          role,
-          added_at,
-          profiles!chat_conversation_participants_user_id_fkey(email, display_name)
-        `)
+        .select("id, user_id, role, added_at")
         .eq("conversation_id", conversationId)
         .order("role", { ascending: true })
         .order("added_at", { ascending: true });
 
-      if (error) throw error;
-      setParticipants(((data as any[]) || []).map((p: any) => ({
-        ...p,
-        profiles: Array.isArray(p.profiles) ? p.profiles[0] : p.profiles,
-      })));
+      if (participantError) throw participantError;
+
+      if (!participantData || participantData.length === 0) {
+        setParticipants([]);
+        return;
+      }
+
+      // Get profiles for all participants
+      const userIds = participantData.map(p => p.user_id);
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("id, email, display_name")
+        .in("id", userIds);
+
+      if (profileError) throw profileError;
+
+      // Combine data
+      const participantsWithProfiles = participantData.map(p => {
+        const profile = profileData?.find(prof => prof.id === p.user_id);
+        return {
+          ...p,
+          profiles: {
+            email: profile?.email || '',
+            display_name: profile?.display_name || null,
+          }
+        };
+      });
+
+      setParticipants(participantsWithProfiles);
     } catch (error) {
       console.error("Error loading participants:", error);
       toast.error("Failed to load participants");
@@ -106,20 +125,42 @@ export function ConversationSettings({
 
   const loadTeamMembers = async () => {
     try {
-      const { data, error } = await supabase
+      // Get restaurant members
+      const { data: memberData, error: memberError } = await supabase
         .from("restaurant_members")
-        .select(`
-          user_id,
-          profiles!restaurant_members_user_id_fkey(email, display_name)
-        `)
+        .select("user_id")
         .eq("restaurant_id", restaurantId)
         .eq("status", "active");
 
-      if (error) throw error;
-      setTeamMembers(((data as any[]) || []).map((m: any) => ({
-        ...m,
-        profiles: Array.isArray(m.profiles) ? m.profiles[0] : m.profiles,
-      })));
+      if (memberError) throw memberError;
+
+      if (!memberData || memberData.length === 0) {
+        setTeamMembers([]);
+        return;
+      }
+
+      // Get profiles for all members
+      const userIds = memberData.map(m => m.user_id);
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("id, email, display_name")
+        .in("id", userIds);
+
+      if (profileError) throw profileError;
+
+      // Combine data
+      const membersWithProfiles = memberData.map(m => {
+        const profile = profileData?.find(prof => prof.id === m.user_id);
+        return {
+          user_id: m.user_id,
+          profiles: {
+            email: profile?.email || '',
+            display_name: profile?.display_name || null,
+          }
+        };
+      });
+
+      setTeamMembers(membersWithProfiles);
     } catch (error) {
       console.error("Error loading team members:", error);
     }
