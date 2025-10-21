@@ -241,7 +241,7 @@ const RestaurantFindings = () => {
 
   const samplePrompts = [
     "I am here to...",
-    "Coaching Session",
+    "Strategy Session",
     "Tips for using Shyloh"
   ];
 
@@ -815,8 +815,8 @@ const RestaurantFindings = () => {
       return;
     }
 
-    // Handle Coaching Session prompt with framework and interactive options
-    if (promptText === "Coaching Session") {
+    // Handle Strategy Session prompt with framework and interactive options
+    if (promptText === "Strategy Session") {
       const userMessage: ChatMessage = { role: "user", content: promptText };
       setMessages((prev) => [...prev, userMessage]);
       setShowObjectives(false);
@@ -2506,7 +2506,7 @@ const RestaurantFindings = () => {
                     </div>
                   )}
 
-                  {/* Coaching Session Area Selection */}
+                  {/* Strategy Session Area Selection */}
                   {showCoachingOptions && (
                     <div className="flex justify-start animate-fade-in">
                       <div className="bg-background/50 backdrop-blur-sm border border-accent/20 rounded-2xl p-4 max-w-md">
