@@ -378,6 +378,88 @@ ${recentAverage < 3.5 ? '⚠️ Recent feedback is below target. Adjust your ton
       }
     }
 
+    // Fetch Toast POS data for real-time context
+    let toastContext = '';
+    if (restaurantId) {
+      try {
+        console.log('Fetching Toast metrics for today...');
+        
+        // Get today's date in YYYYMMDD format
+        const today = new Date();
+        const todayYYYYMMDD = parseInt(
+          today.getFullYear().toString() + 
+          (today.getMonth() + 1).toString().padStart(2, '0') + 
+          today.getDate().toString().padStart(2, '0')
+        );
+
+        // Get restaurant GUID from environment or restaurant data
+        const restaurantGuid = Deno.env.get('TOAST_RESTAURANT_GUID') || '';
+        
+        if (restaurantGuid) {
+          // Call toast-reporting function to get today's metrics
+          const toastResponse = await fetch(`${supabaseUrl}/functions/v1/toast-reporting`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              action: 'request-and-poll',
+              reportType: 'metrics',
+              timeRange: 'day',
+              startDate: todayYYYYMMDD,
+              endDate: todayYYYYMMDD,
+              restaurantIds: [restaurantGuid],
+              aggregateBy: 'HOUR'
+            })
+          });
+
+          if (toastResponse.ok) {
+            const toastData = await toastResponse.json();
+            
+            if (toastData.success && toastData.data && toastData.data.length > 0) {
+              const metrics = toastData.data[0];
+              const netSales = Number(metrics.netSalesAmount || 0);
+              const covers = Number(metrics.guestCount || 0);
+              const avgCheck = Number(metrics.avgOrderValue || 0);
+              const ordersCount = Number(metrics.ordersCount || 0);
+              const laborHours = metrics.hourlyJobTotalHours ? parseFloat(metrics.hourlyJobTotalHours) : 0;
+              const laborCost = metrics.hourlyJobTotalPay ? parseFloat(metrics.hourlyJobTotalPay) : 0;
+
+              toastContext = `\n\n**LIVE TOAST POS DATA (Today - ${metrics.businessDate})**
+
+Sales Performance:
+- Net Sales: $${netSales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+- Guest Count (Covers): ${covers}
+- Average Check: $${avgCheck.toFixed(2)}
+- Total Orders: ${ordersCount}
+${ordersCount > 0 ? `- Orders Per Cover: ${(ordersCount / covers).toFixed(1)}` : ''}
+
+Labor Metrics:
+- Total Labor Hours: ${laborHours.toFixed(1)} hours
+- Total Labor Cost: $${laborCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+${netSales > 0 ? `- Labor Cost %: ${((laborCost / netSales) * 100).toFixed(1)}%` : ''}
+${laborHours > 0 && netSales > 0 ? `- Sales Per Labor Hour: $${(netSales / laborHours).toFixed(2)}` : ''}
+
+**HOW TO USE THIS DATA:**
+- Reference specific numbers when discussing today's performance
+- Compare against their stated KPI goals (food cost ${kpiData?.food_cost_goal || 'N/A'}%, labor cost ${kpiData?.labor_cost_goal || 'N/A'}%)
+- Use to provide concrete, data-driven insights
+- Connect Toast metrics to their REGGI profile and tuning settings
+- This is LIVE data from their POS—treat it as authoritative for today's operations
+- When they ask about "today" or "current" performance, cite these numbers`;
+
+              console.log('Added Toast POS context with live metrics');
+            }
+          } else {
+            console.log('Toast data fetch failed, continuing without POS context');
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching Toast data:', error);
+        // Continue without Toast context - don't let this break the conversation
+      }
+    }
+
     // Fetch and parse uploaded documents - prioritize permanent files
     let docsContext = '';
     if (restaurantId) {
@@ -1092,7 +1174,7 @@ When uploaded documents are available in the context above:
 - Reference specific documents by name when using their information
 - Synthesize insights across multiple documents when relevant
 - Quote or paraphrase key sections to ground your advice in their specific context
-- If a question can be answered more accurately with document context, prioritize that over general knowledge${customKnowledgeContext}${docsContext}${feedbackInsights}${notionContext}${onboardingEnhancement}${coachingContext}${activeScenarioContext}${stateContext}`;
+- If a question can be answered more accurately with document context, prioritize that over general knowledge${customKnowledgeContext}${toastContext}${docsContext}${feedbackInsights}${notionContext}${onboardingEnhancement}${coachingContext}${activeScenarioContext}${stateContext}`;
 
     // Log total context size for monitoring
     const totalContextChars = docsContext.length + systemPrompt.length;
