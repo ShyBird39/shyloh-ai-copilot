@@ -436,16 +436,43 @@ ${recentAverage < 3.5 ? '⚠️ Recent feedback is below target. Adjust your ton
             console.log('Toast data received:', JSON.stringify(toastData).substring(0, 200));
             
             if (toastData.success && toastData.data && toastData.data.length > 0) {
-              apiCallsDebug.push('✅ Toast API - SUCCESS - Retrieved metrics data');
-              const metrics = toastData.data[0];
-              const netSales = Number(metrics.netSalesAmount || 0);
-              const covers = Number(metrics.guestCount || 0);
-              const avgCheck = Number(metrics.avgOrderValue || 0);
-              const ordersCount = Number(metrics.ordersCount || 0);
-              const laborHours = metrics.hourlyJobTotalHours ? parseFloat(metrics.hourlyJobTotalHours) : 0;
-              const laborCost = metrics.hourlyJobTotalPay ? parseFloat(metrics.hourlyJobTotalPay) : 0;
+              apiCallsDebug.push(`✅ Toast API - SUCCESS - Retrieved ${toastData.data.length} hourly records`);
+              
+              // Aggregate all hourly records into daily totals
+              let netSales = 0;
+              let covers = 0;
+              let ordersCount = 0;
+              let laborHours = 0;
+              let laborCost = 0;
+              let businessDate = '';
+              
+              console.log(`Aggregating ${toastData.data.length} hourly records...`);
+              
+              toastData.data.forEach((hourlyMetrics: any, index: number) => {
+                const hourSales = Number(hourlyMetrics.netSalesAmount || 0);
+                const hourCovers = Number(hourlyMetrics.guestCount || 0);
+                const hourOrders = Number(hourlyMetrics.ordersCount || 0);
+                const hourLaborHours = hourlyMetrics.hourlyJobTotalHours ? parseFloat(hourlyMetrics.hourlyJobTotalHours) : 0;
+                const hourLaborCost = hourlyMetrics.hourlyJobTotalPay ? parseFloat(hourlyMetrics.hourlyJobTotalPay) : 0;
+                
+                console.log(`Hour ${index + 1}: Sales=$${hourSales}, Covers=${hourCovers}, Orders=${hourOrders}`);
+                
+                netSales += hourSales;
+                covers += hourCovers;
+                ordersCount += hourOrders;
+                laborHours += hourLaborHours;
+                laborCost += hourLaborCost;
+                
+                if (!businessDate && hourlyMetrics.businessDate) {
+                  businessDate = hourlyMetrics.businessDate;
+                }
+              });
+              
+              const avgCheck = covers > 0 ? netSales / covers : 0;
+              
+              console.log(`Daily Totals: Sales=$${netSales}, Covers=${covers}, Orders=${ordersCount}, AvgCheck=$${avgCheck.toFixed(2)}`);
 
-              toastContext = `\n\n**LIVE TOAST POS DATA (Today - ${metrics.businessDate})**
+              toastContext = `\n\n**LIVE TOAST POS DATA (Today - ${businessDate})**
 
 Sales Performance:
 - Net Sales: $${netSales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
