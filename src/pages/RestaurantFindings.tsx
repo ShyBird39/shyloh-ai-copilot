@@ -458,6 +458,27 @@ const RestaurantFindings = () => {
         setCurrentConversationVisibility(convMeta.visibility || 'private');
       }
 
+      // Auto-add current user as participant if they're not already
+      if (user?.id) {
+        const { data: existingParticipant } = await supabase
+          .from('chat_conversation_participants')
+          .select('id')
+          .eq('conversation_id', conversationId)
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (!existingParticipant) {
+          await supabase
+            .from('chat_conversation_participants')
+            .insert({
+              conversation_id: conversationId,
+              user_id: user.id,
+              role: 'member',
+            });
+          console.log('Auto-added user as conversation participant');
+        }
+      }
+
       setCurrentConversationId(conversationId);
       setMessages(msgs.map(msg => ({
         role: msg.role as "user" | "assistant",
@@ -1802,6 +1823,27 @@ What would you like to work on today?`
               user_id: user.id,
               role: 'owner',
             });
+        }
+      } else {
+        // For existing conversations, ensure current user is a participant
+        if (user?.id) {
+          const { data: existingParticipant } = await supabase
+            .from('chat_conversation_participants')
+            .select('id')
+            .eq('conversation_id', convId)
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          if (!existingParticipant) {
+            await supabase
+              .from('chat_conversation_participants')
+              .insert({
+                conversation_id: convId,
+                user_id: user.id,
+                role: 'member',
+              });
+            console.log('Auto-added user as conversation participant');
+          }
         }
       }
 

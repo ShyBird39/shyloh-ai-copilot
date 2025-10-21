@@ -274,6 +274,37 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Verify user has access to this restaurant
+    const authHeader = req.headers.get('Authorization');
+    if (authHeader && restaurantId) {
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+      
+      if (!userError && user) {
+        // Check if user is a restaurant member
+        const { data: memberCheck } = await supabase
+          .from('restaurant_members')
+          .select('id')
+          .eq('restaurant_id', restaurantId)
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .maybeSingle();
+        
+        if (!memberCheck) {
+          console.error(`Access denied: User ${user.id} is not a member of restaurant ${restaurantId}`);
+          return new Response(
+            JSON.stringify({ error: 'You do not have access to this restaurant' }),
+            { 
+              status: 403, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        }
+        
+        console.log(`Access granted: User ${user.id} is a member of restaurant ${restaurantId}`);
+      }
+    }
+
     // Fetch conversation state for context
     let conversationState: any = null;
     if (conversationId) {
