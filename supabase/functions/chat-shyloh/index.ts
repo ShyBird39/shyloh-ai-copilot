@@ -473,6 +473,9 @@ ${recentAverage < 3.5 ? '⚠️ Recent feedback is below target. Adjust your ton
               console.log(`Daily Totals: Sales=$${netSales}, Covers=${covers}, Orders=${ordersCount}, AvgCheck=$${avgCheck.toFixed(2)}`);
 
               toastContext = `\n\n**LIVE TOAST POS DATA (Today - ${businessDate})**
+*** CRITICAL: THIS DATA WAS JUST PULLED FROM TOAST POS (${new Date().toISOString()}) ***
+*** ALWAYS USE THESE NUMBERS WHEN ASKED ABOUT TODAY/CURRENT/NOW PERFORMANCE ***
+*** IGNORE ANY OLDER NUMBERS FROM EARLIER IN THE CONVERSATION ***
 
 Sales Performance:
 - Net Sales: $${netSales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -488,17 +491,13 @@ ${netSales > 0 ? `- Labor Cost %: ${((laborCost / netSales) * 100).toFixed(1)}%`
 ${laborHours > 0 && netSales > 0 ? `- Sales Per Labor Hour: $${(netSales / laborHours).toFixed(2)}` : ''}
 
 **HOW TO USE THIS DATA:**
-- Reference specific numbers when discussing today's performance
+- **CRITICAL:** When user asks about "now", "current", "today", or "right now", ALWAYS use the numbers from THIS section (above)
+- These numbers are refreshed on EVERY message you receive, so they represent the most current data available
+- If you mentioned different numbers earlier in the conversation, those are now OUTDATED—use these fresh numbers instead
 - Compare against their stated KPI goals (food cost ${kpiData?.food_cost_goal || 'N/A'}%, labor cost ${kpiData?.labor_cost_goal || 'N/A'}%)
 - Use to provide concrete, data-driven insights
 - Connect Toast metrics to their REGGI profile and tuning settings
-- This is LIVE data from their POS—treat it as authoritative for today's operations
-- When they ask about "today" or "current" performance, cite these numbers
-
-**DEBUG MODE - TOAST DATA CONFIRMATION:**
-IMPORTANT: In your FIRST response in this conversation, acknowledge that you have live Toast data by saying something like:
-"[Just pulled today's Toast data - I can see your live numbers]" 
-Then proceed with your normal response. This is temporary debugging to confirm the integration is working.`;
+- This is LIVE data from their POS—treat it as authoritative for today's operations`;
 
               console.log('✅ Toast POS context added successfully with live metrics');
             } else {
