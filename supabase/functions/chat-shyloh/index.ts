@@ -747,6 +747,24 @@ ${fileTexts.join('\n\n')}`;
       }
     ] : [];
 
+    // Load Toast API YAML spec for Claude's reference
+    const toastApiSpec = await Deno.readTextFile(new URL('./toast-api-spec.yaml', import.meta.url).pathname);
+    const toastApiContext = `\n\n**TOAST API SPECIFICATION**
+
+You have access to Toast POS data through the toast-reporting edge function. Below is the complete Toast API specification so you understand what data is available and how to request it:
+
+\`\`\`yaml
+${toastApiSpec}
+\`\`\`
+
+**IMPORTANT NOTES:**
+- The toast-reporting function handles authentication automatically
+- Use action: "request-and-poll" to get data (it will request and wait for results)
+- Always aggregate HOURLY data when analyzing daily totals (don't just use the first record)
+- When discussing sales, labor, or operational metrics, you have access to real Toast POS data
+- Available report types: metrics (sales/labor), check, labor (hourly), menu
+- Always use YYYYMMDD format for dates (e.g., 20251021 for Oct 21, 2025)`;
+
     // Conditionally add Notion context to system prompt
     const notionContext = useNotion 
       ? "\n\nNOTION INTEGRATION ACTIVE\nThe user has explicitly requested Notion access via @notion mention. You MUST use these tools to search their Notion workspace:\n- search_notion: Search for pages/databases by keyword (START HERE - always search first)\n- read_notion_page: Get full content of a specific page after finding it via search\n- query_notion_database: Query structured databases after finding them via search\n\nWhen the user asks about logs, SOPs, schedules, recipes, inventory, or any operational documentation, IMMEDIATELY use search_notion to look for it. Don't ask where it's stored—assume it's in Notion and search for it. Only mention that you couldn't find it if the search returns no results. Always cite specific Notion pages when using this information."
@@ -1248,7 +1266,7 @@ When uploaded documents are available in the context above:
 - Reference specific documents by name when using their information
 - Synthesize insights across multiple documents when relevant
 - Quote or paraphrase key sections to ground your advice in their specific context
-- If a question can be answered more accurately with document context, prioritize that over general knowledge${customKnowledgeContext}${toastContext}${apiCallsSummary}${docsContext}${feedbackInsights}${notionContext}${onboardingEnhancement}${coachingContext}${activeScenarioContext}${stateContext}`;
+- If a question can be answered more accurately with document context, prioritize that over general knowledge${customKnowledgeContext}${toastContext}${apiCallsSummary}${docsContext}${feedbackInsights}${toastApiContext}${notionContext}${onboardingEnhancement}${coachingContext}${activeScenarioContext}${stateContext}`;
 
     // Log total context size for monitoring
     const totalContextChars = docsContext.length + systemPrompt.length;
