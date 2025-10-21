@@ -10,7 +10,7 @@ interface TeamMember {
   profiles: {
     email: string;
     display_name: string | null;
-  };
+  } | null;
 }
 
 interface MentionInputProps {
@@ -89,6 +89,8 @@ export function MentionInput({
   };
 
   const insertMention = (member: TeamMember) => {
+    if (!member.profiles) return;
+    
     const displayName = member.profiles.display_name || member.profiles.email.split("@")[0];
     const textBeforeCursor = value.slice(0, cursorPosition);
     const textAfterCursor = value.slice(cursorPosition);
@@ -139,6 +141,7 @@ export function MentionInput({
   };
 
   const filteredMembers = teamMembers.filter((member) => {
+    if (!member.profiles) return false;
     const displayName = member.profiles.display_name || member.profiles.email;
     return displayName.toLowerCase().includes(mentionQuery);
   });
