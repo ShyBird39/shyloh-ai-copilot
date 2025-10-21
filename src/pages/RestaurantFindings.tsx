@@ -912,6 +912,36 @@ const RestaurantFindings = () => {
       }, 600);
       return;
     }
+
+    // Handle Tips for using Shyloh prompt with Socratic pro tip
+    if (promptText === "Tips for using Shyloh") {
+      const userMessage: ChatMessage = { role: "user", content: promptText };
+      setMessages((prev) => [...prev, userMessage]);
+      setShowObjectives(false);
+      setIsTyping(true);
+
+      setTimeout(() => {
+        setMessages((prev) => [...prev, {
+          role: "assistant",
+          content: `Here are some tips to get the most out of working with me:
+
+**Pro tip:** I'm Socratic by default—I'll ask what *you* think first before jumping to answers. Builds your intuition over time. If you just want the answer, tell me to skip the questions.
+
+**Quick Start Prompts:** Use the buttons above to jump into common workflows like Strategy Sessions or WWAHD guidance.
+
+**Saved Prompts:** Access your custom prompt library in the right sidebar to save and reuse your best questions.
+
+**Context Matters:** I have access to your KPIs, tools, and custom knowledge—the more you fill out, the better I can help.
+
+**Be Specific:** Instead of "help with sales," try "what can I do this week to increase check averages by 10%?"
+
+What would you like to work on today?`
+        }]);
+        setIsTyping(false);
+      }, 1200);
+      
+      return;
+    }
     
     setCurrentInput(promptText);
     // Auto-send the prompt
@@ -1812,10 +1842,55 @@ const RestaurantFindings = () => {
 
       // Save assistant message
       if (assistantMessage && convId) {
+        // Socratic pro tip constant
+        const SOCRATIC_PRO_TIP = "\n\n**Quick reminder:** I'm Socratic by default—I'll ask what *you* think first before jumping to answers. Builds your intuition over time. If you just want the answer, tell me to skip the questions.";
+        
+        let finalContent = assistantMessage;
+        
+        // 5-10% chance (7.5%) to append Socratic reminder
+        const shouldShowTip = Math.random() < 0.075;
+        
+        if (shouldShowTip) {
+          // Check conversation metadata to ensure we haven't shown it too recently
+          const { data: convData } = await supabase
+            .from('chat_conversations')
+            .select('conversation_state')
+            .eq('id', convId)
+            .single();
+          
+          const lastTipIndex = convData?.conversation_state?.last_socratic_tip_index || 0;
+          const messagesSinceLastTip = messages.length - lastTipIndex;
+          
+          // Only show if at least 10 messages have passed
+          if (messagesSinceLastTip >= 10) {
+            finalContent += SOCRATIC_PRO_TIP;
+            
+            // Update conversation state to track when we last showed it
+            await supabase
+              .from('chat_conversations')
+              .update({
+                conversation_state: {
+                  ...convData?.conversation_state,
+                  last_socratic_tip_index: messages.length + 1
+                }
+              })
+              .eq('id', convId);
+            
+            // Update the displayed message with the tip
+            setMessages((prev) => {
+              const lastMsg = prev[prev.length - 1];
+              if (lastMsg?.role === 'assistant') {
+                return [...prev.slice(0, -1), { ...lastMsg, content: finalContent }];
+              }
+              return prev;
+            });
+          }
+        }
+        
         await supabase.from("chat_messages").insert({
           conversation_id: convId,
           role: "assistant",
-          content: assistantMessage,
+          content: finalContent,
           user_id: null, // Assistant messages have no user_id
         });
 
