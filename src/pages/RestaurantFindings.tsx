@@ -22,6 +22,7 @@ import { TuningSheet } from "@/components/TuningSheet";
 import { PinInput } from "@/components/PinInput";
 import { useAuth } from "@/hooks/useAuth";
 import ReactMarkdown from "react-markdown";
+import rehypeRaw from "rehype-raw";
 
 interface KPIData {
   avg_weekly_sales: number | null;
@@ -2616,6 +2617,7 @@ What would you like to work on today?`
                       
                       return (
                         <ReactMarkdown
+                          rehypePlugins={[rehypeRaw]}
                           components={{
                             // Custom styling for markdown elements
                             p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
