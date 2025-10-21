@@ -392,10 +392,14 @@ ${recentAverage < 3.5 ? '⚠️ Recent feedback is below target. Adjust your ton
           today.getDate().toString().padStart(2, '0')
         );
 
+        console.log('Today date (YYYYMMDD):', todayYYYYMMDD);
+
         // Get restaurant GUID from environment or restaurant data
         const restaurantGuid = Deno.env.get('TOAST_RESTAURANT_GUID') || '';
+        console.log('Restaurant GUID:', restaurantGuid ? 'Found' : 'NOT FOUND');
         
         if (restaurantGuid) {
+          console.log('Calling toast-reporting function...');
           // Call toast-reporting function to get today's metrics
           const toastResponse = await fetch(`${supabaseUrl}/functions/v1/toast-reporting`, {
             method: 'POST',
@@ -413,8 +417,11 @@ ${recentAverage < 3.5 ? '⚠️ Recent feedback is below target. Adjust your ton
             })
           });
 
+          console.log('Toast response status:', toastResponse.status);
+
           if (toastResponse.ok) {
             const toastData = await toastResponse.json();
+            console.log('Toast data received:', JSON.stringify(toastData).substring(0, 200));
             
             if (toastData.success && toastData.data && toastData.data.length > 0) {
               const metrics = toastData.data[0];
@@ -453,14 +460,19 @@ IMPORTANT: In your FIRST response in this conversation, acknowledge that you hav
 "[Just pulled today's Toast data - I can see your live numbers]" 
 Then proceed with your normal response. This is temporary debugging to confirm the integration is working.`;
 
-              console.log('Added Toast POS context with live metrics');
+              console.log('✅ Toast POS context added successfully with live metrics');
+            } else {
+              console.log('❌ Toast data structure unexpected:', toastData);
             }
           } else {
-            console.log('Toast data fetch failed, continuing without POS context');
+            const errorText = await toastResponse.text();
+            console.log('❌ Toast data fetch failed:', toastResponse.status, errorText);
           }
+        } else {
+          console.log('❌ TOAST_RESTAURANT_GUID not configured, skipping Toast data fetch');
         }
       } catch (error) {
-        console.error('Error fetching Toast data:', error);
+        console.error('❌ Error fetching Toast data:', error);
         // Continue without Toast context - don't let this break the conversation
       }
     }
