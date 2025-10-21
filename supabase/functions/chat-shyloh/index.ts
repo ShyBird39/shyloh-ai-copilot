@@ -747,11 +747,19 @@ ${fileTexts.join('\n\n')}`;
       }
     ] : [];
 
-    // Load Toast API YAML spec for Claude's reference
-    const toastApiSpec = await Deno.readTextFile(new URL('./toast-api-spec.yaml', import.meta.url).pathname);
+    // Load Toast API YAML spec for Claude's reference (with fallback if file is not bundled)
+    let toastApiSpec = '';
+    try {
+      const specPath = new URL('./toast-api-spec.yaml', import.meta.url).pathname;
+      toastApiSpec = await Deno.readTextFile(specPath);
+    } catch (err) {
+      console.error('Toast API spec not found, continuing without YAML:', (err as Error)?.message ?? err);
+      // Minimal summary so Claude still has context even without the full YAML file
+      toastApiSpec = "swagger: '2.0'\ninfo:\n  title: Analytics API (summary)\npaths:\n  /metrics: {post: {summary: 'Request aggregated metrics'}}\n  /metrics/{reportRequestGuid}: {get: {summary: 'Get aggregated metrics'}}";
+    }
     const toastApiContext = `\n\n**TOAST API SPECIFICATION**
 
-You have access to Toast POS data through the toast-reporting edge function. Below is the complete Toast API specification so you understand what data is available and how to request it:
+You have access to Toast POS data through the toast-reporting backend function. Below is the Toast API specification (or a concise summary if the full YAML isn't available):
 
 \`\`\`yaml
 ${toastApiSpec}
