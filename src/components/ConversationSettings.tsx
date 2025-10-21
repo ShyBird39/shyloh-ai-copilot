@@ -94,7 +94,10 @@ export function ConversationSettings({
         .order("added_at", { ascending: true });
 
       if (error) throw error;
-      setParticipants((data as any) || []);
+      setParticipants(((data as any[]) || []).map((p: any) => ({
+        ...p,
+        profiles: Array.isArray(p.profiles) ? p.profiles[0] : p.profiles,
+      })));
     } catch (error) {
       console.error("Error loading participants:", error);
       toast.error("Failed to load participants");
@@ -113,7 +116,10 @@ export function ConversationSettings({
         .eq("status", "active");
 
       if (error) throw error;
-      setTeamMembers((data as any) || []);
+      setTeamMembers(((data as any[]) || []).map((m: any) => ({
+        ...m,
+        profiles: Array.isArray(m.profiles) ? m.profiles[0] : m.profiles,
+      })));
     } catch (error) {
       console.error("Error loading team members:", error);
     }

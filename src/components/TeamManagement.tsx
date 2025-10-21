@@ -81,14 +81,19 @@ export function TeamManagement({ restaurantId }: TeamManagementProps) {
       // Create a map of user_id to role
       const rolesMap = new Map(rolesData?.map(r => [r.user_id, r.role]) || []);
 
-      const formattedMembers = membersData.map((member: any) => ({
-        id: member.id,
-        user_id: member.user_id,
-        email: member.profiles?.email,
-        display_name: member.profiles?.display_name || member.profiles?.email,
-        role: rolesMap.get(member.user_id) || "member",
-        invited_at: member.invited_at,
-      }));
+      const formattedMembers = (membersData as any[]).map((member: any) => {
+        const profile = Array.isArray(member.profiles)
+          ? member.profiles[0]
+          : member.profiles;
+        return {
+          id: member.id,
+          user_id: member.user_id,
+          email: profile?.email,
+          display_name: profile?.display_name || profile?.email,
+          role: rolesMap.get(member.user_id) || "member",
+          invited_at: member.invited_at,
+        } as TeamMember;
+      });
 
       setMembers(formattedMembers);
     } catch (error: any) {
