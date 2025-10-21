@@ -14,6 +14,7 @@ interface Notification {
   is_read: boolean;
   conversation_id: string;
   mentioned_by: string;
+  type: string;
   profiles?: {
     display_name: string;
     email: string;
@@ -165,11 +166,16 @@ export function NotificationBell({ restaurantId, onNavigate }: NotificationBellP
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium">
-                        {notif.profiles?.display_name || notif.profiles?.email} mentioned you
+                        {notif.type === 'conversation_shared' 
+                          ? notif.content
+                          : `${notif.profiles?.display_name || notif.profiles?.email} mentioned you`
+                        }
                       </p>
-                      <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                        {notif.content}
-                      </p>
+                      {notif.type === 'mention' && (
+                        <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                          {notif.content}
+                        </p>
+                      )}
                       <p className="text-xs text-muted-foreground mt-1">
                         {formatDistanceToNow(new Date(notif.created_at), { addSuffix: true })}
                       </p>

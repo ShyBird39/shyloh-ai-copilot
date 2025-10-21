@@ -167,20 +167,56 @@ export function ConversationSettings({
   };
 
   const handleAddParticipant = async (userId: string) => {
-    if (!conversationId) return;
+    if (!conversationId || !user) return;
 
     setLoading(true);
     try {
-      const { error } = await supabase
+      // Add participant
+      const { error: participantError } = await supabase
         .from("chat_conversation_participants")
         .insert({
           conversation_id: conversationId,
           user_id: userId,
           role: "member",
-          added_by: user?.id,
+          added_by: user.id,
         });
 
-      if (error) throw error;
+      if (participantError) throw participantError;
+
+      // Get conversation title for the notification
+      const { data: conversationData } = await supabase
+        .from("chat_conversations")
+        .select("title")
+        .eq("id", conversationId)
+        .single();
+
+      // Get the user's profile for the notification message
+      const { data: currentUserProfile } = await supabase
+        .from("profiles")
+        .select("display_name, email")
+        .eq("id", user.id)
+        .single();
+
+      const addedByName = currentUserProfile?.display_name || currentUserProfile?.email || "Someone";
+      const conversationTitle = conversationData?.title || "a conversation";
+
+      // Create notification for the added user
+      const { error: notificationError } = await supabase
+        .from("notifications")
+        .insert({
+          user_id: userId,
+          restaurant_id: restaurantId,
+          conversation_id: conversationId,
+          message_id: conversationId, // Using conversation_id as placeholder since there's no specific message
+          type: "conversation_shared",
+          content: `${addedByName} added you to "${conversationTitle}"`,
+          mentioned_by: user.id,
+        });
+
+      if (notificationError) {
+        console.error("Error creating notification:", notificationError);
+        // Don't fail the whole operation if notification fails
+      }
 
       toast.success("Participant added");
       loadParticipants();
