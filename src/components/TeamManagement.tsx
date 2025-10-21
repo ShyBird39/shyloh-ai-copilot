@@ -47,15 +47,10 @@ export function TeamManagement({ restaurantId }: TeamManagementProps) {
 
   const loadMembers = async () => {
     try {
-      // Fetch members with profiles
+      // Fetch members
       const { data: membersData, error: membersError } = await supabase
         .from("restaurant_members")
-        .select(`
-          id,
-          user_id,
-          invited_at,
-          profiles!restaurant_members_user_id_fkey(email, display_name)
-        `)
+        .select("id, user_id, invited_at")
         .eq("restaurant_id", restaurantId)
         .eq("status", "active");
 
@@ -66,8 +61,18 @@ export function TeamManagement({ restaurantId }: TeamManagementProps) {
         return;
       }
 
-      // Fetch roles for these users
+      // Fetch profiles for these users
       const userIds = membersData.map(m => m.user_id);
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, email, display_name")
+        .in("id", userIds);
+
+      if (profilesError) {
+        console.error("Error fetching profiles:", profilesError);
+      }
+
+      // Fetch roles for these users
       const { data: rolesData, error: rolesError } = await supabase
         .from("user_roles")
         .select("user_id, role")
@@ -78,18 +83,17 @@ export function TeamManagement({ restaurantId }: TeamManagementProps) {
         console.error("Error fetching roles:", rolesError);
       }
 
-      // Create a map of user_id to role
+      // Create maps for easy lookup
+      const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
       const rolesMap = new Map(rolesData?.map(r => [r.user_id, r.role]) || []);
 
-      const formattedMembers = (membersData as any[]).map((member: any) => {
-        const profile = Array.isArray(member.profiles)
-          ? member.profiles[0]
-          : member.profiles;
+      const formattedMembers = membersData.map((member: any) => {
+        const profile = profilesMap.get(member.user_id);
         return {
           id: member.id,
           user_id: member.user_id,
-          email: profile?.email,
-          display_name: profile?.display_name || profile?.email,
+          email: profile?.email || "Unknown",
+          display_name: profile?.display_name || profile?.email || "Unknown User",
           role: rolesMap.get(member.user_id) || "member",
           invited_at: member.invited_at,
         } as TeamMember;
