@@ -446,7 +446,12 @@ ${laborHours > 0 && netSales > 0 ? `- Sales Per Labor Hour: $${(netSales / labor
 - Use to provide concrete, data-driven insights
 - Connect Toast metrics to their REGGI profile and tuning settings
 - This is LIVE data from their POS—treat it as authoritative for today's operations
-- When they ask about "today" or "current" performance, cite these numbers`;
+- When they ask about "today" or "current" performance, cite these numbers
+
+**DEBUG MODE - TOAST DATA CONFIRMATION:**
+IMPORTANT: In your FIRST response in this conversation, acknowledge that you have live Toast data by saying something like:
+"[Just pulled today's Toast data - I can see your live numbers]" 
+Then proceed with your normal response. This is temporary debugging to confirm the integration is working.`;
 
               console.log('Added Toast POS context with live metrics');
             }
