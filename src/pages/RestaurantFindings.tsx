@@ -2514,6 +2514,17 @@ What would you like to work on today?`
                         handleLoadConversation(conversationId);
                       }}
                     />
+                    {currentConversationId && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setShowConversationSettings(true)}
+                        className="text-primary-foreground hover:bg-background/20"
+                        title="Share conversation"
+                      >
+                        <Users className="w-4 h-4" />
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"
@@ -3860,6 +3871,15 @@ What would you like to work on today?`
         onOpenChange={setTuningSheetOpen}
         restaurantId={id!}
         onSave={refreshRestaurantData}
+      />
+      
+      <ConversationSettings
+        open={showConversationSettings}
+        onOpenChange={setShowConversationSettings}
+        conversationId={currentConversationId}
+        restaurantId={id || ""}
+        currentVisibility={currentConversationVisibility}
+        onVisibilityChange={setCurrentConversationVisibility}
       />
     </SidebarProvider>
   );
