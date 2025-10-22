@@ -394,15 +394,16 @@ ${recentAverage < 3.5 ? '⚠️ Recent feedback is below target. Adjust your ton
       try {
         console.log('Fetching Toast metrics for today...');
         
-        // Get today's date in YYYYMMDD format
+        // Get today's date in YYYYMMDD format (EST/EDT timezone)
         const today = new Date();
+        const estDate = new Date(today.toLocaleString('en-US', { timeZone: 'America/New_York' }));
         const todayYYYYMMDD = parseInt(
-          today.getFullYear().toString() + 
-          (today.getMonth() + 1).toString().padStart(2, '0') + 
-          today.getDate().toString().padStart(2, '0')
+          estDate.getFullYear().toString() + 
+          (estDate.getMonth() + 1).toString().padStart(2, '0') + 
+          estDate.getDate().toString().padStart(2, '0')
         );
 
-        console.log('Today date (YYYYMMDD):', todayYYYYMMDD);
+        console.log('Today date (YYYYMMDD) in EST:', todayYYYYMMDD);
 
         // Get restaurant GUID from environment or restaurant data
         const restaurantGuid = Deno.env.get('TOAST_RESTAURANT_GUID') || '';
