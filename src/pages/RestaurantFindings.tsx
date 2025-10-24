@@ -2696,10 +2696,10 @@ What would you like to work on today?`
 
             {/* Incomplete Settings Alert Banner */}
             {!hasCompletedKPIs && data?.tuning_completed && (
-              <Alert className="mx-4 my-3 border-amber-500/50 bg-amber-50/10 dark:bg-amber-950/20">
-                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                <AlertTitle className="text-amber-900 dark:text-amber-100">Complete Your Setup</AlertTitle>
-                <AlertDescription className="text-amber-800 dark:text-amber-200">
+              <Alert className="mx-4 my-3 border-accent/30 bg-accent/10">
+                <AlertCircle className="h-4 w-4 text-accent-foreground" />
+                <AlertTitle className="text-foreground font-semibold">Complete Your Setup</AlertTitle>
+                <AlertDescription className="text-foreground/90">
                   <p className="mb-2">
                     You can chat freely, but I'll be more helpful once you complete your KPIs 
                     (Sales, Food Cost, Labor Cost goals).
@@ -2711,7 +2711,7 @@ What would you like to work on today?`
                       setSidebarOpen(true);
                       toast.info("Scroll to the 'KPIs' section in the settings panel");
                     }}
-                    className="mt-1 bg-amber-100 hover:bg-amber-200 dark:bg-amber-900 dark:hover:bg-amber-800 border-amber-300 dark:border-amber-700"
+                    className="mt-1 bg-accent hover:bg-accent-glow text-accent-foreground border-accent"
                   >
                     Complete KPIs Now
                   </Button>
