@@ -429,24 +429,31 @@ const RestaurantFindings = () => {
 
   const handleNewConversation = () => {
     setCurrentConversationId(null);
-    setMessages(hasCompletedKPIs ? [
-      {
+    
+    // Check if tuning is complete
+    const tuningComplete = data?.tuning_completed;
+    
+    if (tuningComplete) {
+      // Tuning complete → free chat mode, regardless of KPI status
+      // Alert banner will handle KPI reminders if needed
+      setMessages([{
         role: "assistant",
         content: "Welcome back! I'm here to help you explore your restaurant's data and insights. What would you like to know?",
         type: "question",
-      },
-    ] : [
-      {
-        role: "assistant",
-        content: "First things first, I am a restaurant intelligence tool. I don't have all the answers by any means, but through conversation, hopefully the two of us have more of them. I know a lot about restaurants but just a little bit about yours. This initial conversation is meant to help me learn more. That way I can be more helpful to you going forward.",
-        type: "question",
-      },
-      {
-        role: "assistant",
-        content: "What are your average weekly sales $? (Feel free to round)",
-        type: "question",
-      },
-    ]);
+      }]);
+      setOnboardingPhase('hook'); // Ensure we're in normal chat mode
+    } else {
+      // Tuning not complete → trigger onboarding flow
+      setMessages([
+        {
+          role: "assistant",
+          content: "First things first, I am a restaurant intelligence tool. I don't have all the answers by any means, but through conversation, hopefully the two of us have more of them. I know a lot about restaurants but just a little bit about yours. This initial conversation is meant to help me learn more. That way I can be more helpful to you going forward.",
+          type: "question",
+        }
+      ]);
+      setOnboardingPhase('hook'); // Will trigger hook useEffect
+    }
+    
     setCurrentInput("");
     setShowObjectives(false);
   };
