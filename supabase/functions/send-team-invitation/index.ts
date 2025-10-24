@@ -84,7 +84,8 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const invitationToken = invitation.invitation_token;
-    const appUrl = Deno.env.get("APP_URL") || "https://shyloh.ai";
+    const rawAppUrl = Deno.env.get("APP_URL") || "https://shyloh.ai";
+    const appUrl = rawAppUrl.replace(/\/+$/, "");
     const invitationUrl = `${appUrl}/auth?invitation=${invitationToken}`;
 
     // Send email using Resend API
