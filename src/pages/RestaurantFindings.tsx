@@ -251,7 +251,7 @@ const RestaurantFindings = () => {
     currentStep: 1,
     totalSteps: 5,
     steps: [
-      { id: 'quick_win', label: 'Quick Win', completed: false, active: true },
+      { id: 'quick_win', label: 'Earn Your Attention', completed: false, active: true },
       { id: 'tuning_intro', label: 'Tuning Setup', completed: false, active: false },
       { id: 'tuning_sliders', label: 'Set Profile', completed: false, active: false },
       { id: 'kpi_collection', label: 'Key Numbers', completed: false, active: false },
