@@ -20,7 +20,6 @@ import { TagSelector } from "@/components/TagSelector";
 import { OnboardingProgress } from "@/components/OnboardingProgress";
 import { TeamManagement } from "@/components/TeamManagement";
 import { ConversationSettings } from "@/components/ConversationSettings";
-import { ApiKeySettings } from "@/components/ApiKeySettings";
 import { MentionInput } from "@/components/MentionInput";
 import { NotificationBell } from "@/components/NotificationBell";
 import { TuningSheet } from "@/components/TuningSheet";
@@ -4542,14 +4541,6 @@ What would you like to work on today?`
                         </CollapsibleContent>
                       </Card>
                     </Collapsible>
-
-                    {/* API Key Settings Sub-section */}
-                    <div className="mt-2">
-                      <ApiKeySettings 
-                        restaurantId={id!} 
-                        currentApiKey={data?.anthropic_api_key}
-                      />
-                    </div>
                   </div>
                 </CollapsibleContent>
               </div>

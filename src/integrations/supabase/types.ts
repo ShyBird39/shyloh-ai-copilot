@@ -668,7 +668,6 @@ export type Database = {
       }
       restaurants: {
         Row: {
-          anthropic_api_key: string | null
           augmented_hex_code: string
           category: string
           created_at: string | null
@@ -696,7 +695,6 @@ export type Database = {
           zip_code: string | null
         }
         Insert: {
-          anthropic_api_key?: string | null
           augmented_hex_code: string
           category: string
           created_at?: string | null
@@ -724,7 +722,6 @@ export type Database = {
           zip_code?: string | null
         }
         Update: {
-          anthropic_api_key?: string | null
           augmented_hex_code?: string
           category?: string
           created_at?: string | null
