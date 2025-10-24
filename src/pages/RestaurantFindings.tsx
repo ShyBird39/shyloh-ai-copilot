@@ -3,7 +3,8 @@ import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, ChevronDown, ChevronUp, RotateCcw, Paperclip, UtensilsCrossed, Sparkles, Users, Clock, Settings, Heart, UserCog, Trash2, Brain } from "lucide-react";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, ChevronDown, ChevronUp, RotateCcw, Paperclip, UtensilsCrossed, Sparkles, Users, Clock, Settings, Heart, UserCog, Trash2, Brain, AlertCircle } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -2099,6 +2100,37 @@ What would you like to work on today?`
           .eq("id", convId);
 
         loadConversations();
+        
+        // KPI Nudge: Every 25 messages if KPIs incomplete
+        if (!hasCompletedKPIs && data?.tuning_completed) {
+          const totalMessages = messages.length + 2; // +2 for current user + AI messages
+          
+          if (totalMessages % 25 === 0) {
+            const nudgeMessages = [
+              "By the way, I'd be much more helpful if you completed your KPIs. Things like your average weekly sales, food cost goal, and labor cost goal help me give you better recommendations. Want to set those up now?",
+              "Quick reminder: Completing your restaurant settings (like sales targets and cost goals) will unlock more personalized insights. It only takes a minute! Should we do that?",
+              "I notice you haven't filled in your KPIs yet. Knowing your food cost goal, labor target, and average sales helps me provide much more relevant advice. Ready to add those?"
+            ];
+            
+            const randomNudge = nudgeMessages[Math.floor(Math.random() * nudgeMessages.length)];
+            
+            // Delay nudge slightly after AI response
+            setTimeout(() => {
+              setMessages((prev) => [...prev, {
+                role: "assistant",
+                content: randomNudge
+              }]);
+              
+              // Save nudge to database
+              supabase.from("chat_messages").insert({
+                conversation_id: convId,
+                role: "assistant",
+                content: randomNudge,
+                user_id: null,
+              });
+            }, 2000);
+          }
+        }
       }
     } catch (error) {
       console.error('Chat error:', error);
@@ -2660,6 +2692,31 @@ What would you like to work on today?`
                 steps={isOnboarding ? onboardingSteps : quickWinProgress.steps} 
                 currentStep={isOnboarding ? onboardingStep : quickWinProgress.currentStep} 
               />
+            )}
+
+            {/* Incomplete Settings Alert Banner */}
+            {!hasCompletedKPIs && data?.tuning_completed && (
+              <Alert className="mx-4 my-3 border-amber-500/50 bg-amber-50/10 dark:bg-amber-950/20">
+                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                <AlertTitle className="text-amber-900 dark:text-amber-100">Complete Your Setup</AlertTitle>
+                <AlertDescription className="text-amber-800 dark:text-amber-200">
+                  <p className="mb-2">
+                    You can chat freely, but I'll be more helpful once you complete your KPIs 
+                    (Sales, Food Cost, Labor Cost goals).
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSidebarOpen(true);
+                      toast.info("Scroll to the 'KPIs' section in the settings panel");
+                    }}
+                    className="mt-1 bg-amber-100 hover:bg-amber-200 dark:bg-amber-900 dark:hover:bg-amber-800 border-amber-300 dark:border-amber-700"
+                  >
+                    Complete KPIs Now
+                  </Button>
+                </AlertDescription>
+              </Alert>
             )}
 
             {/* Collapsible Quick Start Prompts - Hidden during onboarding */}
@@ -3998,20 +4055,36 @@ What would you like to work on today?`
           restaurantId={id}
           onComplete={() => {
             setShowTuningFlow(false);
-            setOnboardingPhase('data_collection');
             
-            // Update progress: tuning complete, activate KPI collection
-            setQuickWinProgress(prev => ({
-              ...prev,
-              currentStep: 4,
-              steps: prev.steps.map((step, idx) => ({
-                ...step,
-                completed: idx <= 2,
-                active: idx === 3
-              }))
-            }));
-            
-            toast.success("Tuning profile saved!");
+            if (!hasCompletedKPIs) {
+              // KPIs not done - transition to free chat WITH nudges
+              setOnboardingPhase('hook');  // Normal chat mode
+              
+              // Update progress: tuning complete, KPI step active but not blocking
+              setQuickWinProgress(prev => ({
+                ...prev,
+                currentStep: 4,
+                steps: prev.steps.map((step, idx) => ({
+                  ...step,
+                  completed: idx <= 2, // Tuning complete
+                  active: idx === 3 // KPI step active but not blocking
+                }))
+              }));
+              
+              toast.success("Tuning profile saved! You can now chat freely. Complete your KPIs when ready for the full experience.");
+            } else {
+              // KPIs already done - just update tuning
+              setOnboardingPhase('hook');
+              
+              // Mark all steps complete
+              setQuickWinProgress(prev => ({
+                ...prev,
+                currentStep: 5,
+                steps: prev.steps.map(step => ({ ...step, completed: true, active: false }))
+              }));
+              
+              toast.success("Tuning profile updated!");
+            }
           }}
           onBack={() => {
             setShowTuningFlow(false);
@@ -4020,41 +4093,7 @@ What would you like to work on today?`
         />
       )}
       
-      {/* KPI Collection */}
-      {onboardingPhase === 'data_collection' && id && data && (
-        <KPIInput
-          restaurantId={id}
-          restaurantName={data.name}
-          onComplete={() => {
-            setHasCompletedKPIs(true);
-            setOnboardingPhase('hook');
-            
-            // Mark all steps complete
-            setQuickWinProgress(prev => ({
-              ...prev,
-              currentStep: 5,
-              steps: prev.steps.map(step => ({ ...step, completed: true, active: false }))
-            }));
-            
-            toast.success("Onboarding complete! Welcome to Shyloh.");
-            window.location.reload();
-          }}
-          onBack={() => {
-            setOnboardingPhase('tuning');
-            setShowTuningFlow(true);
-            
-            setQuickWinProgress(prev => ({
-              ...prev,
-              currentStep: 3,
-              steps: prev.steps.map((step, idx) => ({
-                ...step,
-                completed: idx <= 1,
-                active: idx === 2
-              }))
-            }));
-          }}
-        />
-      )}
+      {/* KPI Collection - Removed blocking modal, users access via settings panel */}
     </SidebarProvider>
   );
 };
