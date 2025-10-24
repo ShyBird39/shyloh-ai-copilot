@@ -867,8 +867,26 @@ const RestaurantFindings = () => {
   const handlePromptClick = async (promptText: string) => {
     // Handle "Review or Change Settings" prompt
     if (promptText === "Review or Change Settings") {
+      // Add user message to chat
+      const userMessage: ChatMessage = { role: "user", content: promptText };
+      setMessages((prev) => [...prev, userMessage]);
+      setShowObjectives(false);
+      
+      // Open the settings sidebar
       setSidebarOpen(true);
-      toast.success("Open the Profile Tuning section to adjust your settings");
+      
+      // Show typing indicator
+      setIsTyping(true);
+      
+      // AI response after brief delay
+      setTimeout(() => {
+        setMessages((prev) => [...prev, {
+          role: "assistant",
+          content: "I've opened your settings panel on the right. What would you like to adjust?\n\nHere are some common changes:\n• **Adjust my food cost goal** - Update your target food cost percentage\n• **Change my average weekly sales** - Modify your sales baseline\n• **Update my labor cost goal** - Set a new labor cost target\n• **Create a custom rule** - Add operational protocols or special instructions\n• **Edit my restaurant story** - Refine your brand narrative or mission\n• **Update my tech stack** - Change your POS, reservation system, etc.\n\nJust let me know what you'd like to change, and I'll guide you to the right section!"
+        }]);
+        setIsTyping(false);
+      }, 1200);
+      
       return;
     }
 
