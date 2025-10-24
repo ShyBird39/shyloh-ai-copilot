@@ -263,11 +263,6 @@ serve(async (req) => {
     } = await req.json();
     
     console.log(`Notion tools ${useNotion ? 'ENABLED' : 'disabled'} for this query`);
-    
-    const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
-    if (!ANTHROPIC_API_KEY) {
-      throw new Error('ANTHROPIC_API_KEY is not configured');
-    }
 
     // Create Supabase client with service role for file access
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -303,6 +298,27 @@ serve(async (req) => {
         
         console.log(`Access granted: User ${user.id} is a member of restaurant ${restaurantId}`);
       }
+    }
+
+    // Fetch restaurant-specific API key if available
+    let ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
+    if (restaurantId) {
+      const { data: restaurantData } = await supabase
+        .from('restaurants')
+        .select('anthropic_api_key')
+        .eq('id', restaurantId)
+        .maybeSingle();
+      
+      if (restaurantData?.anthropic_api_key) {
+        ANTHROPIC_API_KEY = restaurantData.anthropic_api_key;
+        console.log(`Using restaurant-specific API key for ${restaurantId}`);
+      } else {
+        console.log(`Using global API key for ${restaurantId}`);
+      }
+    }
+    
+    if (!ANTHROPIC_API_KEY) {
+      throw new Error('ANTHROPIC_API_KEY is not configured');
     }
 
     // Fetch conversation state for context
