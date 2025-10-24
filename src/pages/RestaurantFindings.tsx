@@ -434,12 +434,42 @@ const RestaurantFindings = () => {
     const tuningComplete = data?.tuning_completed;
     
     if (tuningComplete) {
-      // Tuning complete → free chat mode, regardless of KPI status
+      // Tuning complete → free chat mode with rotating welcome messages
       // Alert banner will handle KPI reminders if needed
+      const welcomeMessages = [
+        {
+          content: "Welcome back, I'm here to be helpful. I can't always be, but I'll try and I won't waste your time.",
+          type: "question" as const,
+        },
+        {
+          content: "Hi- what's on your mind?",
+          type: "question" as const,
+        },
+        {
+          content: "Shyloh Quick Tip: Did you know you could connect Toast, Square and other POS Systems to Shyloh? This lets me analyze your actual sales data and provide more relevant insights.",
+          type: "question" as const,
+        },
+        {
+          content: "Shyloh Quick Tip: Did you know Shyloh can help analyze and summarize data you give it and then discuss how to act on the insight? Feel free to share sales reports, inventory lists, or menu ideas.",
+          type: "question" as const,
+        },
+        {
+          content: "Shyloh Quick Tip: You can create custom rules like 'always keep BOH hourly labor under 8%' or 'when thinking about a new dish, keep in mind we don't have any entrees over $25'. This helps me give advice that fits your restaurant's specific constraints.",
+          type: "question" as const,
+        },
+        {
+          content: "Try asking me 'How's today going?'",
+          type: "question" as const,
+        },
+      ];
+      
+      // Select random welcome message
+      const randomWelcome = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
+      
       setMessages([{
         role: "assistant",
-        content: "Welcome back! I'm here to help you explore your restaurant's data and insights. What would you like to know?",
-        type: "question",
+        content: randomWelcome.content,
+        type: randomWelcome.type,
       }]);
       setOnboardingPhase('hook'); // Ensure we're in normal chat mode
     } else {
@@ -2142,6 +2172,31 @@ What would you like to work on today?`
                 user_id: null,
               });
             }, 2000);
+          }
+        }
+        
+        // Balance Reminder: Don't let tech tools take too much attention (every 75 messages)
+        if (data?.tuning_completed) {
+          const totalMessages = messages.length + 2; // +2 for current user + AI messages
+          
+          if (totalMessages % 75 === 0) {
+            const balanceReminder = "Hey! Before we dive into anything- quick reminder: Tech tools like Shyloh have their place but ultimately it's what's happening in the restaurant that really matters. We all need to recognize these tools can easily take too much of our time and attention- including the tools themselves. Gut check for both of us- is this a good time to be mentally out of service?";
+            
+            // Delay reminder slightly after AI response
+            setTimeout(() => {
+              setMessages((prev) => [...prev, {
+                role: "assistant",
+                content: balanceReminder
+              }]);
+              
+              // Save reminder to database
+              supabase.from("chat_messages").insert({
+                conversation_id: convId,
+                role: "assistant",
+                content: balanceReminder,
+                user_id: null,
+              });
+            }, 2500); // Slightly longer delay than KPI nudge
           }
         }
       }
