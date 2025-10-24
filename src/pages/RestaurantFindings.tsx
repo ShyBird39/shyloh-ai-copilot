@@ -262,6 +262,7 @@ const RestaurantFindings = () => {
   const samplePrompts = [
     "I am here to...",
     "Strategy Session",
+    "Review or Change Settings",
     "Tips for using Shyloh"
   ];
 
@@ -864,6 +865,13 @@ const RestaurantFindings = () => {
   };
 
   const handlePromptClick = async (promptText: string) => {
+    // Handle "Review or Change Settings" prompt
+    if (promptText === "Review or Change Settings") {
+      setSidebarOpen(true);
+      toast.success("Open the Profile Tuning section to adjust your settings");
+      return;
+    }
+
     // Handle "I am here to..." prompt with thinking delay
     if (promptText === "I am here to...") {
       const userMessage: ChatMessage = { role: "user", content: promptText };
@@ -1298,7 +1306,7 @@ What would you like to work on today?`
 
   // Phase 1: The Hook - Auto-triggered messages for first-time users
   useEffect(() => {
-    if (!hasCompletedKPIs && messages.length === 0 && onboardingPhase === 'hook' && !loading && id && user?.id) {
+    if (!hasCompletedKPIs && !data?.tuning_completed && messages.length === 0 && onboardingPhase === 'hook' && !loading && id && user?.id) {
       setIsTyping(true);
       
       // Initialize progress tracking
@@ -2629,7 +2637,7 @@ What would you like to work on today?`
             </div>
 
             {/* Onboarding Progress */}
-            {(isOnboarding || (!hasCompletedKPIs && onboardingPhase !== 'hook')) && (
+            {(isOnboarding || (!hasCompletedKPIs && !data?.tuning_completed && onboardingPhase !== 'hook')) && (
               <OnboardingProgress 
                 steps={isOnboarding ? onboardingSteps : quickWinProgress.steps} 
                 currentStep={isOnboarding ? onboardingStep : quickWinProgress.currentStep} 
