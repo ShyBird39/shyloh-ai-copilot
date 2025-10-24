@@ -9,6 +9,7 @@ interface KPIInputProps {
   restaurantId: string;
   restaurantName: string;
   onBack: () => void;
+  onComplete?: () => void;
 }
 
 interface KPIData {
@@ -28,11 +29,11 @@ interface ChatMessage {
   type?: "question" | "confirmation" | "input";
 }
 
-const KPIInput = ({ restaurantId, restaurantName, onBack }: KPIInputProps) => {
+const KPIInput = ({ restaurantId, restaurantName, onBack, onComplete }: KPIInputProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "assistant",
-      content: "Hey! 👋 I need a few quick ops numbers to personalize your analysis and make real recommendations. Just give me your best guesses if you're not 100% sure.",
+      content: "Perfect! Now that I understand your philosophy, I need a few quick numbers to power your insights. Just ballpark figures are fine—don't overthink it.",
       type: "question",
     },
     {
@@ -181,7 +182,7 @@ const KPIInput = ({ restaurantId, restaurantName, onBack }: KPIInputProps) => {
       ]);
 
       setTimeout(() => {
-        onBack();
+        onComplete?.();
       }, 2000);
     } catch (error) {
       console.error("Error saving KPIs:", error);

@@ -20,6 +20,8 @@ import { MentionInput } from "@/components/MentionInput";
 import { NotificationBell } from "@/components/NotificationBell";
 import { TuningSheet } from "@/components/TuningSheet";
 import { PinInput } from "@/components/PinInput";
+import { OnboardingTuningFlow } from "@/components/OnboardingTuningFlow";
+import KPIInput from "@/components/KPIInput";
 import { useAuth } from "@/hooks/useAuth";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
@@ -238,9 +240,24 @@ const RestaurantFindings = () => {
   ]);
 
   // Quick Win onboarding state
-  const [onboardingPhase, setOnboardingPhase] = useState<'hook' | 'pain_point' | 'quick_win' | 'data_collection'>('hook');
+  const [onboardingPhase, setOnboardingPhase] = useState<'hook' | 'pain_point' | 'quick_win' | 'tuning' | 'data_collection'>('hook');
   const [userPainPoint, setUserPainPoint] = useState<string>('');
   const [quickWinExchangeCount, setQuickWinExchangeCount] = useState<number>(0);
+  const [quickWinStartTime, setQuickWinStartTime] = useState<number | null>(null);
+  const [showTuningFlow, setShowTuningFlow] = useState(false);
+
+  // Quick Win Progress tracking
+  const [quickWinProgress, setQuickWinProgress] = useState({
+    currentStep: 1,
+    totalSteps: 5,
+    steps: [
+      { id: 'quick_win', label: 'Quick Win', completed: false, active: true },
+      { id: 'tuning_intro', label: 'Tuning Setup', completed: false, active: false },
+      { id: 'tuning_sliders', label: 'Set Profile', completed: false, active: false },
+      { id: 'kpi_collection', label: 'Key Numbers', completed: false, active: false },
+      { id: 'complete', label: 'Ready!', completed: false, active: false },
+    ]
+  });
 
   const samplePrompts = [
     "I am here to...",
@@ -1261,6 +1278,17 @@ What would you like to work on today?`
     if (!hasCompletedKPIs && messages.length === 0 && onboardingPhase === 'hook' && !loading && id && user?.id) {
       setIsTyping(true);
       
+      // Initialize progress tracking
+      setQuickWinProgress(prev => ({
+        ...prev,
+        currentStep: 1,
+        steps: prev.steps.map((step, idx) => ({
+          ...step,
+          active: idx === 0,
+          completed: false
+        }))
+      }));
+      
       // Create conversation for onboarding
       const createOnboardingConversation = async () => {
         try {
@@ -1625,6 +1653,18 @@ What would you like to work on today?`
       setUserPainPoint(messageText);
       setOnboardingPhase('quick_win');
       setQuickWinExchangeCount(1);
+      setQuickWinStartTime(Date.now()); // Start timer
+      
+      // Update progress
+      setQuickWinProgress(prev => ({
+        ...prev,
+        currentStep: 1,
+        steps: prev.steps.map((step, idx) => ({
+          ...step,
+          active: idx === 0,
+          completed: false
+        }))
+      }));
       
       // Build REGGI summary for context (implicit use)
       const reggiSummary = [
@@ -1749,15 +1789,35 @@ What would you like to work on today?`
           });
         }
 
-        // Only transition to setup when the user explicitly asks
+        // Check if we should transition to tuning (time limit or exchange count)
+        const elapsedMinutes = quickWinStartTime ? (Date.now() - quickWinStartTime) / 60000 : 0;
+        const shouldTransition = quickWinExchangeCount >= 3 || elapsedMinutes >= 2;
+        
+        // Only transition to setup when the user explicitly asks OR we've hit limits
         const setupSignals = /\b(set ?up|setup|walk.?through|configure|onboarding|start (setup|onboarding)|get me set up|let'?s (do|start)|yes.*(setup|walk)|sure.*(setup|walk)|ok.*(setup|walk))\b/i.test(messageText);
-        if (setupSignals) {
+        
+        if (setupSignals || shouldTransition) {
           setTimeout(() => {
+            // Mark Quick Win complete, activate tuning intro
+            setQuickWinProgress(prev => ({
+              ...prev,
+              currentStep: 2,
+              steps: prev.steps.map((step, idx) => ({
+                ...step,
+                completed: idx === 0,
+                active: idx === 1
+              }))
+            }));
+            
             setMessages(prev => [...prev, {
               role: "assistant",
-              content: "Great — I'll walk you through a quick setup so I can tailor insights. Sound good?",
+              content: "Great! Now, before we dive into the numbers, I need to understand YOUR philosophy for running this place. This 2-minute tuning exercise is how I learn what matters to YOU.",
             }]);
-            setOnboardingPhase('data_collection');
+            
+            setTimeout(() => {
+              setShowTuningFlow(true);
+              setOnboardingPhase('tuning');
+            }, 1000);
           }, 500);
         }
       } catch (error) {
@@ -1769,16 +1829,12 @@ What would you like to work on today?`
       return;
     }
 
-    // PHASE 4: Data collection (existing REGGI/KPI flow)
+    // PHASE 4: Data collection phase (now called from tuning completion)
     if (onboardingPhase === 'data_collection') {
-      // Transition to existing onboarding flow
-      setIsOnboarding(true);
-      setOnboardingStep(1);
-      setCurrentReggiDimension(0);
-      setOnboardingPhase('hook'); // Reset for future
-      
-      // Continue with existing onboarding logic
-      return handleOnboardingMessage(messageText);
+      // Import KPIInput dynamically if not already imported
+      // The data_collection phase will now be triggered by tuning completion
+      // We don't transition to old onboarding, but show KPI collection
+      return;
     }
 
     // Hide objectives when sending a message
@@ -2550,8 +2606,11 @@ What would you like to work on today?`
             </div>
 
             {/* Onboarding Progress */}
-            {isOnboarding && (
-              <OnboardingProgress steps={onboardingSteps} currentStep={onboardingStep} />
+            {(isOnboarding || (!hasCompletedKPIs && onboardingPhase !== 'hook')) && (
+              <OnboardingProgress 
+                steps={isOnboarding ? onboardingSteps : quickWinProgress.steps} 
+                currentStep={isOnboarding ? onboardingStep : quickWinProgress.currentStep} 
+              />
             )}
 
             {/* Collapsible Quick Start Prompts - Hidden during onboarding */}
@@ -3883,6 +3942,70 @@ What would you like to work on today?`
         currentVisibility={currentConversationVisibility}
         onVisibilityChange={setCurrentConversationVisibility}
       />
+      
+      {/* Onboarding Tuning Flow */}
+      {showTuningFlow && id && (
+        <OnboardingTuningFlow
+          restaurantId={id}
+          onComplete={() => {
+            setShowTuningFlow(false);
+            setOnboardingPhase('data_collection');
+            
+            // Update progress: tuning complete, activate KPI collection
+            setQuickWinProgress(prev => ({
+              ...prev,
+              currentStep: 4,
+              steps: prev.steps.map((step, idx) => ({
+                ...step,
+                completed: idx <= 2,
+                active: idx === 3
+              }))
+            }));
+            
+            toast.success("Tuning profile saved!");
+          }}
+          onBack={() => {
+            setShowTuningFlow(false);
+            setOnboardingPhase('quick_win');
+          }}
+        />
+      )}
+      
+      {/* KPI Collection */}
+      {onboardingPhase === 'data_collection' && id && data && (
+        <KPIInput
+          restaurantId={id}
+          restaurantName={data.name}
+          onComplete={() => {
+            setHasCompletedKPIs(true);
+            setOnboardingPhase('hook');
+            
+            // Mark all steps complete
+            setQuickWinProgress(prev => ({
+              ...prev,
+              currentStep: 5,
+              steps: prev.steps.map(step => ({ ...step, completed: true, active: false }))
+            }));
+            
+            toast.success("Onboarding complete! Welcome to Shyloh.");
+            window.location.reload();
+          }}
+          onBack={() => {
+            setOnboardingPhase('tuning');
+            setShowTuningFlow(true);
+            
+            setQuickWinProgress(prev => ({
+              ...prev,
+              currentStep: 3,
+              steps: prev.steps.map((step, idx) => ({
+                ...step,
+                completed: idx <= 1,
+                active: idx === 2
+              }))
+            }));
+          }}
+        />
+      )}
     </SidebarProvider>
   );
 };
