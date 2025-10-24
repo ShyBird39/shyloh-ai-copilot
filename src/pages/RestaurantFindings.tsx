@@ -1331,8 +1331,15 @@ What would you like to work on today?`
       const tuningCompleted = (data as any).tuning_completed;
       const hasTuningProfile = data.tuning_profile && Object.keys(data.tuning_profile).length > 0;
       
-      // If they have KPIs but incomplete tuning, resume tuning flow
-      if (hasTuningProfile && !tuningCompleted) {
+      // Check if tuning profile is actually incomplete (not all sliders filled)
+      const requiredSliders = ['profit_motivation', 'service_philosophy', 'revenue_strategy', 
+                               'market_position', 'team_philosophy', 'innovation_appetite'];
+      const isTuningIncomplete = !requiredSliders.every(key => 
+        data.tuning_profile?.[key] !== undefined && data.tuning_profile?.[key] !== null
+      );
+      
+      // Only auto-resume if profile is genuinely incomplete AND flag is false
+      if (hasTuningProfile && !tuningCompleted && isTuningIncomplete) {
         setShowTuningFlow(true);
         setOnboardingPhase('tuning');
         setQuickWinProgress(prev => ({
