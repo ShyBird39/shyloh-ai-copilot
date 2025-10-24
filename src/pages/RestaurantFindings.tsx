@@ -611,6 +611,30 @@ const RestaurantFindings = () => {
     }
   };
 
+  const handleToggleVisibility = async (conversationId: string, currentVisibility: string) => {
+    try {
+      const newVisibility = currentVisibility === 'private' ? 'team' : 'private';
+      
+      const { error } = await supabase
+        .from("chat_conversations")
+        .update({ visibility: newVisibility })
+        .eq("id", conversationId);
+
+      if (error) throw error;
+
+      // Update local state
+      if (conversationId === currentConversationId) {
+        setCurrentConversationVisibility(newVisibility);
+      }
+      
+      loadConversations();
+      toast.success(newVisibility === 'team' ? "Shared with team" : "Made private");
+    } catch (error) {
+      console.error("Error toggling visibility:", error);
+      toast.error("Failed to update visibility");
+    }
+  };
+
   // Helper function to detect file type with fallback to extension
   const getFileType = (file: File): string => {
     // First try the browser's MIME type
@@ -2841,11 +2865,7 @@ What would you like to work on today?`
                 onMoveToKnowledgeBase={handleMoveToKnowledgeBase}
                 onRefreshConversations={loadConversations}
                 onRefreshFiles={loadFiles}
-                onOpenSettings={(conversationId, visibility) => {
-                  setCurrentConversationId(conversationId);
-                  setCurrentConversationVisibility(visibility);
-                  setShowConversationSettings(true);
-                }}
+                onToggleVisibility={handleToggleVisibility}
               />
             </ResizablePanel>
 

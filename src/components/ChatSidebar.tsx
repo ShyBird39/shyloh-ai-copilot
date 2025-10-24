@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MessageSquare, Upload, Trash2, FileText, Plus, Bot, Lock, Users as UsersIcon, Globe, GripVertical, Settings } from "lucide-react";
+import { MessageSquare, Upload, Trash2, FileText, Plus, Bot, Lock, Users as UsersIcon, Globe, GripVertical, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -41,7 +41,7 @@ interface ChatSidebarProps {
   onMoveToKnowledgeBase?: (fileId: string, fileName: string) => void;
   onRefreshConversations: () => void;
   onRefreshFiles: () => void;
-  onOpenSettings?: (conversationId: string, visibility: string) => void;
+  onToggleVisibility?: (conversationId: string, currentVisibility: string) => void;
 }
 
 export function ChatSidebar({
@@ -57,7 +57,7 @@ export function ChatSidebar({
   onDeleteFile,
   onRefreshConversations,
   onRefreshFiles,
-  onOpenSettings,
+  onToggleVisibility,
 }: ChatSidebarProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [agents, setAgents] = useState<any[]>([]);
@@ -257,18 +257,18 @@ export function ChatSidebar({
                           </p>
                         </div>
                         <div className="flex items-center gap-1">
-                          {onOpenSettings && (
+                          {onToggleVisibility && (
                             <Button
                               variant="ghost"
                               size="icon"
                               className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                onOpenSettings(conv.id, conv.visibility);
+                                onToggleVisibility(conv.id, conv.visibility);
                               }}
-                              title="Share & manage conversation"
+                              title={conv.visibility === 'private' ? 'Share with team' : 'Make private'}
                             >
-                              <Settings className="w-3 h-3" />
+                              <Share2 className="w-3 h-3" />
                             </Button>
                           )}
                           <Button
