@@ -1242,6 +1242,29 @@ What would you like to work on today?`
     fetchRestaurant();
   }, [id, navigate, user, authLoading]);
 
+  // Resume incomplete tuning on page load
+  useEffect(() => {
+    if (data && hasCompletedKPIs) {
+      const tuningCompleted = (data as any).tuning_completed;
+      const hasTuningProfile = data.tuning_profile && Object.keys(data.tuning_profile).length > 0;
+      
+      // If they have KPIs but incomplete tuning, resume tuning flow
+      if (hasTuningProfile && !tuningCompleted) {
+        setShowTuningFlow(true);
+        setOnboardingPhase('tuning');
+        setQuickWinProgress(prev => ({
+          ...prev,
+          currentStep: 3,
+          steps: prev.steps.map((step, idx) => ({
+            ...step,
+            completed: idx < 2,
+            active: idx === 2
+          }))
+        }));
+      }
+    }
+  }, [data, hasCompletedKPIs]);
+
   const handleClaimRestaurant = async () => {
     if (!id || !user || !claimPin.trim()) {
       toast.error("Please enter a PIN");

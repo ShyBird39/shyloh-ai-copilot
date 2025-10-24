@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, ArrowRight } from "lucide-react";
@@ -126,6 +126,36 @@ export const OnboardingTuningFlow = ({ restaurantId, onComplete, onBack }: Onboa
   });
   const [pinModalOpen, setPinModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Load existing tuning profile on mount
+  useEffect(() => {
+    const loadTuningProfile = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("restaurants")
+          .select("tuning_profile, tuning_pin")
+          .eq("id", restaurantId)
+          .single();
+
+        if (error) throw error;
+
+        if (data?.tuning_profile) {
+          setValues(data.tuning_profile);
+          // If they have a PIN, skip intro and go straight to sliders
+          if (data.tuning_pin) {
+            setStep("sliders");
+          }
+        }
+      } catch (error) {
+        console.error("Error loading tuning profile:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTuningProfile();
+  }, [restaurantId]);
 
   const handlePinSubmit = async (pin: string) => {
     try {
@@ -145,8 +175,19 @@ export const OnboardingTuningFlow = ({ restaurantId, onComplete, onBack }: Onboa
     }
   };
 
-  const handleSliderChange = (id: string, value: number) => {
-    setValues(prev => ({ ...prev, [id]: value }));
+  const handleSliderChange = async (id: string, value: number) => {
+    const newValues = { ...values, [id]: value };
+    setValues(newValues);
+    
+    // Save progress incrementally
+    try {
+      await supabase
+        .from("restaurants")
+        .update({ tuning_profile: newValues })
+        .eq("id", restaurantId);
+    } catch (error) {
+      console.error("Error saving tuning progress:", error);
+    }
   };
 
   const handleNext = () => {
@@ -168,7 +209,10 @@ export const OnboardingTuningFlow = ({ restaurantId, onComplete, onBack }: Onboa
     try {
       const { error } = await supabase
         .from("restaurants")
-        .update({ tuning_profile: values })
+        .update({ 
+          tuning_profile: values,
+          tuning_completed: true 
+        })
         .eq("id", restaurantId);
 
       if (error) throw error;

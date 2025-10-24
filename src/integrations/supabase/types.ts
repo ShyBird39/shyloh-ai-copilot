@@ -686,6 +686,7 @@ export type Database = {
           social_context_description: string | null
           time_occasion_code: string | null
           time_occasion_description: string | null
+          tuning_completed: boolean | null
           tuning_pin: string | null
           tuning_profile: Json | null
           updated_at: string | null
@@ -712,6 +713,7 @@ export type Database = {
           social_context_description?: string | null
           time_occasion_code?: string | null
           time_occasion_description?: string | null
+          tuning_completed?: boolean | null
           tuning_pin?: string | null
           tuning_profile?: Json | null
           updated_at?: string | null
@@ -738,6 +740,7 @@ export type Database = {
           social_context_description?: string | null
           time_occasion_code?: string | null
           time_occasion_description?: string | null
+          tuning_completed?: boolean | null
           tuning_pin?: string | null
           tuning_profile?: Json | null
           updated_at?: string | null
@@ -819,10 +822,7 @@ export type Database = {
         Args: { _restaurant_id: string; _user_id: string }
         Returns: boolean
       }
-      is_super_admin: {
-        Args: { _user_id: string }
-        Returns: boolean
-      }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "owner" | "admin" | "member" | "viewer"
