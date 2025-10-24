@@ -1323,8 +1323,14 @@ What would you like to work on today?`
     }
   };
 
-  // Phase 1: The Hook - Auto-triggered messages for first-time users
+  // Phase 1: The Hook - Auto-triggered messages for first-time users (only if tuning NOT completed)
   useEffect(() => {
+    // Only trigger hook if:
+    // 1. KPIs not completed
+    // 2. Tuning not completed (NEW: don't re-trigger if tuning is done)
+    // 3. No messages yet
+    // 4. In hook phase
+    // 5. Data loaded and user authenticated
     if (!hasCompletedKPIs && !data?.tuning_completed && messages.length === 0 && onboardingPhase === 'hook' && !loading && id && user?.id) {
       setIsTyping(true);
       
