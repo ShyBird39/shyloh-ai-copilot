@@ -2841,6 +2841,11 @@ What would you like to work on today?`
                 onMoveToKnowledgeBase={handleMoveToKnowledgeBase}
                 onRefreshConversations={loadConversations}
                 onRefreshFiles={loadFiles}
+                onOpenSettings={(conversationId, visibility) => {
+                  setCurrentConversationId(conversationId);
+                  setCurrentConversationVisibility(visibility);
+                  setShowConversationSettings(true);
+                }}
               />
             </ResizablePanel>
 
