@@ -297,88 +297,91 @@ export function ChatSidebar({
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {conversations.map((conv) => (
-                    <div
-                      key={conv.id}
-                      className={`group relative p-3 rounded-lg border cursor-pointer transition-colors ${
-                        currentConversationId === conv.id
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-card text-card-foreground hover:bg-accent hover:text-accent-foreground border-border"
-                      }`}
-                      onClick={() => onLoadConversation(conv.id)}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        {/* Left side: Trash icon (hover only) + Title & Details */}
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteClick(conv.id);
-                            }}
-                            title="Delete conversation"
-                          >
-                            <Trash2 className="w-4 h-4" style={{ color: '#DD3828' }} />
-                          </Button>
-                          
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-medium text-sm truncate">
-                              {conv.title}
-                            </h3>
-                            <p className="text-xs opacity-70 mt-1">
-                              {formatDistanceToNow(new Date(conv.updated_at), {
-                                addSuffix: true,
-                              })}
-                            </p>
-                            <p className="text-xs opacity-60 mt-0.5">
-                              {conv.message_count} messages
-                            </p>
-                          </div>
-                        </div>
-                        
-                        {/* Right side: Visibility controls (always visible) */}
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          {/* Lock/Users Icon */}
-                          {conv.visibility === 'team' || conv.visibility === 'public' ? (
-                            <UsersIcon className="w-4 h-4" style={{ color: '#EAEFDB' }} />
-                          ) : (
-                            <Lock className="w-4 h-4" style={{ color: '#FBEFEA' }} />
-                          )}
-                          
-                          {/* Toggle Switch */}
-                          {onToggleVisibility && (
-                            <Switch
-                              checked={conv.visibility === 'team' || conv.visibility === 'public'}
-                              onCheckedChange={() => handleToggleClick(conv.id, conv.visibility)}
-                              onClick={(e) => e.stopPropagation()}
-                              className="h-5 w-9 [&>span]:bg-[#DD3828]"
-                              style={{
-                                backgroundColor: conv.visibility === 'team' || conv.visibility === 'public' ? '#EAEFDB' : '#FBEFEA'
-                              }}
-                            />
-                          )}
-                          
-                          {/* Share Arrow Button */}
-                          {onOpenShareSettings && (
+                  {conversations.map((conv) => {
+                    const isSelected = currentConversationId === conv.id;
+                    return (
+                      <div
+                        key={conv.id}
+                        className={`group relative p-3 rounded-lg border cursor-pointer transition-colors ${
+                          isSelected
+                            ? "bg-[#620B14] text-[#FBEFEA] border-[#DD3828] border-2"
+                            : "bg-[#FBEFEA] text-[#620B14] border-[#EAEFDB] hover:bg-[#EAEFDB] hover:border-[#195029]"
+                        }`}
+                        onClick={() => onLoadConversation(conv.id)}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          {/* Left side: Trash icon (hover only) + Title & Details */}
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6"
+                              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                onOpenShareSettings(conv.id, conv.visibility);
+                                handleDeleteClick(conv.id);
                               }}
-                              title="Share with specific members"
+                              title="Delete conversation"
                             >
-                              <Share2 className="w-4 h-4" style={{ color: '#EAEFDB' }} />
+                              <Trash2 className="w-4 h-4" style={{ color: '#DD3828' }} />
                             </Button>
-                          )}
+                            
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-medium text-sm truncate">
+                                {conv.title}
+                              </h3>
+                              <p className={`text-xs mt-1 ${isSelected ? 'text-[#F3C5B6]' : 'text-[#DD3828]'}`}>
+                                {formatDistanceToNow(new Date(conv.updated_at), {
+                                  addSuffix: true,
+                                })}
+                              </p>
+                              <p className={`text-xs mt-0.5 ${isSelected ? 'text-[#F3C5B6]' : 'text-[#DD3828]'}`}>
+                                {conv.message_count} messages
+                              </p>
+                            </div>
+                          </div>
+                          
+                          {/* Right side: Visibility controls (always visible) */}
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {/* Lock/Users Icon */}
+                            {conv.visibility === 'team' || conv.visibility === 'public' ? (
+                              <UsersIcon className="w-4 h-4" style={{ color: isSelected ? '#EAEFDB' : '#195029' }} />
+                            ) : (
+                              <Lock className="w-4 h-4" style={{ color: isSelected ? '#EAEFDB' : '#195029' }} />
+                            )}
+                            
+                            {/* Toggle Switch */}
+                            {onToggleVisibility && (
+                              <Switch
+                                checked={conv.visibility === 'team' || conv.visibility === 'public'}
+                                onCheckedChange={() => handleToggleClick(conv.id, conv.visibility)}
+                                onClick={(e) => e.stopPropagation()}
+                                className="h-5 w-9 [&>span]:bg-[#DD3828]"
+                                style={{
+                                  backgroundColor: conv.visibility === 'team' || conv.visibility === 'public' ? '#EAEFDB' : '#F3C5B6'
+                                }}
+                              />
+                            )}
+                            
+                            {/* Share Arrow Button */}
+                            {onOpenShareSettings && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onOpenShareSettings(conv.id, conv.visibility);
+                                }}
+                                title="Share with specific members"
+                              >
+                                <Share2 className="w-4 h-4" style={{ color: isSelected ? '#EAEFDB' : '#195029' }} />
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </ScrollArea>
