@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { MessageSquare, Upload, Trash2, FileText, Plus, Bot, Lock, Users as UsersIcon, Globe, GripVertical, Share2 } from "lucide-react";
+import { MessageSquare, Upload, Trash2, FileText, Plus, Bot, Lock, Users as UsersIcon, Globe, GripVertical, Share2, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -42,6 +43,7 @@ interface ChatSidebarProps {
   onRefreshConversations: () => void;
   onRefreshFiles: () => void;
   onToggleVisibility?: (conversationId: string, currentVisibility: string) => void;
+  onOpenShareSettings?: (conversationId: string, visibility: string) => void;
 }
 
 export function ChatSidebar({
@@ -58,6 +60,7 @@ export function ChatSidebar({
   onRefreshConversations,
   onRefreshFiles,
   onToggleVisibility,
+  onOpenShareSettings,
 }: ChatSidebarProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [agents, setAgents] = useState<any[]>([]);
@@ -257,19 +260,40 @@ export function ChatSidebar({
                           </p>
                         </div>
                         <div className="flex items-center gap-1">
-                          {onToggleVisibility && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onToggleVisibility(conv.id, conv.visibility);
-                              }}
-                              title={conv.visibility === 'private' ? 'Share with team' : 'Make private'}
-                            >
-                              <Share2 className="w-3 h-3" />
-                            </Button>
+                          {onToggleVisibility && onOpenShareSettings && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={(e) => e.stopPropagation()}
+                                  title="Share options"
+                                >
+                                  <Share2 className={`w-3 h-3 ${conv.visibility === 'team' ? 'text-green-500' : 'text-muted-foreground'}`} />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onToggleVisibility(conv.id, conv.visibility);
+                                  }}
+                                >
+                                  <Share2 className="w-4 h-4 mr-2" />
+                                  {conv.visibility === 'private' ? 'Share with team' : 'Make private'}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onOpenShareSettings(conv.id, conv.visibility);
+                                  }}
+                                >
+                                  <UsersIcon className="w-4 h-4 mr-2" />
+                                  Share with specific members...
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           )}
                           <Button
                             variant="ghost"

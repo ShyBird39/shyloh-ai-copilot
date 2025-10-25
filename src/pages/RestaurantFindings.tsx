@@ -2866,6 +2866,11 @@ What would you like to work on today?`
                 onRefreshConversations={loadConversations}
                 onRefreshFiles={loadFiles}
                 onToggleVisibility={handleToggleVisibility}
+                onOpenShareSettings={(conversationId, visibility) => {
+                  setCurrentConversationId(conversationId);
+                  setCurrentConversationVisibility(visibility);
+                  setShowConversationSettings(true);
+                }}
               />
             </ResizablePanel>
 
