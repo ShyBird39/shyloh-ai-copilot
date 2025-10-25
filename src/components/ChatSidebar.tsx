@@ -260,27 +260,27 @@ export function ChatSidebar({
                             {conv.message_count} messages
                           </p>
                         </div>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-2">
                           {onToggleVisibility && (
-                            <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
                               <Switch
                                 checked={conv.visibility === 'team'}
                                 onCheckedChange={() => onToggleVisibility(conv.id, conv.visibility)}
                                 onClick={(e) => e.stopPropagation()}
-                                className="h-4 w-7 data-[state=checked]:bg-green-500"
+                                className="h-5 w-9 data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-muted"
                               />
                               {onOpenShareSettings && (
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-6 w-6"
+                                  className="h-7 w-7"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     onOpenShareSettings(conv.id, conv.visibility);
                                   }}
                                   title="Share with specific members"
                                 >
-                                  <UserPlus className="w-3 h-3" />
+                                  <UserPlus className="w-4 h-4" />
                                 </Button>
                               )}
                             </div>
