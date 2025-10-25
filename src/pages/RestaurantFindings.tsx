@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, ChevronDown, ChevronUp, RotateCcw, Paperclip, UtensilsCrossed, Sparkles, Users, Clock, Settings, Heart, UserCog, Trash2, Brain, AlertCircle, Edit, Crown } from "lucide-react";
+import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, ChevronDown, ChevronUp, RotateCcw, Paperclip, UtensilsCrossed, Sparkles, Users, Clock, Settings, Heart, UserCog, Trash2, Brain, AlertCircle, Edit, Crown, Bot } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -46,6 +46,8 @@ interface ChatMessage {
   role: "assistant" | "user";
   content: string;
   type?: "question" | "confirmation" | "input";
+  user_id?: string | null;
+  display_name?: string | null;
 }
 
 const RestaurantFindings = () => {
@@ -1778,6 +1780,76 @@ What would you like to work on today?`
     }
   }, [currentConversationId]);
 
+  // Real-time message subscription for human-to-human chat
+  useEffect(() => {
+    if (!currentConversationId || !user?.id) return;
+
+    console.log('Setting up realtime subscription for conversation:', currentConversationId);
+
+    const channel = supabase
+      .channel(`messages-${currentConversationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `conversation_id=eq.${currentConversationId}`
+        },
+        async (payload) => {
+          const newMessage = payload.new as any;
+          
+          // Don't add our own messages (already in state from optimistic update)
+          if (newMessage.user_id === user.id) {
+            console.log('Skipping own message from realtime');
+            return;
+          }
+
+          console.log('Received realtime message:', newMessage);
+
+          // Fetch user profile for display name if it's a human message
+          let displayName = null;
+          if (newMessage.user_id && newMessage.role === 'user') {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('display_name, email')
+              .eq('id', newMessage.user_id)
+              .single();
+            
+            displayName = profile?.display_name || profile?.email || 'Team Member';
+          }
+
+          // Add message to state
+          setMessages(prev => {
+            // Check if message already exists
+            const exists = prev.some(m => 
+              m.content === newMessage.content && 
+              m.role === newMessage.role &&
+              Math.abs(Date.now() - new Date(newMessage.created_at).getTime()) < 5000
+            );
+            
+            if (exists) {
+              console.log('Message already in state, skipping');
+              return prev;
+            }
+
+            return [...prev, {
+              role: newMessage.role,
+              content: newMessage.content,
+              user_id: newMessage.user_id,
+              display_name: displayName,
+            }];
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('Cleaning up realtime subscription');
+      supabase.removeChannel(channel);
+    };
+  }, [currentConversationId, user?.id]);
+
   useEffect(() => {
     if (sidebarOpen) {
       inputRef.current?.focus();
@@ -2240,9 +2312,131 @@ What would you like to work on today?`
     // Hide objectives when sending a message
     setShowObjectives(false);
 
+    // Detect AI mention to route message appropriately
+    const mentionsAI = /@shyloh|@ai|\/ask|\/shyloh/i.test(messageText);
+    
     // Detect Notion mention and strip it from the message
     const useNotion = /@notion|\/notion/i.test(messageText);
     const cleanedMessage = messageText.replace(/@notion|\/notion/gi, '').trim();
+    
+    // If not mentioning AI, send as human-to-human message
+    if (!mentionsAI) {
+      const userMessage: ChatMessage = { role: "user", content: messageText };
+      setMessages((prev) => [...prev, userMessage]);
+      setCurrentInput("");
+      setNotionMentioned(false);
+
+      try {
+        // Create or update conversation
+        let convId = currentConversationId;
+        
+        if (!convId) {
+          // Create new conversation
+          const { data: newConv, error: convError } = await supabase
+            .from("chat_conversations")
+            .insert({
+              restaurant_id: id,
+              title: messageText.substring(0, 50) + (messageText.length > 50 ? "..." : ""),
+              message_count: 1,
+              created_by: user?.id,
+              visibility: currentConversationVisibility || 'private',
+            })
+            .select()
+            .single();
+
+          if (convError) throw convError;
+          convId = newConv.id;
+          setCurrentConversationId(convId);
+
+          // Add creator as participant (owner)
+          if (user?.id) {
+            await supabase
+              .from("chat_conversation_participants")
+              .insert({
+                conversation_id: newConv.id,
+                user_id: user.id,
+                role: 'owner',
+              });
+          }
+        } else {
+          // Ensure current user is a participant
+          if (user?.id) {
+            const { data: existingParticipant } = await supabase
+              .from('chat_conversation_participants')
+              .select('id')
+              .eq('conversation_id', convId)
+              .eq('user_id', user.id)
+              .maybeSingle();
+
+            if (!existingParticipant) {
+              await supabase
+                .from('chat_conversation_participants')
+                .insert({
+                  conversation_id: convId,
+                  user_id: user.id,
+                  role: 'member',
+                });
+            }
+          }
+        }
+
+        // Save user message
+        const { data: insertedMessage } = await supabase
+          .from("chat_messages")
+          .insert({
+            conversation_id: convId,
+            role: "user",
+            content: messageText,
+            user_id: user?.id,
+          })
+          .select()
+          .single();
+
+        // Process mentions asynchronously
+        if (insertedMessage) {
+          supabase.functions.invoke('process-mentions', {
+            body: {
+              messageId: insertedMessage.id,
+              content: messageText,
+              conversationId: convId,
+              restaurantId: id,
+              senderId: user?.id
+            }
+          }).then(({ data, error }) => {
+            if (error) {
+              console.error('Error processing mentions:', error);
+            } else {
+              console.log('Mentions processed:', data);
+              
+              if (data?.mentionsFound > 0 && data?.notificationsCreated === 0) {
+                toast.error("We couldn't notify anyone. Try selecting from the @mention picker.");
+              } else if (data?.unmatchedMentions && data.unmatchedMentions.length > 0) {
+                const unmatchedList = data.unmatchedMentions.map((m: string) => `@${m}`).join(', ');
+                toast.warning(`Some mentions weren't delivered: ${unmatchedList}. Try selecting from the picker or type more of the name.`);
+              }
+            }
+          });
+        }
+
+        // Update conversation metadata
+        await supabase
+          .from("chat_conversations")
+          .update({
+            message_count: (await supabase
+              .from("chat_messages")
+              .select("id", { count: 'exact', head: true })
+              .eq("conversation_id", convId)).count || 0,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", convId);
+
+      } catch (error) {
+        console.error('Error sending message:', error);
+        toast.error('Failed to send message');
+      }
+      
+      return; // Exit early - no AI call
+    }
 
     const userMessage: ChatMessage = { role: "user", content: cleanedMessage };
     setMessages((prev) => [...prev, userMessage]);
@@ -3206,18 +3400,33 @@ What would you like to work on today?`
                       );
                     };
 
+                    const isAI = message.role === 'assistant';
+                    const isCurrentUser = message.user_id === user?.id;
+
                     return (
                       <div
                         key={idx}
-                        className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} animate-fade-in group`}
+                        className={`flex ${isCurrentUser ? "justify-end" : "justify-start"} animate-fade-in group`}
                       >
                         <div
                           className={`max-w-[70%] rounded-2xl px-4 py-3 ${
-                            message.role === "user"
+                            isCurrentUser
                               ? "bg-accent text-accent-foreground"
                               : "bg-background/50 backdrop-blur-sm border border-accent/20 text-primary-foreground"
                           }`}
                         >
+                          {/* Sender Name for non-current-user messages */}
+                          {!isCurrentUser && !isAI && message.display_name && (
+                            <div className="text-xs font-medium mb-1 opacity-70">
+                              {message.display_name}
+                            </div>
+                          )}
+                          {isAI && (
+                            <div className="flex items-center gap-2 mb-1">
+                              <Bot className="w-4 h-4" />
+                              <span className="text-xs font-medium">Shyloh AI</span>
+                            </div>
+                          )}
                           <div className="text-sm leading-relaxed">
                             {renderMessageContent(message.content)}
                           </div>
@@ -3384,6 +3593,11 @@ What would you like to work on today?`
                     >
                       {isTyping ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                     </Button>
+                  </div>
+                  
+                  {/* AI Availability Hint */}
+                  <div className="text-xs text-muted-foreground px-1 mt-1">
+                    💡 Type <span className="font-medium">@Shyloh</span> or <span className="font-medium">/ask</span> to get AI help
                   </div>
                   
                   {/* Notion Mention Indicator */}

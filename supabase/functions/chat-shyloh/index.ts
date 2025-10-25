@@ -264,6 +264,14 @@ serve(async (req) => {
     
     console.log(`Notion tools ${useNotion ? 'ENABLED' : 'disabled'} for this query`);
     
+    // Strip AI mentions from the last user message
+    if (messages && messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage && lastMessage.role === 'user') {
+        lastMessage.content = lastMessage.content.replace(/@shyloh|@ai|\/ask|\/shyloh/gi, '').trim();
+      }
+    }
+    
     const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
     if (!ANTHROPIC_API_KEY) {
       throw new Error('ANTHROPIC_API_KEY is not configured');
