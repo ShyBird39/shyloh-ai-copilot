@@ -249,7 +249,7 @@ export function ChatSidebar({
                             }}
                             title="Delete conversation"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4" style={{ color: '#DD3828' }} />
                           </Button>
                           
                           <div className="flex-1 min-w-0">
@@ -271,9 +271,9 @@ export function ChatSidebar({
                         <div className="flex items-center gap-2 flex-shrink-0">
                           {/* Lock/Users Icon */}
                           {conv.visibility === 'team' || conv.visibility === 'public' ? (
-                            <UsersIcon className="w-4 h-4 text-muted-foreground" />
+                            <UsersIcon className="w-4 h-4" style={{ color: '#EAEFDB' }} />
                           ) : (
-                            <Lock className="w-4 h-4 text-muted-foreground" />
+                            <Lock className="w-4 h-4" style={{ color: '#FBEFEA' }} />
                           )}
                           
                           {/* Toggle Switch */}
@@ -282,7 +282,10 @@ export function ChatSidebar({
                               checked={conv.visibility === 'team' || conv.visibility === 'public'}
                               onCheckedChange={() => onToggleVisibility(conv.id, conv.visibility)}
                               onClick={(e) => e.stopPropagation()}
-                              className="h-5 w-9 data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-gray-400"
+                              className="h-5 w-9"
+                              style={{
+                                backgroundColor: conv.visibility === 'team' || conv.visibility === 'public' ? '#EAEFDB' : '#FBEFEA'
+                              }}
                             />
                           )}
                           
@@ -298,7 +301,7 @@ export function ChatSidebar({
                               }}
                               title="Share with specific members"
                             >
-                              <Share2 className="w-4 h-4" />
+                              <Share2 className="w-4 h-4" style={{ color: '#EAEFDB' }} />
                             </Button>
                           )}
                         </div>
