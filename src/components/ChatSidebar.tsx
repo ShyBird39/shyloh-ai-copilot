@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { MessageSquare, Upload, Trash2, FileText, Plus, Bot, Lock, Users as UsersIcon, Globe, GripVertical, Share2, ChevronDown } from "lucide-react";
+import { MessageSquare, Upload, Trash2, FileText, Plus, Bot, Lock, Users as UsersIcon, Globe, GripVertical, Share2, ChevronDown, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -259,41 +260,30 @@ export function ChatSidebar({
                             {conv.message_count} messages
                           </p>
                         </div>
-                        <div className="flex items-center gap-1">
-                          {onToggleVisibility && onOpenShareSettings && (
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
+                        <div className="flex items-center gap-1.5">
+                          {onToggleVisibility && (
+                            <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Switch
+                                checked={conv.visibility === 'team'}
+                                onCheckedChange={() => onToggleVisibility(conv.id, conv.visibility)}
+                                onClick={(e) => e.stopPropagation()}
+                                className="h-4 w-7 data-[state=checked]:bg-green-500"
+                              />
+                              {onOpenShareSettings && (
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                  onClick={(e) => e.stopPropagation()}
-                                  title="Share options"
-                                >
-                                  <Share2 className={`w-3 h-3 ${conv.visibility === 'team' ? 'text-green-500' : 'text-muted-foreground'}`} />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                                <DropdownMenuItem
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onToggleVisibility(conv.id, conv.visibility);
-                                  }}
-                                >
-                                  <Share2 className="w-4 h-4 mr-2" />
-                                  {conv.visibility === 'private' ? 'Share with team' : 'Make private'}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
+                                  className="h-6 w-6"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     onOpenShareSettings(conv.id, conv.visibility);
                                   }}
+                                  title="Share with specific members"
                                 >
-                                  <UsersIcon className="w-4 h-4 mr-2" />
-                                  Share with specific members...
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                                  <UserPlus className="w-3 h-3" />
+                                </Button>
+                              )}
+                            </div>
                           )}
                           <Button
                             variant="ghost"
