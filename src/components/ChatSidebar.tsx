@@ -282,7 +282,7 @@ export function ChatSidebar({
                               checked={conv.visibility === 'team' || conv.visibility === 'public'}
                               onCheckedChange={() => onToggleVisibility(conv.id, conv.visibility)}
                               onClick={(e) => e.stopPropagation()}
-                              className="h-5 w-9"
+                              className="h-5 w-9 [&>span]:bg-[#DD3828]"
                               style={{
                                 backgroundColor: conv.visibility === 'team' || conv.visibility === 'public' ? '#EAEFDB' : '#FBEFEA'
                               }}
