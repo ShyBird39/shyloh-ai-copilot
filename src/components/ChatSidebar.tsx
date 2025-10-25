@@ -237,66 +237,70 @@ export function ChatSidebar({
                       onClick={() => onLoadConversation(conv.id)}
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-medium text-sm truncate flex-1">
-                              {conv.title}
-                            </h3>
-                            <div className="flex items-center gap-1 opacity-70">
-                              {getVisibilityIcon(conv.visibility)}
-                              {conv.participant_count && conv.visibility === "private" && (
-                                <span className="text-xs">
-                                  {conv.participant_count}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <p className="text-xs opacity-70 mt-1">
-                            {formatDistanceToNow(new Date(conv.updated_at), {
-                              addSuffix: true,
-                            })}
-                          </p>
-                          <p className="text-xs opacity-60 mt-0.5">
-                            {conv.message_count} messages
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {onToggleVisibility && (
-                            <div className="flex items-center gap-2">
-                              <div className="flex items-center gap-1.5 text-muted-foreground">
-                                {conv.visibility === 'team' || conv.visibility === 'public' ? (
-                                  <UsersIcon className="w-4 h-4" />
-                                ) : (
-                                  <Lock className="w-4 h-4" />
-                                )}
-                              </div>
-                              {onOpenShareSettings && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onOpenShareSettings(conv.id, conv.visibility);
-                                  }}
-                                  title="Share conversation"
-                                >
-                                  <Share2 className="w-4 h-4" />
-                                </Button>
-                              )}
-                            </div>
-                          )}
+                        {/* Left side: Trash icon (hover only) + Title & Details */}
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
                             onClick={(e) => {
                               e.stopPropagation();
                               onDeleteConversation(conv.id);
                             }}
+                            title="Delete conversation"
                           >
-                            <Trash2 className="w-3 h-3" />
+                            <Trash2 className="w-4 h-4" />
                           </Button>
+                          
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-medium text-sm truncate">
+                              {conv.title}
+                            </h3>
+                            <p className="text-xs opacity-70 mt-1">
+                              {formatDistanceToNow(new Date(conv.updated_at), {
+                                addSuffix: true,
+                              })}
+                            </p>
+                            <p className="text-xs opacity-60 mt-0.5">
+                              {conv.message_count} messages
+                            </p>
+                          </div>
+                        </div>
+                        
+                        {/* Right side: Visibility controls (always visible) */}
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {/* Lock/Users Icon */}
+                          {conv.visibility === 'team' || conv.visibility === 'public' ? (
+                            <UsersIcon className="w-4 h-4 text-muted-foreground" />
+                          ) : (
+                            <Lock className="w-4 h-4 text-muted-foreground" />
+                          )}
+                          
+                          {/* Toggle Switch */}
+                          {onToggleVisibility && (
+                            <Switch
+                              checked={conv.visibility === 'team' || conv.visibility === 'public'}
+                              onCheckedChange={() => onToggleVisibility(conv.id, conv.visibility)}
+                              onClick={(e) => e.stopPropagation()}
+                              className="h-5 w-9 data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-gray-400"
+                            />
+                          )}
+                          
+                          {/* Share Arrow Button */}
+                          {onOpenShareSettings && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onOpenShareSettings(conv.id, conv.visibility);
+                              }}
+                              title="Share with specific members"
+                            >
+                              <Share2 className="w-4 h-4" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </div>
