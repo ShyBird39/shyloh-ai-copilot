@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -67,6 +68,9 @@ export function ChatSidebar({
   const [agents, setAgents] = useState<any[]>([]);
   const [draggedAgent, setDraggedAgent] = useState<any>(null);
   const [dragOverAgent, setDragOverAgent] = useState<string | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [toggleConfirmOpen, setToggleConfirmOpen] = useState(false);
+  const [selectedConversation, setSelectedConversation] = useState<{ id: string; visibility: string } | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -186,8 +190,75 @@ export function ChatSidebar({
     }
   };
 
+  const handleDeleteClick = (conversationId: string) => {
+    setSelectedConversation({ id: conversationId, visibility: '' });
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (selectedConversation) {
+      onDeleteConversation(selectedConversation.id);
+    }
+    setDeleteConfirmOpen(false);
+    setSelectedConversation(null);
+  };
+
+  const handleToggleClick = (conversationId: string, currentVisibility: string) => {
+    // If switching from private to public/team, show confirmation
+    if (currentVisibility === 'private') {
+      setSelectedConversation({ id: conversationId, visibility: currentVisibility });
+      setToggleConfirmOpen(true);
+    } else {
+      // If switching from public/team to private, no confirmation needed
+      onToggleVisibility?.(conversationId, currentVisibility);
+    }
+  };
+
+  const handleToggleConfirm = () => {
+    if (selectedConversation && onToggleVisibility) {
+      onToggleVisibility(selectedConversation.id, selectedConversation.visibility);
+    }
+    setToggleConfirmOpen(false);
+    setSelectedConversation(null);
+  };
+
   return (
-    <div className="h-full flex flex-col border-r border-border bg-background">
+    <>
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Conversation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this conversation and all its messages.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={toggleConfirmOpen} onOpenChange={setToggleConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Make Conversation Public?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will make the conversation visible to all team members. They will be able to view all messages in this conversation.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleToggleConfirm}>
+              Make Public
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <div className="h-full flex flex-col border-r border-border bg-background">
       <div className="border-b border-border p-4">
         <h2 className="text-lg font-semibold">Chat & Files</h2>
       </div>
@@ -245,7 +316,7 @@ export function ChatSidebar({
                             className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
                             onClick={(e) => {
                               e.stopPropagation();
-                              onDeleteConversation(conv.id);
+                              handleDeleteClick(conv.id);
                             }}
                             title="Delete conversation"
                           >
@@ -280,7 +351,7 @@ export function ChatSidebar({
                           {onToggleVisibility && (
                             <Switch
                               checked={conv.visibility === 'team' || conv.visibility === 'public'}
-                              onCheckedChange={() => onToggleVisibility(conv.id, conv.visibility)}
+                              onCheckedChange={() => handleToggleClick(conv.id, conv.visibility)}
                               onClick={(e) => e.stopPropagation()}
                               className="h-5 w-9 [&>span]:bg-[#DD3828]"
                               style={{
@@ -457,5 +528,6 @@ export function ChatSidebar({
         </Tabs>
       </div>
     </div>
+    </>
   );
 }
