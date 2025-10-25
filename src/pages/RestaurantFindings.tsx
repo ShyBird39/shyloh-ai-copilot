@@ -3161,7 +3161,7 @@ What would you like to work on today?`
                       // Process @mentions to add custom styling
                       const processedContent = content.replace(
                         /(@[A-Za-z0-9\s\-_.]+?)(?=\s|$|[.,!?])/g,
-                        '<span class="bg-primary/10 text-primary px-1 rounded">$1</span>'
+                        '<span class="bg-accent/30 text-accent-foreground font-medium px-1.5 py-0.5 rounded">$1</span>'
                       );
                       
                       return (
