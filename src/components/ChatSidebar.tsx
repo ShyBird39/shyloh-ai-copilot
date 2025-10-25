@@ -262,25 +262,26 @@ export function ChatSidebar({
                         </div>
                         <div className="flex items-center gap-2">
                           {onToggleVisibility && (
-                            <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Switch
-                                checked={conv.visibility === 'team'}
-                                onCheckedChange={() => onToggleVisibility(conv.id, conv.visibility)}
-                                onClick={(e) => e.stopPropagation()}
-                                className="h-5 w-9 data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-muted"
-                              />
+                            <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1.5 text-muted-foreground">
+                                {conv.visibility === 'team' || conv.visibility === 'public' ? (
+                                  <UsersIcon className="w-4 h-4" />
+                                ) : (
+                                  <Lock className="w-4 h-4" />
+                                )}
+                              </div>
                               {onOpenShareSettings && (
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-7 w-7"
+                                  className="h-6 w-6"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     onOpenShareSettings(conv.id, conv.visibility);
                                   }}
-                                  title="Share with specific members"
+                                  title="Share conversation"
                                 >
-                                  <UserPlus className="w-4 h-4" />
+                                  <Share2 className="w-4 h-4" />
                                 </Button>
                               )}
                             </div>
