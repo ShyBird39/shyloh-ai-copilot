@@ -362,21 +362,35 @@ export function ChatSidebar({
                               />
                             )}
                             
-                            {/* Share Arrow Button */}
-                            {onOpenShareSettings && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onOpenShareSettings(conv.id, conv.visibility);
-                                }}
-                                title="Share with specific members"
-                              >
-                                <Share2 className="w-4 h-4" style={{ color: isSelected ? '#EAEFDB' : '#195029' }} />
-                              </Button>
-                            )}
+              {/* Share Arrow Button with Participant Count Badge */}
+              {onOpenShareSettings && (
+                <div className="relative">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenShareSettings(conv.id, conv.visibility);
+                    }}
+                    title="Share with specific members"
+                  >
+                    <Share2 className="w-4 h-4" style={{ color: isSelected ? '#EAEFDB' : '#195029' }} />
+                  </Button>
+                  {/* Participant count badge - only show if more than just owner */}
+                  {conv.participant_count && conv.participant_count > 1 && (
+                    <div 
+                      className="absolute -top-1 -right-1 flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full text-[10px] font-semibold"
+                      style={{ 
+                        backgroundColor: '#DD3828',
+                        color: '#FBEFEA'
+                      }}
+                    >
+                      {conv.participant_count}
+                    </div>
+                  )}
+                </div>
+              )}
                           </div>
                         </div>
                       </div>

@@ -1,11 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, ChevronDown, ChevronUp, RotateCcw, Paperclip, UtensilsCrossed, Sparkles, Users, Clock, Settings, Heart, UserCog, Trash2, Brain, AlertCircle, Edit } from "lucide-react";
+import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, ChevronDown, ChevronUp, RotateCcw, Paperclip, UtensilsCrossed, Sparkles, Users, Clock, Settings, Heart, UserCog, Trash2, Brain, AlertCircle, Edit, Crown } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -219,6 +220,15 @@ const RestaurantFindings = () => {
   const [showConversationSettings, setShowConversationSettings] = useState(false);
   const [currentConversationVisibility, setCurrentConversationVisibility] = useState("private");
   const [messageFeedback, setMessageFeedback] = useState<Record<number, number>>({});
+  const [currentParticipants, setCurrentParticipants] = useState<Array<{
+    id: string;
+    user_id: string;
+    role: string;
+    profiles: {
+      email: string;
+      display_name: string | null;
+    };
+  }>>([]);
 
   // Conversation state tracking
   const [conversationState, setConversationState] = useState<{
@@ -295,6 +305,55 @@ const RestaurantFindings = () => {
 
   const handleRefreshChat = () => {
     handleNewConversation();
+  };
+
+  const loadCurrentConversationParticipants = async (conversationId: string) => {
+    if (!conversationId) {
+      setCurrentParticipants([]);
+      return;
+    }
+
+    try {
+      // Get participants
+      const { data: participantData, error: participantError } = await supabase
+        .from("chat_conversation_participants")
+        .select("id, user_id, role")
+        .eq("conversation_id", conversationId)
+        .order("role", { ascending: true });
+
+      if (participantError) throw participantError;
+
+      if (!participantData || participantData.length === 0) {
+        setCurrentParticipants([]);
+        return;
+      }
+
+      // Get profiles for all participants
+      const userIds = participantData.map(p => p.user_id);
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("id, email, display_name")
+        .in("id", userIds);
+
+      if (profileError) throw profileError;
+
+      // Combine data
+      const participantsWithProfiles = participantData.map(p => {
+        const profile = profileData?.find(prof => prof.id === p.user_id);
+        return {
+          ...p,
+          profiles: {
+            email: profile?.email || '',
+            display_name: profile?.display_name || null,
+          }
+        };
+      });
+
+      setCurrentParticipants(participantsWithProfiles);
+    } catch (error) {
+      console.error("Error loading participants:", error);
+      setCurrentParticipants([]);
+    }
   };
 
   const updateMessageFeedbackStats = async (messageId: string) => {
@@ -422,6 +481,51 @@ const RestaurantFindings = () => {
     );
   };
 
+  const ParticipantTags = () => {
+    if (!currentConversationId || currentParticipants.length <= 1) {
+      return null;
+    }
+
+    return (
+      <div className="border-b border-accent/20 bg-background/50 backdrop-blur-sm">
+        <div className="container mx-auto px-4 py-2 max-w-4xl">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Users className="w-4 h-4" style={{ color: '#195029' }} />
+            <span className="text-sm font-medium" style={{ color: '#620B14' }}>
+              Participants:
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {currentParticipants.map((participant) => {
+                const isCurrentUser = participant.user_id === user?.id;
+                const displayName = participant.profiles.display_name || 
+                                   participant.profiles.email.split('@')[0];
+                
+                return (
+                  <Badge
+                    key={participant.id}
+                    variant="outline"
+                    className="flex items-center gap-1"
+                    style={{
+                      backgroundColor: '#EAEFDB',
+                      borderColor: '#195029',
+                      color: '#620B14'
+                    }}
+                  >
+                    {participant.role === 'owner' && (
+                      <Crown className="w-3 h-3" style={{ color: '#DD3828' }} />
+                    )}
+                    {displayName}
+                    {isCurrentUser && <span className="text-xs">(you)</span>}
+                  </Badge>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const startOnboarding = () => {
     setIsOnboarding(true);
     setOnboardingStep(1);
@@ -448,6 +552,7 @@ const RestaurantFindings = () => {
 
   const handleNewConversation = () => {
     setCurrentConversationId(null);
+    setCurrentParticipants([]);
     
     // Check if tuning is complete
     const tuningComplete = data?.tuning_completed;
@@ -562,6 +667,9 @@ const RestaurantFindings = () => {
         role: msg.role as "user" | "assistant",
         content: msg.content,
       })));
+
+      // Load participants for this conversation
+      loadCurrentConversationParticipants(conversationId);
 
       // Load feedback for this conversation
       if (user?.id) {
@@ -1660,6 +1768,15 @@ What would you like to work on today?`
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Load participants when conversation changes
+  useEffect(() => {
+    if (currentConversationId) {
+      loadCurrentConversationParticipants(currentConversationId);
+    } else {
+      setCurrentParticipants([]);
+    }
+  }, [currentConversationId]);
 
   useEffect(() => {
     if (sidebarOpen) {
@@ -3014,6 +3131,9 @@ What would you like to work on today?`
                 </div>
               </Collapsible>
             )}
+
+            {/* Participant Tags */}
+            <ParticipantTags />
 
             {/* Chat Area */}
             <div className="flex-1 overflow-y-auto">
