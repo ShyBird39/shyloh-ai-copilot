@@ -20,8 +20,8 @@ serve(async (req) => {
 
     console.log('Processing mentions for message:', messageId);
 
-    // Extract @mentions from content using regex
-    const mentionRegex = /@([A-Za-z0-9\s\-_.]+?)(?:\s|$|[.,!?])/g;
+    // Extract @mentions from content using improved regex (handles more punctuation)
+    const mentionRegex = /@([A-Za-z0-9\s\-_.]+?)(?=\s|$|[.,!?:;()\[\]{}…–—])/g;
     const mentionNames = [];
     let match;
     
@@ -74,25 +74,47 @@ serve(async (req) => {
     }
 
     const mentionedUserIds = new Set<string>();
+    const unmatchedMentions: string[] = [];
     
     for (const name of mentionNames) {
       const lowerName = name.toLowerCase();
+      
+      // Priority matching: exact > prefix > partial (if token length >= 3)
       const matchedProfile = profiles?.find(p => {
         const displayName = p.display_name?.toLowerCase() || '';
         const email = p.email?.toLowerCase() || '';
         const emailPrefix = email.split('@')[0];
         
-        return displayName === lowerName || 
-               emailPrefix === lowerName ||
-               email === lowerName;
+        // 1. Exact match on display name or email
+        if (displayName === lowerName || emailPrefix === lowerName || email === lowerName) {
+          return true;
+        }
+        
+        // 2. Partial match for tokens >= 3 chars (safe for common names)
+        if (lowerName.length >= 3) {
+          // Split display name into tokens (by space, hyphen, underscore)
+          const nameTokens = displayName.split(/[\s\-_]+/);
+          if (nameTokens.some((token: string) => token.startsWith(lowerName))) {
+            return true;
+          }
+          
+          // Also check email prefix partial match
+          if (emailPrefix.startsWith(lowerName)) {
+            return true;
+          }
+        }
+        
+        return false;
       });
       
       if (matchedProfile && matchedProfile.id !== senderId) {
         mentionedUserIds.add(matchedProfile.id);
+      } else if (!matchedProfile) {
+        unmatchedMentions.push(name);
       }
     }
-
-    console.log(`Matched ${mentionedUserIds.size} users to notify`);
+    
+    console.log(`Matched ${mentionedUserIds.size} users to notify, ${unmatchedMentions.length} unmatched: ${unmatchedMentions.join(', ')}`);
 
     // Update message with mentions array
     const mentionedArray = Array.from(mentionedUserIds);
@@ -134,7 +156,8 @@ serve(async (req) => {
     return new Response(JSON.stringify({ 
       mentionsFound: mentionNames.length,
       notificationsCreated: notifications.length,
-      mentionedUsers: mentionedArray
+      mentionedUsers: mentionedArray,
+      unmatchedMentions
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

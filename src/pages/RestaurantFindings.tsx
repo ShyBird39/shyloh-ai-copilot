@@ -2333,6 +2333,14 @@ What would you like to work on today?`
             console.error('Error processing mentions:', error);
           } else {
             console.log('Mentions processed:', data);
+            
+            // Show feedback if mentions didn't resolve
+            if (data?.mentionsFound > 0 && data?.notificationsCreated === 0) {
+              toast.error("We couldn't notify anyone. Try selecting from the @mention picker.");
+            } else if (data?.unmatchedMentions && data.unmatchedMentions.length > 0) {
+              const unmatchedList = data.unmatchedMentions.map((m: string) => `@${m}`).join(', ');
+              toast.warning(`Some mentions weren't delivered: ${unmatchedList}. Try selecting from the picker or type more of the name.`);
+            }
           }
         });
       }
