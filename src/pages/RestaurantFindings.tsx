@@ -221,6 +221,7 @@ const RestaurantFindings = () => {
   const [cleanupAttempted, setCleanupAttempted] = useState(false);
   const [showConversationSettings, setShowConversationSettings] = useState(false);
   const [currentConversationVisibility, setCurrentConversationVisibility] = useState("private");
+  const [notionEnabled, setNotionEnabled] = useState(false);
   const [messageFeedback, setMessageFeedback] = useState<Record<number, number>>({});
   const [currentParticipants, setCurrentParticipants] = useState<Array<{
     id: string;
@@ -555,6 +556,7 @@ const RestaurantFindings = () => {
   const handleNewConversation = () => {
     setCurrentConversationId(null);
     setCurrentParticipants([]);
+    setNotionEnabled(false);
     
     // Check if tuning is complete
     const tuningComplete = data?.tuning_completed;
@@ -627,7 +629,7 @@ const RestaurantFindings = () => {
       // Fetch conversation state and visibility
       const { data: convMeta, error: metaError } = await supabase
         .from('chat_conversations')
-        .select('conversation_state, current_topic, intent_classification, wwahd_mode, topics_discussed, last_question_asked, visibility')
+        .select('conversation_state, current_topic, intent_classification, wwahd_mode, topics_discussed, last_question_asked, visibility, notion_enabled')
         .eq('id', conversationId)
         .maybeSingle();
 
@@ -641,6 +643,7 @@ const RestaurantFindings = () => {
           conversation_state: convMeta.conversation_state || {},
         });
         setCurrentConversationVisibility(convMeta.visibility || 'private');
+        setNotionEnabled(convMeta.notion_enabled || false);
       }
 
       // Auto-add current user as participant if they're not already
@@ -2316,7 +2319,8 @@ What would you like to work on today?`
     const mentionsAI = /@shyloh|@ai|\/ask|\/shyloh/i.test(messageText);
     
     // Detect Notion mention and strip it from the message
-    const useNotion = /@notion|\/notion/i.test(messageText);
+    const mentionedNotion = /@notion|\/notion/i.test(messageText);
+    const useNotion = mentionedNotion || notionEnabled; // Use if mentioned OR conversation has it enabled
     const cleanedMessage = messageText.replace(/@notion|\/notion/gi, '').trim();
     
     // If not mentioning AI, send as human-to-human message
@@ -3596,20 +3600,59 @@ What would you like to work on today?`
                   </div>
                   
                   {/* AI Availability Hint */}
-                  <div className="text-xs text-muted-foreground px-1 mt-1">
-                    💡 Type <span className="font-medium">@Shyloh</span> or <span className="font-medium">/ask</span> to get AI help
+                  <div className="flex items-center justify-between text-xs text-muted-foreground px-1 mt-1">
+                    <div>
+                      💡 Type <span className="font-medium">@Shyloh</span> or <span className="font-medium">/ask</span> to get AI help
+                    </div>
+                    
+                    {/* Notion Toggle - Only show if conversation exists */}
+                    {currentConversationId && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={async () => {
+                          if (!currentConversationId) return;
+                          
+                          const newValue = !notionEnabled;
+                          setNotionEnabled(newValue);
+                          
+                          try {
+                            const { error } = await supabase
+                              .from('chat_conversations')
+                              .update({ notion_enabled: newValue })
+                              .eq('id', currentConversationId);
+                            
+                            if (error) throw error;
+                            
+                            toast.success(newValue ? 'Notion enabled for this conversation' : 'Notion disabled for this conversation');
+                          } catch (error) {
+                            console.error('Error toggling Notion:', error);
+                            setNotionEnabled(!newValue); // Revert on error
+                            toast.error('Failed to update Notion setting');
+                          }
+                        }}
+                        className="h-6 gap-1.5 px-2"
+                      >
+                        <Bot className="w-3.5 h-3.5" />
+                        <span className="text-xs">Notion: {notionEnabled ? 'ON' : 'OFF'}</span>
+                      </Button>
+                    )}
                   </div>
                   
-                  {/* Notion Mention Indicator */}
-                  {notionMentioned && (
+                  {/* Notion Active Indicator */}
+                  {(notionMentioned || notionEnabled) && (
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-accent/10 border border-accent/20 rounded-lg animate-fade-in">
                       <div className="flex items-center gap-1.5">
                         <div className="w-4 h-4 rounded bg-accent/20 flex items-center justify-center">
                           <span className="text-[10px] font-semibold text-accent-foreground">N</span>
                         </div>
-                        <span className="text-xs font-medium text-accent-foreground">Notion enabled</span>
+                        <span className="text-xs font-medium text-accent-foreground">
+                          Notion {notionEnabled ? 'active' : 'enabled'}
+                        </span>
                       </div>
-                      <span className="text-xs text-muted-foreground">I'll search your Notion workspace</span>
+                      <span className="text-xs text-muted-foreground">
+                        {notionEnabled ? 'Automatically searching Notion' : "I'll search your Notion workspace"}
+                      </span>
                     </div>
                   )}
                 </div>

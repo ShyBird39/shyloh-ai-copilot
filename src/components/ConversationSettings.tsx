@@ -64,17 +64,36 @@ export function ConversationSettings({
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [visibility, setVisibility] = useState(currentVisibility);
+  const [notionEnabled, setNotionEnabled] = useState(false);
 
   useEffect(() => {
     if (open && conversationId) {
       loadParticipants();
       loadTeamMembers();
+      loadNotionSetting();
     }
   }, [open, conversationId]);
 
   useEffect(() => {
     setVisibility(currentVisibility);
   }, [currentVisibility]);
+
+  const loadNotionSetting = async () => {
+    if (!conversationId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('chat_conversations')
+        .select('notion_enabled')
+        .eq('id', conversationId)
+        .single();
+      
+      if (error) throw error;
+      setNotionEnabled(data?.notion_enabled || false);
+    } catch (error) {
+      console.error('Error loading Notion setting:', error);
+    }
+  };
 
   const loadParticipants = async () => {
     if (!conversationId) return;
@@ -276,6 +295,28 @@ export function ConversationSettings({
     }
   };
 
+  const handleNotionToggle = async (enabled: boolean) => {
+    if (!conversationId) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("chat_conversations")
+        .update({ notion_enabled: enabled })
+        .eq("id", conversationId);
+
+      if (error) throw error;
+
+      setNotionEnabled(enabled);
+      toast.success(enabled ? "Notion enabled" : "Notion disabled");
+    } catch (error) {
+      console.error("Error updating Notion setting:", error);
+      toast.error("Failed to update Notion setting");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getRoleIcon = (role: string) => {
     switch (role) {
       case "owner":
@@ -359,7 +400,28 @@ export function ConversationSettings({
                   </div>
                 </SelectItem>
               </SelectContent>
-            </Select>
+          </Select>
+          </div>
+
+          {/* Notion Integration Toggle */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <label className="text-sm font-medium">Notion Integration</label>
+                <p className="text-xs text-muted-foreground">
+                  Automatically search Notion in all messages
+                </p>
+              </div>
+              <Button
+                variant={notionEnabled ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleNotionToggle(!notionEnabled)}
+                disabled={!isOwner || loading}
+                className="ml-4"
+              >
+                {notionEnabled ? "ON" : "OFF"}
+              </Button>
+            </div>
           </div>
 
           {/* Participants List */}

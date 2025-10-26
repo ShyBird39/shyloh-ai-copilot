@@ -61,6 +61,7 @@ export type Database = {
           intent_classification: string | null
           last_question_asked: string | null
           message_count: number | null
+          notion_enabled: boolean | null
           restaurant_id: string
           title: string
           topics_discussed: string[] | null
@@ -79,6 +80,7 @@ export type Database = {
           intent_classification?: string | null
           last_question_asked?: string | null
           message_count?: number | null
+          notion_enabled?: boolean | null
           restaurant_id: string
           title: string
           topics_discussed?: string[] | null
@@ -97,6 +99,7 @@ export type Database = {
           intent_classification?: string | null
           last_question_asked?: string | null
           message_count?: number | null
+          notion_enabled?: boolean | null
           restaurant_id?: string
           title?: string
           topics_discussed?: string[] | null

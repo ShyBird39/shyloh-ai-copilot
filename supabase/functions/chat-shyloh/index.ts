@@ -696,8 +696,22 @@ ${fileTexts.join('\n\n')}`;
 
     console.log(`Using model: ${model} (onboarding_mode: ${onboarding_mode}, complexity: ${isComplex ? 'high' : 'normal'})`);
 
-    // Notion tools - only included when explicitly requested via @notion or /notion
-    const notionTools = useNotion ? [
+    // Check if conversation has Notion enabled
+    let notionEnabled = useNotion; // Start with explicit @notion mention
+    if (conversationId) {
+      const { data: convData } = await supabase
+        .from('chat_conversations')
+        .select('notion_enabled')
+        .eq('id', conversationId)
+        .single();
+      
+      if (convData?.notion_enabled) {
+        notionEnabled = true;
+      }
+    }
+
+    // Notion tools - included when explicitly requested via @notion mention OR conversation has notion_enabled=true
+    const notionTools = notionEnabled ? [
       {
         name: "search_notion",
         description: "Search across all accessible Notion pages and databases for specific content, keywords, or concepts. Returns matching pages with titles, URLs, and excerpts.",
@@ -782,8 +796,8 @@ ${toastApiSpec}
 - Always use YYYYMMDD format for dates (e.g., 20251021 for Oct 21, 2025)`;
 
     // Conditionally add Notion context to system prompt
-    const notionContext = useNotion 
-      ? "\n\nNOTION INTEGRATION ACTIVE\nThe user has explicitly requested Notion access via @notion mention. You MUST use these tools to search their Notion workspace:\n- search_notion: Search for pages/databases by keyword (START HERE - always search first)\n- read_notion_page: Get full content of a specific page after finding it via search\n- query_notion_database: Query structured databases after finding them via search\n\nWhen the user asks about logs, SOPs, schedules, recipes, inventory, or any operational documentation, IMMEDIATELY use search_notion to look for it. Don't ask where it's stored—assume it's in Notion and search for it. Only mention that you couldn't find it if the search returns no results. Always cite specific Notion pages when using this information."
+    const notionContext = notionEnabled 
+      ? "\n\nNOTION INTEGRATION ACTIVE\nNotion access is enabled for this conversation. You MUST use these tools to search their Notion workspace:\n- search_notion: Search for pages/databases by keyword (START HERE - always search first)\n- read_notion_page: Get full content of a specific page after finding it via search\n- query_notion_database: Query structured databases after finding them via search\n\nWhen the user asks about logs, SOPs, schedules, recipes, inventory, or any operational documentation, IMMEDIATELY use search_notion to look for it. Don't ask where it's stored—assume it's in Notion and search for it. Only mention that you couldn't find it if the search returns no results. Always cite specific Notion pages when using this information."
       : "";
 
     // Add Quick Win onboarding enhancement to system prompt
