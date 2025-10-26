@@ -2318,13 +2318,24 @@ What would you like to work on today?`
     // Detect AI mention to route message appropriately
     const mentionsAI = /@shyloh|@ai|\/ask|\/shyloh/i.test(messageText);
     
+    // Check if this is a 1-on-1 conversation (only user + Shyloh)
+    // In 1-on-1 chats, auto-route to Shyloh without requiring @shyloh mention
+    const isOneOnOneWithShyloh = currentParticipants.length === 1 && 
+                                 currentParticipants[0].user_id === user?.id;
+    
+    // Auto-route to Shyloh if:
+    // 1. User explicitly mentions @shyloh, OR
+    // 2. It's a 1-on-1 conversation (just user, no other humans), OR
+    // 3. New conversation (no participants yet)
+    const shouldRouteToAI = mentionsAI || isOneOnOneWithShyloh || !currentConversationId;
+    
     // Detect Notion mention and strip it from the message
     const mentionedNotion = /@notion|\/notion/i.test(messageText);
     const useNotion = mentionedNotion || notionEnabled; // Use if mentioned OR conversation has it enabled
     const cleanedMessage = messageText.replace(/@notion|\/notion/gi, '').trim();
     
-    // If not mentioning AI, send as human-to-human message
-    if (!mentionsAI) {
+    // If not routing to AI, send as human-to-human message
+    if (!shouldRouteToAI) {
       const userMessage: ChatMessage = { role: "user", content: messageText };
       setMessages((prev) => [...prev, userMessage]);
       setCurrentInput("");
