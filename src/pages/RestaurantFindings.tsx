@@ -3233,6 +3233,44 @@ What would you like to work on today?`
                     >
                       <RotateCcw className="w-4 h-4" />
                     </Button>
+                    
+                    {/* Notion Toggle */}
+                    {currentConversationId && (
+                      <Button
+                        variant={notionEnabled ? "default" : "ghost"}
+                        size="sm"
+                        onClick={async () => {
+                          if (!currentConversationId) return;
+                          
+                          const newValue = !notionEnabled;
+                          setNotionEnabled(newValue);
+                          
+                          try {
+                            const { error } = await supabase
+                              .from('chat_conversations')
+                              .update({ notion_enabled: newValue })
+                              .eq('id', currentConversationId);
+                            
+                            if (error) throw error;
+                            
+                            toast.success(newValue ? 'Notion enabled' : 'Notion disabled');
+                          } catch (error) {
+                            console.error('Error toggling Notion:', error);
+                            setNotionEnabled(!newValue);
+                            toast.error('Failed to update Notion setting');
+                          }
+                        }}
+                        className={notionEnabled 
+                          ? "bg-accent text-accent-foreground hover:bg-accent-glow" 
+                          : "text-primary-foreground hover:bg-background/20"
+                        }
+                        title={notionEnabled ? "Notion active - Click to disable" : "Enable Notion integration"}
+                      >
+                        <Bot className="w-4 h-4 mr-1.5" />
+                        Notion
+                      </Button>
+                    )}
+                    
                     <NotificationBell
                       restaurantId={id || ""}
                       onNavigate={(conversationId) => {
@@ -3600,61 +3638,9 @@ What would you like to work on today?`
                   </div>
                   
                   {/* AI Availability Hint */}
-                  <div className="flex items-center justify-between text-xs text-muted-foreground px-1 mt-1">
-                    <div>
-                      💡 Type <span className="font-medium">@Shyloh</span> or <span className="font-medium">/ask</span> to get AI help
-                    </div>
-                    
-                    {/* Notion Toggle - Only show if conversation exists */}
-                    {currentConversationId && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={async () => {
-                          if (!currentConversationId) return;
-                          
-                          const newValue = !notionEnabled;
-                          setNotionEnabled(newValue);
-                          
-                          try {
-                            const { error } = await supabase
-                              .from('chat_conversations')
-                              .update({ notion_enabled: newValue })
-                              .eq('id', currentConversationId);
-                            
-                            if (error) throw error;
-                            
-                            toast.success(newValue ? 'Notion enabled for this conversation' : 'Notion disabled for this conversation');
-                          } catch (error) {
-                            console.error('Error toggling Notion:', error);
-                            setNotionEnabled(!newValue); // Revert on error
-                            toast.error('Failed to update Notion setting');
-                          }
-                        }}
-                        className="h-6 gap-1.5 px-2"
-                      >
-                        <Bot className="w-3.5 h-3.5" />
-                        <span className="text-xs">Notion: {notionEnabled ? 'ON' : 'OFF'}</span>
-                      </Button>
-                    )}
+                  <div className="text-xs text-muted-foreground px-1 mt-1">
+                    💡 Type <span className="font-medium">@Shyloh</span> or <span className="font-medium">/ask</span> to get AI help
                   </div>
-                  
-                  {/* Notion Active Indicator */}
-                  {(notionMentioned || notionEnabled) && (
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-accent/10 border border-accent/20 rounded-lg animate-fade-in">
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-4 h-4 rounded bg-accent/20 flex items-center justify-center">
-                          <span className="text-[10px] font-semibold text-accent-foreground">N</span>
-                        </div>
-                        <span className="text-xs font-medium text-accent-foreground">
-                          Notion {notionEnabled ? 'active' : 'enabled'}
-                        </span>
-                      </div>
-                      <span className="text-xs text-muted-foreground">
-                        {notionEnabled ? 'Automatically searching Notion' : "I'll search your Notion workspace"}
-                      </span>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
