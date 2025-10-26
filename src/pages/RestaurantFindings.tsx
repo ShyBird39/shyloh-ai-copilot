@@ -2407,30 +2407,36 @@ What would you like to work on today?`
           .select()
           .single();
 
-        // Process mentions asynchronously
+        // Process mentions asynchronously (exclude system mentions like @shyloh and @notion)
         if (insertedMessage) {
-          supabase.functions.invoke('process-mentions', {
-            body: {
-              messageId: insertedMessage.id,
-              content: messageText,
-              conversationId: convId,
-              restaurantId: id,
-              senderId: user?.id
-            }
-          }).then(({ data, error }) => {
-            if (error) {
-              console.error('Error processing mentions:', error);
-            } else {
-              console.log('Mentions processed:', data);
-              
-              if (data?.mentionsFound > 0 && data?.notificationsCreated === 0) {
-                toast.error("We couldn't notify anyone. Try selecting from the @mention picker.");
-              } else if (data?.unmatchedMentions && data.unmatchedMentions.length > 0) {
-                const unmatchedList = data.unmatchedMentions.map((m: string) => `@${m}`).join(', ');
-                toast.warning(`Some mentions weren't delivered: ${unmatchedList}. Try selecting from the picker or type more of the name.`);
+          // Filter out system mentions before processing user mentions
+          const contentForMentions = messageText.replace(/@shyloh|@ai|\/ask|\/shyloh|@notion|\/notion/gi, '');
+          
+          // Only process if there are remaining @ mentions (actual user mentions)
+          if (contentForMentions.includes('@')) {
+            supabase.functions.invoke('process-mentions', {
+              body: {
+                messageId: insertedMessage.id,
+                content: contentForMentions,
+                conversationId: convId,
+                restaurantId: id,
+                senderId: user?.id
               }
-            }
-          });
+            }).then(({ data, error }) => {
+              if (error) {
+                console.error('Error processing mentions:', error);
+              } else {
+                console.log('Mentions processed:', data);
+                
+                if (data?.mentionsFound > 0 && data?.notificationsCreated === 0) {
+                  toast.error("We couldn't notify anyone. Try selecting from the @mention picker.");
+                } else if (data?.unmatchedMentions && data.unmatchedMentions.length > 0) {
+                  const unmatchedList = data.unmatchedMentions.map((m: string) => `@${m}`).join(', ');
+                  toast.warning(`Some mentions weren't delivered: ${unmatchedList}. Try selecting from the picker or type more of the name.`);
+                }
+              }
+            });
+          }
         }
 
         // Update conversation metadata
@@ -2527,31 +2533,37 @@ What would you like to work on today?`
         .select()
         .single();
 
-      // Process mentions asynchronously
+      // Process mentions asynchronously (exclude system mentions like @shyloh and @notion)
       if (insertedMessage) {
-        supabase.functions.invoke('process-mentions', {
-          body: {
-            messageId: insertedMessage.id,
-            content: messageText,
-            conversationId: convId,
-            restaurantId: id,
-            senderId: user?.id
-          }
-        }).then(({ data, error }) => {
-          if (error) {
-            console.error('Error processing mentions:', error);
-          } else {
-            console.log('Mentions processed:', data);
-            
-            // Show feedback if mentions didn't resolve
-            if (data?.mentionsFound > 0 && data?.notificationsCreated === 0) {
-              toast.error("We couldn't notify anyone. Try selecting from the @mention picker.");
-            } else if (data?.unmatchedMentions && data.unmatchedMentions.length > 0) {
-              const unmatchedList = data.unmatchedMentions.map((m: string) => `@${m}`).join(', ');
-              toast.warning(`Some mentions weren't delivered: ${unmatchedList}. Try selecting from the picker or type more of the name.`);
+        // Filter out system mentions before processing user mentions
+        const contentForMentions = messageText.replace(/@shyloh|@ai|\/ask|\/shyloh|@notion|\/notion/gi, '');
+        
+        // Only process if there are remaining @ mentions (actual user mentions)
+        if (contentForMentions.includes('@')) {
+          supabase.functions.invoke('process-mentions', {
+            body: {
+              messageId: insertedMessage.id,
+              content: contentForMentions,
+              conversationId: convId,
+              restaurantId: id,
+              senderId: user?.id
             }
-          }
-        });
+          }).then(({ data, error }) => {
+            if (error) {
+              console.error('Error processing mentions:', error);
+            } else {
+              console.log('Mentions processed:', data);
+              
+              // Show feedback if mentions didn't resolve
+              if (data?.mentionsFound > 0 && data?.notificationsCreated === 0) {
+                toast.error("We couldn't notify anyone. Try selecting from the @mention picker.");
+              } else if (data?.unmatchedMentions && data.unmatchedMentions.length > 0) {
+                const unmatchedList = data.unmatchedMentions.map((m: string) => `@${m}`).join(', ');
+                toast.warning(`Some mentions weren't delivered: ${unmatchedList}. Try selecting from the picker or type more of the name.`);
+              }
+            }
+          });
+        }
       }
 
       const response = await fetch(
