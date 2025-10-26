@@ -481,7 +481,23 @@ ${recentAverage < 3.5 ? '⚠️ Recent feedback is below target. Adjust your ton
               
               console.log(`Daily Totals: Sales=$${netSales}, Covers=${covers}, Orders=${ordersCount}, AvgCheck=$${avgCheck.toFixed(2)}`);
 
-              toastContext = `\n\n**LIVE TOAST POS DATA (Today - ${businessDate})**
+              // Calculate explicit day of week to prevent AI from miscalculating
+              const dateObj = new Date(
+                parseInt(businessDate.substring(0, 4)),
+                parseInt(businessDate.substring(4, 6)) - 1,
+                parseInt(businessDate.substring(6, 8))
+              );
+              const dayOfWeek = dateObj.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                timeZone: 'America/New_York' 
+              });
+              const formattedDate = dateObj.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric',
+                timeZone: 'America/New_York'
+              });
+
+              toastContext = `\n\n**LIVE TOAST POS DATA (Today - ${dayOfWeek}, ${formattedDate})**
 *** CRITICAL: THIS DATA WAS JUST PULLED FROM TOAST POS (${new Date().toISOString()}) ***
 *** ALWAYS USE THESE NUMBERS WHEN ASKED ABOUT TODAY/CURRENT/NOW PERFORMANCE ***
 *** IGNORE ANY OLDER NUMBERS FROM EARLIER IN THE CONVERSATION ***
