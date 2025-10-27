@@ -170,6 +170,8 @@ export type Database = {
           content: string
           conversation_id: string
           created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           feedback_stats: Json | null
           id: string
           mentions: string[] | null
@@ -180,6 +182,8 @@ export type Database = {
           content: string
           conversation_id: string
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           feedback_stats?: Json | null
           id?: string
           mentions?: string[] | null
@@ -190,6 +194,8 @@ export type Database = {
           content?: string
           conversation_id?: string
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           feedback_stats?: Json | null
           id?: string
           mentions?: string[] | null
@@ -202,6 +208,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -807,6 +820,10 @@ export type Database = {
       can_manage_conversation: {
         Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
+      }
+      decrement_message_count: {
+        Args: { p_conversation_id: string }
+        Returns: undefined
       }
       get_user_role: {
         Args: { _restaurant_id: string; _user_id: string }

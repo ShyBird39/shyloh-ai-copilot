@@ -43,6 +43,7 @@ interface KPIData {
 }
 
 interface ChatMessage {
+  id?: string;
   role: "assistant" | "user";
   content: string;
   type?: "question" | "confirmation" | "input";
@@ -449,6 +450,39 @@ const RestaurantFindings = () => {
     }
   };
 
+  const handleDeleteMessage = async (messageId: string, messageIndex: number) => {
+    if (!currentConversationId || !user?.id) return;
+    
+    if (!confirm("Delete this message? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("chat_messages")
+        .update({ 
+          deleted_at: new Date().toISOString(),
+          deleted_by: user.id 
+        })
+        .eq("id", messageId);
+
+      if (error) throw error;
+
+      // Update local state to remove the message
+      setMessages(prev => prev.filter((_, idx) => idx !== messageIndex));
+      
+      // Decrement message count
+      await supabase.rpc('decrement_message_count', { 
+        p_conversation_id: currentConversationId 
+      });
+      
+      toast.success("Message deleted");
+    } catch (error) {
+      console.error("Error deleting message:", error);
+      toast.error("Failed to delete message");
+    }
+  };
+
   const FeedbackEmojis = ({ 
     messageIndex, 
     currentRating, 
@@ -622,6 +656,7 @@ const RestaurantFindings = () => {
         .from("chat_messages")
         .select("*")
         .eq("conversation_id", conversationId)
+        .is('deleted_at', null)
         .order("created_at", { ascending: true });
 
       if (error) throw error;
@@ -669,8 +704,11 @@ const RestaurantFindings = () => {
 
       setCurrentConversationId(conversationId);
       setMessages(msgs.map(msg => ({
+        id: msg.id,
         role: msg.role as "user" | "assistant",
         content: msg.content,
+        user_id: msg.user_id,
+        display_name: msg.profiles?.display_name || msg.profiles?.email || null,
       })));
 
       // Load participants for this conversation
@@ -3467,41 +3505,55 @@ What would you like to work on today?`
 
                     const isAI = message.role === 'assistant';
                     const isCurrentUser = message.user_id === user?.id;
+                    const canDelete = isCurrentUser || isAI || currentConversationId; // Can delete own messages, AI messages, or any message if conversation owner
 
                     return (
                       <div
                         key={idx}
                         className={`flex ${isCurrentUser ? "justify-end" : "justify-start"} animate-fade-in group`}
                       >
-                        <div
-                          className={`max-w-[70%] rounded-2xl px-4 py-3 ${
-                            isCurrentUser
-                              ? "bg-accent text-accent-foreground"
-                              : "bg-background/50 backdrop-blur-sm border border-accent/20 text-primary-foreground"
-                          }`}
-                        >
-                          {/* Sender Name for non-current-user messages */}
-                          {!isCurrentUser && !isAI && message.display_name && (
-                            <div className="text-xs font-medium mb-1 opacity-70">
-                              {message.display_name}
+                        <div className="relative">
+                          <div
+                            className={`max-w-[70%] rounded-2xl px-4 py-3 ${
+                              isCurrentUser
+                                ? "bg-accent text-accent-foreground"
+                                : "bg-background/50 backdrop-blur-sm border border-accent/20 text-primary-foreground"
+                            }`}
+                          >
+                            {/* Sender Name for non-current-user messages */}
+                            {!isCurrentUser && !isAI && message.display_name && (
+                              <div className="text-xs font-medium mb-1 opacity-70">
+                                {message.display_name}
+                              </div>
+                            )}
+                            {isAI && (
+                              <div className="flex items-center gap-2 mb-1">
+                                <Bot className="w-4 h-4" />
+                                <span className="text-xs font-medium">Shyloh AI</span>
+                              </div>
+                            )}
+                            <div className="text-sm leading-relaxed">
+                              {renderMessageContent(message.content)}
                             </div>
-                          )}
-                          {isAI && (
-                            <div className="flex items-center gap-2 mb-1">
-                              <Bot className="w-4 h-4" />
-                              <span className="text-xs font-medium">Shyloh AI</span>
-                            </div>
-                          )}
-                          <div className="text-sm leading-relaxed">
-                            {renderMessageContent(message.content)}
+                            
+                            {message.role === "assistant" && !isOnboarding && (
+                              <FeedbackEmojis
+                                messageIndex={idx}
+                                currentRating={messageFeedback[idx]}
+                                onRate={(rating) => handleMessageFeedback(idx, rating)}
+                              />
+                            )}
                           </div>
                           
-                          {message.role === "assistant" && !isOnboarding && (
-                            <FeedbackEmojis
-                              messageIndex={idx}
-                              currentRating={messageFeedback[idx]}
-                              onRate={(rating) => handleMessageFeedback(idx, rating)}
-                            />
+                          {/* Delete button - shows on hover */}
+                          {canDelete && message.id && (
+                            <button
+                              onClick={() => handleDeleteMessage(message.id!, idx)}
+                              className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90"
+                              title="Delete message"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
                           )}
                         </div>
                       </div>
