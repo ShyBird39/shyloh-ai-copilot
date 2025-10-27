@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { AtSign } from "lucide-react";
@@ -16,7 +16,7 @@ interface TeamMember {
 interface MentionInputProps {
   value: string;
   onChange: (value: string) => void;
-  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   restaurantId: string;
   placeholder?: string;
   disabled?: boolean;
@@ -37,7 +37,7 @@ export function MentionInput({
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [cursorPosition, setCursorPosition] = useState(0);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const mentionsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -65,7 +65,7 @@ export function MentionInput({
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
     const cursorPos = e.target.selectionStart || 0;
     
@@ -117,7 +117,7 @@ export function MentionInput({
     }, 0);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (showMentions && filteredMembers.length > 0) {
       if (e.key === "ArrowDown") {
         e.preventDefault();
@@ -151,14 +151,15 @@ export function MentionInput({
 
   return (
     <div className="relative flex-1">
-      <Input
+      <Textarea
         ref={inputRef}
         value={value}
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         disabled={disabled}
-        className={cn(className)}
+        className={cn("resize-none", className)}
+        rows={1}
       />
       
       {showMentions && filteredMembers.length > 0 && (
