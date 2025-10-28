@@ -3707,7 +3707,7 @@ What would you like to work on today?`
             </Dialog>
 
             {/* Input Area - Sticky at bottom */}
-            <div className="sticky bottom-0 z-10 border-t border-accent/20 bg-background/95 backdrop-blur-sm">
+            <div className="sticky bottom-0 z-50 border-t border-accent/20 bg-background/95 backdrop-blur-sm">
               <div className="container mx-auto px-4 py-4 max-w-4xl">
                 <div className="space-y-2">
                   {/* Hard Mode Badge Indicator */}

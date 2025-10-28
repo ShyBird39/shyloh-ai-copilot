@@ -25,8 +25,8 @@ export function ChatToolsPopover({
         <Button
           variant="ghost"
           size="icon"
-          disabled={disabled}
-          className="relative z-20 text-foreground hover:bg-accent"
+          aria-disabled={disabled}
+          className={`relative z-50 text-foreground hover:bg-accent ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
           title="Chat tools"
         >
           <Sliders className="w-4 h-4" />
@@ -58,7 +58,8 @@ export function ChatToolsPopover({
             <Switch
               id="hard-mode"
               checked={hardModeEnabled}
-              onCheckedChange={onHardModeToggle}
+              onCheckedChange={(v) => !disabled && onHardModeToggle(v)}
+              disabled={disabled}
               className="data-[state=checked]:bg-orange-500"
             />
           </div>
@@ -80,7 +81,8 @@ export function ChatToolsPopover({
             <Switch
               id="notion"
               checked={notionEnabled}
-              onCheckedChange={onNotionToggle}
+              onCheckedChange={(v) => !disabled && onNotionToggle(v)}
+              disabled={disabled}
               className="data-[state=checked]:bg-accent"
             />
           </div>
