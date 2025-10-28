@@ -57,6 +57,7 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           current_topic: string | null
+          hard_mode_enabled: boolean | null
           id: string
           intent_classification: string | null
           last_question_asked: string | null
@@ -76,6 +77,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           current_topic?: string | null
+          hard_mode_enabled?: boolean | null
           id?: string
           intent_classification?: string | null
           last_question_asked?: string | null
@@ -95,6 +97,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           current_topic?: string | null
+          hard_mode_enabled?: boolean | null
           id?: string
           intent_classification?: string | null
           last_question_asked?: string | null
@@ -113,6 +116,68 @@ export type Database = {
             columns: ["restaurant_id"]
             isOneToOne: false
             referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_hard_mode_usage: {
+        Row: {
+          conversation_id: string | null
+          created_at: string | null
+          id: string
+          message_id: string | null
+          model_used: string
+          restaurant_id: string | null
+          tokens_used: number | null
+          user_id: string | null
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+          message_id?: string | null
+          model_used: string
+          restaurant_id?: string | null
+          tokens_used?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+          message_id?: string | null
+          model_used?: string
+          restaurant_id?: string | null
+          tokens_used?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_hard_mode_usage_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_hard_mode_usage_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_hard_mode_usage_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_hard_mode_usage_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -173,6 +238,7 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           feedback_stats: Json | null
+          hard_mode_used: boolean | null
           id: string
           mentions: string[] | null
           role: string
@@ -185,6 +251,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           feedback_stats?: Json | null
+          hard_mode_used?: boolean | null
           id?: string
           mentions?: string[] | null
           role: string
@@ -197,6 +264,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           feedback_stats?: Json | null
+          hard_mode_used?: boolean | null
           id?: string
           mentions?: string[] | null
           role?: string

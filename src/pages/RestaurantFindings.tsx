@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, ChevronDown, ChevronUp, RotateCcw, Paperclip, UtensilsCrossed, Sparkles, Users, Clock, Settings, Heart, UserCog, Trash2, Brain, AlertCircle, Edit, Crown, Bot } from "lucide-react";
+import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, ChevronDown, ChevronUp, RotateCcw, Paperclip, UtensilsCrossed, Sparkles, Users, Clock, Settings, Heart, UserCog, Trash2, Brain, AlertCircle, Edit, Crown, Bot, Zap } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -26,6 +26,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { TuningSheet } from "@/components/TuningSheet";
 import { PinInput } from "@/components/PinInput";
 import { OnboardingTuningFlow } from "@/components/OnboardingTuningFlow";
+import { ChatToolsPopover } from "@/components/ChatToolsPopover";
 import KPIInput from "@/components/KPIInput";
 import { useAuth } from "@/hooks/useAuth";
 import ReactMarkdown from "react-markdown";
@@ -49,6 +50,7 @@ interface ChatMessage {
   type?: "question" | "confirmation" | "input";
   user_id?: string | null;
   display_name?: string | null;
+  hard_mode_used?: boolean;
 }
 
 const RestaurantFindings = () => {
@@ -223,6 +225,9 @@ const RestaurantFindings = () => {
   const [showConversationSettings, setShowConversationSettings] = useState(false);
   const [currentConversationVisibility, setCurrentConversationVisibility] = useState("private");
   const [notionEnabled, setNotionEnabled] = useState(false);
+  const [hardModeEnabled, setHardModeEnabled] = useState(false);
+  const [showHardModeConfirm, setShowHardModeConfirm] = useState(false);
+  const [pendingMessage, setPendingMessage] = useState("");
   const [messageFeedback, setMessageFeedback] = useState<Record<number, number>>({});
   const [currentParticipants, setCurrentParticipants] = useState<Array<{
     id: string;
@@ -591,6 +596,7 @@ const RestaurantFindings = () => {
     setCurrentConversationId(null);
     setCurrentParticipants([]);
     setNotionEnabled(false);
+    setHardModeEnabled(false);
     
     // Check if tuning is complete
     const tuningComplete = data?.tuning_completed;
@@ -664,7 +670,7 @@ const RestaurantFindings = () => {
       // Fetch conversation state and visibility
       const { data: convMeta, error: metaError } = await supabase
         .from('chat_conversations')
-        .select('conversation_state, current_topic, intent_classification, wwahd_mode, topics_discussed, last_question_asked, visibility, notion_enabled')
+        .select('conversation_state, current_topic, intent_classification, wwahd_mode, topics_discussed, last_question_asked, visibility, notion_enabled, hard_mode_enabled')
         .eq('id', conversationId)
         .maybeSingle();
 
@@ -679,6 +685,7 @@ const RestaurantFindings = () => {
         });
         setCurrentConversationVisibility(convMeta.visibility || 'private');
         setNotionEnabled(convMeta.notion_enabled || false);
+        setHardModeEnabled(convMeta.hard_mode_enabled || false);
       }
 
       // Auto-add current user as participant if they're not already
@@ -709,6 +716,7 @@ const RestaurantFindings = () => {
         content: msg.content,
         user_id: msg.user_id,
         display_name: msg.profiles?.display_name || msg.profiles?.email || null,
+        hard_mode_used: msg.hard_mode_used || false,
       })));
 
       // Load participants for this conversation
@@ -1289,6 +1297,28 @@ What would you like to work on today?`
     });
   };
 
+  const handleHardModeToggle = async (enabled: boolean) => {
+    if (!currentConversationId) {
+      toast.error("Start a conversation first");
+      return;
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('chat_conversations')
+        .update({ hard_mode_enabled: enabled })
+        .eq('id', currentConversationId);
+      
+      if (error) throw error;
+      
+      setHardModeEnabled(enabled);
+      toast.success(enabled ? "🔥 Hard Mode enabled - Using most powerful model" : "Hard Mode disabled");
+    } catch (error) {
+      console.error('Error toggling Hard Mode:', error);
+      toast.error('Failed to update Hard Mode setting');
+    }
+  };
+
   const handleCoachingAreasSubmit = async () => {
     if (selectedCoachingAreas.length === 0) return;
 
@@ -1297,7 +1327,7 @@ What would you like to work on today?`
     // Add user message with selected areas
     const areasText = selectedCoachingAreas.join(" and ");
     const userMessage: ChatMessage = { 
-      role: "user", 
+      role: "user",
       content: `I'm focused on: ${areasText}` 
     };
     setMessages((prev) => [...prev, userMessage]);
@@ -2156,6 +2186,20 @@ What would you like to work on today?`
       return handleOnboardingMessage(messageText);
     }
 
+    // Show Hard Mode confirmation if enabled (skip for onboarding phases)
+    if (hardModeEnabled && onboardingPhase !== 'pain_point' && onboardingPhase !== 'quick_win' && onboardingPhase !== 'data_collection') {
+      setPendingMessage(messageText);
+      setShowHardModeConfirm(true);
+      setCurrentInput("");
+      return;
+    }
+
+    await sendMessageWithMode(messageText, false);
+  };
+
+  const sendMessageWithMode = async (messageText: string, useHardMode: boolean) => {
+    if (!messageText.trim() || !id) return;
+
     // PHASE 2: Capture pain point
     if (onboardingPhase === 'pain_point') {
       const userMessage: ChatMessage = { role: "user", content: messageText };
@@ -2618,6 +2662,7 @@ What would you like to work on today?`
             kpiData: kpiData,
             restaurantId: id,
             useNotion: useNotion,
+            hardMode: useHardMode,
             conversationId: convId,
             tuningProfile: data?.tuning_profile,
           }),
@@ -3295,43 +3340,6 @@ What would you like to work on today?`
                       <RotateCcw className="w-4 h-4" />
                     </Button>
                     
-                    {/* Notion Toggle */}
-                    {currentConversationId && (
-                      <Button
-                        variant={notionEnabled ? "default" : "ghost"}
-                        size="sm"
-                        onClick={async () => {
-                          if (!currentConversationId) return;
-                          
-                          const newValue = !notionEnabled;
-                          setNotionEnabled(newValue);
-                          
-                          try {
-                            const { error } = await supabase
-                              .from('chat_conversations')
-                              .update({ notion_enabled: newValue })
-                              .eq('id', currentConversationId);
-                            
-                            if (error) throw error;
-                            
-                            toast.success(newValue ? 'Notion enabled' : 'Notion disabled');
-                          } catch (error) {
-                            console.error('Error toggling Notion:', error);
-                            setNotionEnabled(!newValue);
-                            toast.error('Failed to update Notion setting');
-                          }
-                        }}
-                        className={notionEnabled 
-                          ? "bg-accent text-accent-foreground hover:bg-accent-glow" 
-                          : "text-primary-foreground hover:bg-background/20"
-                        }
-                        title={notionEnabled ? "Notion active - Click to disable" : "Enable Notion integration"}
-                      >
-                        <Bot className="w-4 h-4 mr-1.5" />
-                        Notion
-                      </Button>
-                    )}
-                    
                     <NotificationBell
                       restaurantId={id || ""}
                       onNavigate={(conversationId) => {
@@ -3536,6 +3544,13 @@ What would you like to work on today?`
                               {renderMessageContent(message.content)}
                             </div>
                             
+                            {!isCurrentUser && !isAI && message.hard_mode_used && (
+                              <div className="flex items-center gap-1 mt-2 pt-2 border-t border-border/50">
+                                <Zap className="w-3 h-3 text-orange-500" />
+                                <span className="text-xs text-orange-500 font-medium">Hard Mode</span>
+                              </div>
+                            )}
+                            
                             {message.role === "assistant" && !isOnboarding && (
                               <FeedbackEmojis
                                 messageIndex={idx}
@@ -3634,10 +3649,54 @@ What would you like to work on today?`
               </div>
             </div>
 
+            {/* Hard Mode Confirmation Dialog */}
+            <Dialog open={showHardModeConfirm} onOpenChange={setShowHardModeConfirm}>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Zap className="w-5 h-5 text-orange-500" />
+                    Use Hard Mode?
+                  </DialogTitle>
+                  <DialogDescription className="space-y-3 pt-2">
+                    <p>Hard Mode uses <strong>Claude Opus 4.1</strong>, our most powerful AI model, which provides:</p>
+                    <ul className="text-sm space-y-1 list-disc list-inside">
+                      <li>Deeper reasoning for complex people problems</li>
+                      <li>More thorough analysis of your tuning settings</li>
+                      <li>Richer cultural context from your knowledge base</li>
+                      <li>Higher accuracy and thoughtfulness</li>
+                    </ul>
+                    <Alert className="bg-orange-50 border-orange-200">
+                      <AlertCircle className="w-4 h-4 text-orange-600" />
+                      <AlertDescription className="text-xs text-orange-800">
+                        Premium compute: ~$15 per million tokens (5-15x standard rate). Best for challenging leadership and operational decisions.
+                      </AlertDescription>
+                    </Alert>
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => { setShowHardModeConfirm(false); setPendingMessage(""); }}>
+                    Cancel
+                  </Button>
+                  <Button onClick={async () => { setShowHardModeConfirm(false); await sendMessageWithMode(pendingMessage, true); setPendingMessage(""); }} className="bg-orange-500 hover:bg-orange-600">
+                    <Zap className="w-4 h-4 mr-2" />
+                    Use Hard Mode
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
             {/* Input Area - Sticky at bottom */}
             <div className="sticky bottom-0 z-10 border-t border-accent/20 bg-background/95 backdrop-blur-sm">
               <div className="container mx-auto px-4 py-4 max-w-4xl">
                 <div className="space-y-2">
+                  {/* Hard Mode Badge Indicator */}
+                  {hardModeEnabled && (
+                    <div className="flex items-center gap-2 text-xs text-orange-500">
+                      <Zap className="w-3 h-3 animate-pulse" />
+                      <span className="font-medium">Hard Mode Active - Deep reasoning enabled</span>
+                    </div>
+                  )}
+                  
                   {/* Uploaded Files Indicator */}
                   {(uploadingFiles.length > 0 || showFileNotification) && (
                     <div className="bg-accent/10 border border-accent/30 rounded-lg p-3 animate-fade-in">
@@ -3671,7 +3730,24 @@ What would you like to work on today?`
                     </div>
                   )}
                   
-                  <div className="flex gap-3">
+                  <div className={`flex gap-3 relative ${hardModeEnabled ? "before:absolute before:-inset-2 before:rounded-lg before:border-2 before:border-orange-500/50 before:pointer-events-none before:animate-pulse" : ""}`}>
+                    <ChatToolsPopover
+                      hardModeEnabled={hardModeEnabled}
+                      notionEnabled={notionEnabled}
+                      onHardModeToggle={handleHardModeToggle}
+                      onNotionToggle={async (enabled) => {
+                        if (!currentConversationId) return;
+                        setNotionEnabled(enabled);
+                        try {
+                          await supabase.from('chat_conversations').update({ notion_enabled: enabled }).eq('id', currentConversationId);
+                          toast.success(enabled ? 'Notion enabled' : 'Notion disabled');
+                        } catch (error) {
+                          setNotionEnabled(!enabled);
+                          toast.error('Failed to update Notion setting');
+                        }
+                      }}
+                      disabled={!currentConversationId}
+                    />
                     <input
                       ref={fileInputRef}
                       type="file"
