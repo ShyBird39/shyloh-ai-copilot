@@ -226,8 +226,6 @@ const RestaurantFindings = () => {
   const [currentConversationVisibility, setCurrentConversationVisibility] = useState("private");
   const [notionEnabled, setNotionEnabled] = useState(false);
   const [hardModeEnabled, setHardModeEnabled] = useState(false);
-  const [showHardModeConfirm, setShowHardModeConfirm] = useState(false);
-  const [pendingMessage, setPendingMessage] = useState("");
   const [messageFeedback, setMessageFeedback] = useState<Record<number, number>>({});
   const [currentParticipants, setCurrentParticipants] = useState<Array<{
     id: string;
@@ -2193,17 +2191,7 @@ What would you like to work on today?`
       return handleOnboardingMessage(messageText);
     }
 
-    // Show Hard Mode confirmation if enabled (skip for onboarding phases)
-    if (hardModeEnabled && onboardingPhase !== 'pain_point' && onboardingPhase !== 'quick_win' && onboardingPhase !== 'data_collection') {
-      setPendingMessage(messageText);
-      console.log('HardModeConfirm open requested with message:', messageText);
-      // Defer opening to next frame to avoid event race causing immediate close
-      requestAnimationFrame(() => setShowHardModeConfirm(true));
-      // Do NOT clear input until user decides
-      return;
-    }
-
-    await sendMessageWithMode(messageText, false);
+    await sendMessageWithMode(messageText, hardModeEnabled);
   };
 
   const sendMessageWithMode = async (messageText: string, useHardMode: boolean) => {
@@ -3677,67 +3665,6 @@ What would you like to work on today?`
               </div>
             </div>
 
-            {/* Hard Mode Confirmation Dialog */}
-            <Dialog open={showHardModeConfirm}>
-              <DialogContent
-                className="sm:max-w-md"
-                onOpenAutoFocus={(e) => e.preventDefault()}
-                onInteractOutside={(e) => e.preventDefault()}
-                onPointerDownOutside={(e) => e.preventDefault()}
-                onEscapeKeyDown={(e) => e.preventDefault()}
-              >
-                <DialogHeader>
-                  <DialogTitle className="flex items-center gap-2">
-                    <Zap className="w-5 h-5 text-orange-500" />
-                    Use Hard Mode?
-                  </DialogTitle>
-                  <DialogDescription>
-                    Hard Mode uses Claude Opus 4.1, our most powerful AI model.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div className="space-y-2 text-sm">
-                    <p className="font-medium">Benefits:</p>
-                    <ul className="space-y-1 list-disc list-inside text-muted-foreground">
-                      <li>Deeper reasoning for complex people problems</li>
-                      <li>More thorough analysis of your tuning settings</li>
-                      <li>Richer cultural context from your knowledge base</li>
-                      <li>Higher accuracy and thoughtfulness</li>
-                    </ul>
-                  </div>
-                  <Alert className="bg-orange-50 border-orange-200">
-                    <AlertCircle className="w-4 h-4 text-orange-600" />
-                    <AlertDescription className="text-xs text-orange-800">
-                      Premium compute: ~$15 per million tokens (5-15x standard rate). Best for challenging leadership and operational decisions.
-                    </AlertDescription>
-                  </Alert>
-                </div>
-                <div className="flex justify-end gap-2 mt-4">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => {
-                      setShowHardModeConfirm(false);
-                      setCurrentInput(pendingMessage);
-                      setPendingMessage("");
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
-                    onClick={async () => {
-                      setShowHardModeConfirm(false);
-                      const text = pendingMessage || currentInput;
-                      await sendMessageWithMode(text, true);
-                      setPendingMessage("");
-                    }} 
-                    className="bg-orange-500 hover:bg-orange-600"
-                  >
-                    <Zap className="w-4 h-4 mr-2" />
-                    Use Hard Mode
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
 
             {/* Input Area - Sticky at bottom */}
             <div className="sticky bottom-0 z-50 border-t border-accent/20 bg-background/95 backdrop-blur-sm">
