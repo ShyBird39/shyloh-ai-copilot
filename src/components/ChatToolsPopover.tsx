@@ -26,13 +26,13 @@ export function ChatToolsPopover({
           variant="ghost"
           size="icon"
           disabled={disabled}
-          className="text-foreground hover:bg-accent"
+          className="relative z-20 text-foreground hover:bg-accent"
           title="Chat tools"
         >
           <Sliders className="w-4 h-4" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80" align="end">
+      <PopoverContent className="w-80 z-50" align="end">
         <div className="space-y-4">
           <div className="space-y-2">
             <h4 className="font-medium text-sm">Chat Tools</h4>
