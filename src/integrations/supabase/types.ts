@@ -562,9 +562,7 @@ export type Database = {
       restaurant_kpis: {
         Row: {
           avg_weekly_sales: number | null
-          boh_hourly_goal: number | null
           created_at: string
-          foh_hourly_goal: number | null
           food_cost_goal: number | null
           id: string
           labor_cost_goal: number | null
@@ -578,9 +576,7 @@ export type Database = {
         }
         Insert: {
           avg_weekly_sales?: number | null
-          boh_hourly_goal?: number | null
           created_at?: string
-          foh_hourly_goal?: number | null
           food_cost_goal?: number | null
           id?: string
           labor_cost_goal?: number | null
@@ -594,9 +590,7 @@ export type Database = {
         }
         Update: {
           avg_weekly_sales?: number | null
-          boh_hourly_goal?: number | null
           created_at?: string
-          foh_hourly_goal?: number | null
           food_cost_goal?: number | null
           id?: string
           labor_cost_goal?: number | null

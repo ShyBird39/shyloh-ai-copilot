@@ -413,34 +413,8 @@ ${recentAverage < 3.5 ? '⚠️ Recent feedback is below target. Adjust your ton
           (estDate.getMonth() + 1).toString().padStart(2, '0') + 
           estDate.getDate().toString().padStart(2, '0')
         );
-        
-        // Calculate last week's same day (7 days ago)
-        const lastWeekDate = new Date(estDate);
-        lastWeekDate.setDate(lastWeekDate.getDate() - 7);
-        const lastWeekYYYYMMDD = parseInt(
-          lastWeekDate.getFullYear().toString() + 
-          (lastWeekDate.getMonth() + 1).toString().padStart(2, '0') + 
-          lastWeekDate.getDate().toString().padStart(2, '0')
-        );
-        
-        // Get current time for accurate "as of" reporting
-        const currentTime = estDate.toLocaleTimeString('en-US', { 
-          hour: 'numeric', 
-          minute: '2-digit',
-          hour12: true,
-          timeZone: 'America/New_York'
-        });
-        const currentDate = estDate.toLocaleDateString('en-US', { 
-          weekday: 'long',
-          month: 'numeric',
-          day: 'numeric',
-          year: 'numeric',
-          timeZone: 'America/New_York'
-        });
 
         console.log('Today date (YYYYMMDD) in EST:', todayYYYYMMDD);
-        console.log('Last week date (YYYYMMDD) in EST:', lastWeekYYYYMMDD);
-        console.log('Current time EST:', currentTime);
 
         // Get restaurant GUID from environment or restaurant data
         const restaurantGuid = Deno.env.get('TOAST_RESTAURANT_GUID') || '';
@@ -474,7 +448,7 @@ ${recentAverage < 3.5 ? '⚠️ Recent feedback is below target. Adjust your ton
             console.log('Toast data received:', JSON.stringify(toastData).substring(0, 200));
             
             if (toastData.success && toastData.data && toastData.data.length > 0) {
-              apiCallsDebug.push(`✅ Toast API - SUCCESS - Retrieved ${toastData.data.length} hourly records for today`);
+              apiCallsDebug.push(`✅ Toast API - SUCCESS - Retrieved ${toastData.data.length} hourly records`);
               
               // Aggregate all hourly records into daily totals
               let netSales = 0;
@@ -485,54 +459,6 @@ ${recentAverage < 3.5 ? '⚠️ Recent feedback is below target. Adjust your ton
               let businessDate = '';
               
               console.log(`Aggregating ${toastData.data.length} hourly records...`);
-              
-              // Also fetch last week's data for comparison
-              let lastWeekNetSales = 0;
-              let lastWeekCovers = 0;
-              let lastWeekOrdersCount = 0;
-              let lastWeekBusinessDate = '';
-              
-              try {
-                console.log('Fetching last week same-day data for comparison...');
-                const lastWeekResponse = await fetch(`${supabaseUrl}/functions/v1/toast-reporting`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    action: 'request-and-poll',
-                    reportType: 'metrics',
-                    timeRange: 'day',
-                    startDate: lastWeekYYYYMMDD,
-                    endDate: lastWeekYYYYMMDD,
-                    restaurantIds: [restaurantGuid],
-                    aggregateBy: 'HOUR'
-                  })
-                });
-                
-                if (lastWeekResponse.ok) {
-                  const lastWeekData = await lastWeekResponse.json();
-                  if (lastWeekData.success && lastWeekData.data && lastWeekData.data.length > 0) {
-                    apiCallsDebug.push(`✅ Toast API - SUCCESS - Retrieved ${lastWeekData.data.length} hourly records for last week`);
-                    
-                    // Aggregate last week's data - only up to the same hour as current data
-                    const currentHourCount = toastData.data.length;
-                    lastWeekData.data.slice(0, currentHourCount).forEach((hourlyMetrics: any) => {
-                      lastWeekNetSales += Number(hourlyMetrics.netSalesAmount || 0);
-                      lastWeekCovers += Number(hourlyMetrics.guestCount || 0);
-                      lastWeekOrdersCount += Number(hourlyMetrics.ordersCount || 0);
-                      if (!lastWeekBusinessDate && hourlyMetrics.businessDate) {
-                        lastWeekBusinessDate = hourlyMetrics.businessDate;
-                      }
-                    });
-                    
-                    console.log(`Last week totals (same hours): Sales=$${lastWeekNetSales}, Covers=${lastWeekCovers}`);
-                  }
-                }
-              } catch (error) {
-                console.error('Error fetching last week data:', error);
-                apiCallsDebug.push(`⚠️ Last week data fetch failed - continuing without comparison`);
-              }
               
               toastData.data.forEach((hourlyMetrics: any, index: number) => {
                 const hourSales = Number(hourlyMetrics.netSalesAmount || 0);
@@ -574,73 +500,31 @@ ${recentAverage < 3.5 ? '⚠️ Recent feedback is below target. Adjust your ton
                 timeZone: 'America/New_York'
               });
 
-              // Calculate week-over-week comparison
-              const salesChange = lastWeekNetSales > 0 ? ((netSales - lastWeekNetSales) / lastWeekNetSales) * 100 : 0;
-              const coversChange = lastWeekCovers > 0 ? ((covers - lastWeekCovers) / lastWeekCovers) * 100 : 0;
-              
-              // Format last week's date
-              let lastWeekFormatted = '';
-              if (lastWeekBusinessDate) {
-                const lwDate = new Date(
-                  parseInt(lastWeekBusinessDate.substring(0, 4)),
-                  parseInt(lastWeekBusinessDate.substring(4, 6)) - 1,
-                  parseInt(lastWeekBusinessDate.substring(6, 8))
-                );
-                lastWeekFormatted = lwDate.toLocaleDateString('en-US', { 
-                  month: 'short', 
-                  day: 'numeric',
-                  timeZone: 'America/New_York'
-                });
-              }
-              
-              // Calculate labor target based on FOH/BOH hourly goals
-              let laborTargetContext = '';
-              if (kpiData?.foh_hourly_goal && kpiData?.boh_hourly_goal && laborHours > 0) {
-                const targetLaborCost = (Number(kpiData.foh_hourly_goal) + Number(kpiData.boh_hourly_goal)) * laborHours;
-                const laborVariance = laborCost - targetLaborCost;
-                const variancePercent = targetLaborCost > 0 ? (laborVariance / targetLaborCost) * 100 : 0;
-                
-                laborTargetContext = `\nLabor Target Analysis:
-- FOH Target: $${kpiData.foh_hourly_goal}/hr × ${laborHours.toFixed(1)} hrs = $${(Number(kpiData.foh_hourly_goal) * laborHours).toFixed(2)}
-- BOH Target: $${kpiData.boh_hourly_goal}/hr × ${laborHours.toFixed(1)} hrs = $${(Number(kpiData.boh_hourly_goal) * laborHours).toFixed(2)}
-- Combined Target: $${targetLaborCost.toFixed(2)}
-- Actual: $${laborCost.toFixed(2)}
-- Variance: ${laborVariance >= 0 ? '+' : ''}$${laborVariance.toFixed(2)} (${variancePercent >= 0 ? '+' : ''}${variancePercent.toFixed(1)}%)
-- **CRITICAL**: Benchmark labor against these hourly goals, NOT a percentage`;
-              } else if (kpiData?.labor_cost_goal) {
-                laborTargetContext = `\n- Target Labor Cost: ${kpiData.labor_cost_goal}% (percentage-based - consider setting FOH/BOH hourly goals for more accurate tracking)`;
-              }
+              toastContext = `\n\n**LIVE TOAST POS DATA (Today - ${dayOfWeek}, ${formattedDate})**
+*** CRITICAL: THIS DATA WAS JUST PULLED FROM TOAST POS (${new Date().toISOString()}) ***
+*** ALWAYS USE THESE NUMBERS WHEN ASKED ABOUT TODAY/CURRENT/NOW PERFORMANCE ***
+*** IGNORE ANY OLDER NUMBERS FROM EARLIER IN THE CONVERSATION ***
 
-              toastContext = `\n\n**LIVE TOAST POS DATA**
-*** DATA PULLED AT: ${currentTime} on ${currentDate} ***
-*** CURRENT TIME: ${currentTime} ***
-*** ALWAYS STATE THE CURRENT TIME CLEARLY WHEN DISCUSSING "NOW" OR "TODAY" ***
-
-Today's Performance (${dayOfWeek}, ${formattedDate}):
+Sales Performance:
 - Net Sales: $${netSales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
 - Guest Count (Covers): ${covers}
 - Average Check: $${avgCheck.toFixed(2)}
 - Total Orders: ${ordersCount}
 ${ordersCount > 0 ? `- Orders Per Cover: ${(ordersCount / covers).toFixed(1)}` : ''}
 
-Labor Metrics (as of ${currentTime}):
+Labor Metrics:
 - Total Labor Hours: ${laborHours.toFixed(1)} hours
 - Total Labor Cost: $${laborCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
 ${netSales > 0 ? `- Labor Cost %: ${((laborCost / netSales) * 100).toFixed(1)}%` : ''}
-${laborHours > 0 && netSales > 0 ? `- Sales Per Labor Hour: $${(netSales / laborHours).toFixed(2)}` : ''}${laborTargetContext}
-
-${lastWeekNetSales > 0 ? `Week-Over-Week Comparison (vs Last ${dayOfWeek} ${lastWeekFormatted} at same time):
-- Sales: $${lastWeekNetSales.toFixed(2)} → $${netSales.toFixed(2)} (${salesChange >= 0 ? '+' : ''}${salesChange.toFixed(1)}%)
-- Covers: ${lastWeekCovers} → ${covers} (${coversChange >= 0 ? '+' : ''}${coversChange.toFixed(1)}%)
-- **CRITICAL**: ALWAYS benchmark against same day of week from prior week (apples to apples)` : ''}
+${laborHours > 0 && netSales > 0 ? `- Sales Per Labor Hour: $${(netSales / laborHours).toFixed(2)}` : ''}
 
 **HOW TO USE THIS DATA:**
-- **CRITICAL TIME ACCURACY**: It is currently ${currentTime}. When discussing "now" or "today", ALWAYS state this time clearly
-- Data shown above is as of ${currentTime} - if it's later in the day, acknowledge the data may be a few hours old
-- These numbers are refreshed on EVERY message, so they represent the most current data available
-- ALWAYS compare to last week's same day at the same time (e.g., Tuesday 4PM vs last Tuesday 4PM)
-- If user mentions a specific time (like "4PM"), acknowledge if data is from earlier and benchmark accordingly
-${kpiData?.food_cost_goal ? `- Food Cost Goal: ${kpiData.food_cost_goal}%` : ''}
+- **CRITICAL:** When user asks about "now", "current", "today", or "right now", ALWAYS use the numbers from THIS section (above)
+- These numbers are refreshed on EVERY message you receive, so they represent the most current data available
+- If you mentioned different numbers earlier in the conversation, those are now OUTDATED—use these fresh numbers instead
+- Compare against their stated KPI goals (food cost ${kpiData?.food_cost_goal || 'N/A'}%, labor cost ${kpiData?.labor_cost_goal || 'N/A'}%)
+- Use to provide concrete, data-driven insights
+- Connect Toast metrics to their REGGI profile and tuning settings
 - This is LIVE data from their POS—treat it as authoritative for today's operations`;
 
               console.log('✅ Toast POS context added successfully with live metrics');
@@ -1267,7 +1151,6 @@ VOICE & TONE
 - Industry-authentic language; use shorthand naturally
 - Supportive and direct—celebrate wins, identify opportunities clearly
 - Humor, levity, and irreverence are welcome—but NO profanity or swearing
-- **TIME ACCURACY**: When discussing "now", "current", or "today", ALWAYS explicitly state what time the data is from
 
 CONVERSATIONAL METHOD (Socratic before Prescriptive)
 1. **Ask before you tell**: "What do you think is driving that?" before diagnosing
