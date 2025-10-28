@@ -1298,8 +1298,12 @@ What would you like to work on today?`
   };
 
   const handleHardModeToggle = async (enabled: boolean) => {
+    // Always update local state so the toggle feels responsive
+    setHardModeEnabled(enabled);
+
     if (!currentConversationId) {
-      toast.error("Start a conversation first");
+      // Defer persistence until a conversation exists
+      toast.info(enabled ? "Hard Mode will apply to your next conversation" : "Hard Mode turned off");
       return;
     }
     
@@ -1311,10 +1315,11 @@ What would you like to work on today?`
       
       if (error) throw error;
       
-      setHardModeEnabled(enabled);
       toast.success(enabled ? "🔥 Hard Mode enabled - Using most powerful model" : "Hard Mode disabled");
     } catch (error) {
       console.error('Error toggling Hard Mode:', error);
+      // Revert local state on failure
+      setHardModeEnabled(!enabled);
       toast.error('Failed to update Hard Mode setting');
     }
   };
@@ -3757,17 +3762,22 @@ What would you like to work on today?`
                       notionEnabled={notionEnabled}
                       onHardModeToggle={handleHardModeToggle}
                       onNotionToggle={async (enabled) => {
-                        if (!currentConversationId) return;
                         setNotionEnabled(enabled);
-                        try {
-                          await supabase.from('chat_conversations').update({ notion_enabled: enabled }).eq('id', currentConversationId);
-                          toast.success(enabled ? 'Notion enabled' : 'Notion disabled');
-                        } catch (error) {
-                          setNotionEnabled(!enabled);
-                          toast.error('Failed to update Notion setting');
+                        if (currentConversationId) {
+                          try {
+                            await supabase
+                              .from('chat_conversations')
+                              .update({ notion_enabled: enabled })
+                              .eq('id', currentConversationId);
+                            toast.success(enabled ? 'Notion enabled' : 'Notion disabled');
+                          } catch (error) {
+                            setNotionEnabled(!enabled);
+                            toast.error('Failed to update Notion setting');
+                          }
+                        } else {
+                          toast.info(enabled ? 'Notion will be used once you start a conversation' : 'Notion disabled');
                         }
                       }}
-                      disabled={!currentConversationId}
                     />
                     <input
                       ref={fileInputRef}
