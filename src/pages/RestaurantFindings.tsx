@@ -3834,7 +3834,12 @@ What would you like to work on today?`
                     <MentionInput
                       value={currentInput}
                       onChange={setCurrentInput}
-                      onKeyDown={(e) => e.key === "Enter" && !isTyping && handleSendMessage()}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey && !isTyping) {
+                          e.preventDefault();
+                          handleSendMessage();
+                        }
+                      }}
                       placeholder="Ask me anything about your restaurant... (use @ to mention)"
                       disabled={isTyping}
                       restaurantId={id || ""}
