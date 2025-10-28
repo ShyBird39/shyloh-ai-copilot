@@ -16,6 +16,8 @@ interface KPIData {
   avg_weekly_sales: number | null;
   food_cost_goal: number | null;
   labor_cost_goal: number | null;
+  foh_hourly_goal: number | null;
+  boh_hourly_goal: number | null;
   sales_mix_food: number | null;
   sales_mix_liquor: number | null;
   sales_mix_wine: number | null;
@@ -48,6 +50,8 @@ const KPIInput = ({ restaurantId, restaurantName, onBack, onComplete }: KPIInput
     avg_weekly_sales: null,
     food_cost_goal: null,
     labor_cost_goal: null,
+    foh_hourly_goal: null,
+    boh_hourly_goal: null,
     sales_mix_food: null,
     sales_mix_liquor: null,
     sales_mix_wine: null,
@@ -76,7 +80,19 @@ const KPIInput = ({ restaurantId, restaurantName, onBack, onComplete }: KPIInput
       question: "What's your target labor cost %? (Typically 28–32% for total wages + salaries. Where do you aim?)",
       field: "labor_cost_goal",
       type: "percentage",
-      confirmation: (value: number) => `✓ Logged—${value}% labor cost goal. Tight but doable at your volume.`,
+      confirmation: (value: number) => `✓ Logged—${value}% labor cost goal. Good reference point.`,
+    },
+    {
+      question: "What's your Front of House (FOH) target hourly rate? (Average $/hr for servers, hosts, bartenders)",
+      field: "foh_hourly_goal",
+      type: "currency",
+      confirmation: (value: number) => `✓ FOH rate: $${value.toFixed(2)}/hr. Got it.`,
+    },
+    {
+      question: "And your Back of House (BOH) target hourly rate? (Average $/hr for kitchen staff)",
+      field: "boh_hourly_goal",
+      type: "currency",
+      confirmation: (value: number) => `✓ BOH rate: $${value.toFixed(2)}/hr. These hourly targets will give us much more accurate labor tracking.`,
     },
     {
       question: "Out of every $100 in sales, roughly how much is Food?",
@@ -315,8 +331,8 @@ const KPIInput = ({ restaurantId, restaurantName, onBack, onComplete }: KPIInput
                     <p className="text-sm text-muted-foreground">Your goal food cost percentage</p>
                   </div>
                   <div className="p-6 rounded-lg border border-accent/20 bg-muted/50">
-                    <h3 className="font-semibold mb-2">Labor Cost Target</h3>
-                    <p className="text-sm text-muted-foreground">Your goal labor cost percentage</p>
+                    <h3 className="font-semibold mb-2">Labor Targets</h3>
+                    <p className="text-sm text-muted-foreground">FOH/BOH hourly rates + percentage goals</p>
                   </div>
                   <div className="p-6 rounded-lg border border-accent/20 bg-muted/50">
                     <h3 className="font-semibold mb-2">Sales Mix</h3>
