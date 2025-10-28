@@ -3757,28 +3757,41 @@ What would you like to work on today?`
                   )}
                   
                   <div className="flex gap-3 relative">
-                    <ChatToolsPopover
-                      hardModeEnabled={hardModeEnabled}
-                      notionEnabled={notionEnabled}
-                      onHardModeToggle={handleHardModeToggle}
-                      onNotionToggle={async (enabled) => {
-                        setNotionEnabled(enabled);
-                        if (currentConversationId) {
-                          try {
-                            await supabase
-                              .from('chat_conversations')
-                              .update({ notion_enabled: enabled })
-                              .eq('id', currentConversationId);
-                            toast.success(enabled ? 'Notion enabled' : 'Notion disabled');
-                          } catch (error) {
-                            setNotionEnabled(!enabled);
-                            toast.error('Failed to update Notion setting');
+                    {/* Vertical stack of tool buttons */}
+                    <div className="flex flex-col gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isTyping}
+                        className="relative z-50 h-10 w-10 text-foreground hover:bg-accent"
+                        title="Upload files"
+                      >
+                        <Paperclip className="w-5 h-5" />
+                      </Button>
+                      <ChatToolsPopover
+                        hardModeEnabled={hardModeEnabled}
+                        notionEnabled={notionEnabled}
+                        onHardModeToggle={handleHardModeToggle}
+                        onNotionToggle={async (enabled) => {
+                          setNotionEnabled(enabled);
+                          if (currentConversationId) {
+                            try {
+                              await supabase
+                                .from('chat_conversations')
+                                .update({ notion_enabled: enabled })
+                                .eq('id', currentConversationId);
+                              toast.success(enabled ? 'Notion enabled' : 'Notion disabled');
+                            } catch (error) {
+                              setNotionEnabled(!enabled);
+                              toast.error('Failed to update Notion setting');
+                            }
+                          } else {
+                            toast.info(enabled ? 'Notion will be used once you start a conversation' : 'Notion disabled');
                           }
-                        } else {
-                          toast.info(enabled ? 'Notion will be used once you start a conversation' : 'Notion disabled');
-                        }
-                      }}
-                    />
+                        }}
+                      />
+                    </div>
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -3790,16 +3803,6 @@ What would you like to work on today?`
                         }
                       }}
                     />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isTyping}
-                      className="relative z-50 h-10 w-10 text-foreground hover:bg-accent"
-                      title="Upload files"
-                    >
-                      <Paperclip className="w-5 h-5" />
-                    </Button>
                     <MentionInput
                       value={currentInput}
                       onChange={setCurrentInput}
