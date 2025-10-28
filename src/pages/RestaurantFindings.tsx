@@ -3683,27 +3683,46 @@ What would you like to work on today?`
                     <Zap className="w-5 h-5 text-orange-500" />
                     Use Hard Mode?
                   </DialogTitle>
-                  <DialogDescription className="space-y-3 pt-2">
-                    <p>Hard Mode uses <strong>Claude Opus 4.1</strong>, our most powerful AI model, which provides:</p>
-                    <ul className="text-sm space-y-1 list-disc list-inside">
+                  <DialogDescription>
+                    Hard Mode uses Claude Opus 4.1, our most powerful AI model.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="space-y-2 text-sm">
+                    <p className="font-medium">Benefits:</p>
+                    <ul className="space-y-1 list-disc list-inside text-muted-foreground">
                       <li>Deeper reasoning for complex people problems</li>
                       <li>More thorough analysis of your tuning settings</li>
                       <li>Richer cultural context from your knowledge base</li>
                       <li>Higher accuracy and thoughtfulness</li>
                     </ul>
-                    <Alert className="bg-orange-50 border-orange-200">
-                      <AlertCircle className="w-4 h-4 text-orange-600" />
-                      <AlertDescription className="text-xs text-orange-800">
-                        Premium compute: ~$15 per million tokens (5-15x standard rate). Best for challenging leadership and operational decisions.
-                      </AlertDescription>
-                    </Alert>
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => { setShowHardModeConfirm(false); setPendingMessage(""); }}>
+                  </div>
+                  <Alert className="bg-orange-50 border-orange-200">
+                    <AlertCircle className="w-4 h-4 text-orange-600" />
+                    <AlertDescription className="text-xs text-orange-800">
+                      Premium compute: ~$15 per million tokens (5-15x standard rate). Best for challenging leadership and operational decisions.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+                <div className="flex justify-end gap-2 mt-4">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setShowHardModeConfirm(false);
+                      setCurrentInput(pendingMessage);
+                      setPendingMessage("");
+                    }}
+                  >
                     Cancel
                   </Button>
-                  <Button onClick={async () => { setShowHardModeConfirm(false); await sendMessageWithMode(pendingMessage, true); setPendingMessage(""); }} className="bg-orange-500 hover:bg-orange-600">
+                  <Button 
+                    onClick={async () => {
+                      setShowHardModeConfirm(false);
+                      await sendMessageWithMode(pendingMessage, true);
+                      setPendingMessage("");
+                    }} 
+                    className="bg-orange-500 hover:bg-orange-600"
+                  >
                     <Zap className="w-4 h-4 mr-2" />
                     Use Hard Mode
                   </Button>
