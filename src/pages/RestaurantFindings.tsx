@@ -2196,8 +2196,9 @@ What would you like to work on today?`
     // Show Hard Mode confirmation if enabled (skip for onboarding phases)
     if (hardModeEnabled && onboardingPhase !== 'pain_point' && onboardingPhase !== 'quick_win' && onboardingPhase !== 'data_collection') {
       setPendingMessage(messageText);
+      console.log('HardModeConfirm open requested with message:', messageText);
       setShowHardModeConfirm(true);
-      setCurrentInput("");
+      // Do NOT clear input until user decides
       return;
     }
 
@@ -3676,7 +3677,7 @@ What would you like to work on today?`
             </div>
 
             {/* Hard Mode Confirmation Dialog */}
-            <Dialog open={showHardModeConfirm} onOpenChange={setShowHardModeConfirm}>
+            <Dialog open={showHardModeConfirm} onOpenChange={(open) => { console.log('HardModeConfirm onOpenChange:', open); setShowHardModeConfirm(open); }}>
               <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
