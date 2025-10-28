@@ -2182,6 +2182,27 @@ What would you like to work on today?`
     setNotionMentioned(hasNotionMention);
   };
 
+  // Helper function to get consistent color for each user
+  const getUserColor = (userId: string | null): string => {
+    if (!userId) return '';
+    
+    // Simple hash function to get consistent color
+    const hash = userId.split('').reduce((acc, char) => {
+      return char.charCodeAt(0) + ((acc << 5) - acc);
+    }, 0);
+    
+    const colors = [
+      'border-emerald-500',
+      'border-teal-500', 
+      'border-cyan-500',
+      'border-sky-500',
+      'border-blue-500',
+      'border-indigo-500'
+    ];
+    
+    return colors[Math.abs(hash) % colors.length];
+  };
+
   const handleSendMessage = async (messageOverride?: string) => {
     const messageText = messageOverride || currentInput;
     if (!messageText.trim() || !id) return;
@@ -3530,6 +3551,9 @@ What would you like to work on today?`
                     const isAI = message.role === 'assistant';
                     const isCurrentUser = message.user_id === user?.id;
                     const canDelete = isCurrentUser || isAI || currentConversationId; // Can delete own messages, AI messages, or any message if conversation owner
+                    const userBorderColor = !isCurrentUser && !isAI && message.user_id 
+                      ? getUserColor(message.user_id)
+                      : '';
 
                     return (
                       <div
@@ -3539,9 +3563,11 @@ What would you like to work on today?`
                         <div className="relative">
                           <div
                             className={`max-w-[70%] rounded-2xl px-4 py-3 ${
-                              isCurrentUser
-                                ? "bg-accent text-accent-foreground"
-                                : "bg-background/50 backdrop-blur-sm border border-accent/20 text-primary-foreground"
+                              isAI
+                                ? "bg-[hsl(354,70%,35%)] text-white"
+                                : isCurrentUser
+                                ? "bg-green-600 text-white"
+                                : `bg-green-600/90 text-white border-l-4 ${userBorderColor}`
                             }`}
                           >
                             {/* Sender Name for non-current-user messages */}
