@@ -1793,6 +1793,7 @@ What would you like to work on today?`
                   role: 'assistant',
                   content,
                   user_id: null,
+                  hard_mode_used: false,
                 });
                 
                 // Increment message count
@@ -2123,6 +2124,7 @@ What would you like to work on today?`
             content: msg.content,
             user_id: msg.role === 'user' ? user?.id : null,
             created_at: new Date(Date.now() + idx * 1000).toISOString(),
+            hard_mode_used: false,
           }));
 
           await supabase.from("chat_messages").insert(messagesToSave);
@@ -2750,7 +2752,24 @@ What would you like to work on today?`
           role: "assistant",
           content: finalContent,
           user_id: null, // Assistant messages have no user_id
+          hard_mode_used: useHardMode,
         });
+
+        // Track Hard Mode usage if enabled
+        if (useHardMode && convId) {
+          try {
+            await supabase.from('chat_hard_mode_usage').insert({
+              conversation_id: convId,
+              restaurant_id: id,
+              user_id: user?.id,
+              model_used: 'claude-opus-4-1-20250805',
+              tokens_used: null, // We don't have token count on frontend
+            });
+            console.log('✅ Hard Mode usage tracked');
+          } catch (error) {
+            console.error('❌ Error tracking Hard Mode usage:', error);
+          }
+        }
 
         // Update conversation message count and updated_at
         await supabase
@@ -2789,6 +2808,7 @@ What would you like to work on today?`
                 role: "assistant",
                 content: randomNudge,
                 user_id: null,
+                hard_mode_used: false,
               });
             }, 2000);
           }
@@ -2814,6 +2834,7 @@ What would you like to work on today?`
                 role: "assistant",
                 content: balanceReminder,
                 user_id: null,
+                hard_mode_used: false,
               });
             }, 2500); // Slightly longer delay than KPI nudge
           }
@@ -3544,7 +3565,7 @@ What would you like to work on today?`
                               {renderMessageContent(message.content)}
                             </div>
                             
-                            {!isCurrentUser && !isAI && message.hard_mode_used && (
+                            {isAI && message.hard_mode_used && (
                               <div className="flex items-center gap-1 mt-2 pt-2 border-t border-border/50">
                                 <Zap className="w-3 h-3 text-orange-500" />
                                 <span className="text-xs text-orange-500 font-medium">Hard Mode</span>
