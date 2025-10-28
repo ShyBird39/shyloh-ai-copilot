@@ -26,10 +26,10 @@ export function ChatToolsPopover({
           variant="ghost"
           size="icon"
           aria-disabled={disabled}
-          className={`relative z-50 text-foreground hover:bg-accent ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+          className={`relative z-50 h-10 w-10 text-foreground hover:bg-accent ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
           title="Chat tools"
         >
-          <Sliders className="w-4 h-4" />
+          <Sliders className="w-5 h-5" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80 z-50" align="end">

@@ -3795,7 +3795,7 @@ What would you like to work on today?`
                       size="icon"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isTyping}
-                      className="h-10 w-10 text-muted-foreground hover:text-foreground"
+                      className="relative z-50 h-10 w-10 text-foreground hover:bg-accent"
                       title="Upload files"
                     >
                       <Paperclip className="w-5 h-5" />
