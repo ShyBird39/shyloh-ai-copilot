@@ -2197,7 +2197,8 @@ What would you like to work on today?`
     if (hardModeEnabled && onboardingPhase !== 'pain_point' && onboardingPhase !== 'quick_win' && onboardingPhase !== 'data_collection') {
       setPendingMessage(messageText);
       console.log('HardModeConfirm open requested with message:', messageText);
-      setShowHardModeConfirm(true);
+      // Defer opening to next frame to avoid event race causing immediate close
+      requestAnimationFrame(() => setShowHardModeConfirm(true));
       // Do NOT clear input until user decides
       return;
     }
@@ -3677,8 +3678,14 @@ What would you like to work on today?`
             </div>
 
             {/* Hard Mode Confirmation Dialog */}
-            <Dialog open={showHardModeConfirm} onOpenChange={(open) => { console.log('HardModeConfirm onOpenChange:', open); setShowHardModeConfirm(open); }}>
-              <DialogContent className="sm:max-w-md">
+            <Dialog open={showHardModeConfirm}>
+              <DialogContent
+                className="sm:max-w-md"
+                onOpenAutoFocus={(e) => e.preventDefault()}
+                onInteractOutside={(e) => e.preventDefault()}
+                onPointerDownOutside={(e) => e.preventDefault()}
+                onEscapeKeyDown={(e) => e.preventDefault()}
+              >
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
                     <Zap className="w-5 h-5 text-orange-500" />
@@ -3719,7 +3726,8 @@ What would you like to work on today?`
                   <Button 
                     onClick={async () => {
                       setShowHardModeConfirm(false);
-                      await sendMessageWithMode(pendingMessage, true);
+                      const text = pendingMessage || currentInput;
+                      await sendMessageWithMode(text, true);
                       setPendingMessage("");
                     }} 
                     className="bg-orange-500 hover:bg-orange-600"
