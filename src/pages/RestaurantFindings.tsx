@@ -3756,7 +3756,7 @@ What would you like to work on today?`
                     </div>
                   )}
                   
-                  <div className={`flex gap-3 relative ${hardModeEnabled ? "before:absolute before:-inset-2 before:rounded-lg before:border-2 before:border-orange-500/50 before:pointer-events-none before:animate-pulse" : ""}`}>
+                  <div className="flex gap-3 relative">
                     <ChatToolsPopover
                       hardModeEnabled={hardModeEnabled}
                       notionEnabled={notionEnabled}
