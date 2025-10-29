@@ -4,8 +4,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.0';
 import { getDocument, GlobalWorkerOptions, version } from 'https://esm.sh/pdfjs-dist@4.0.379/legacy/build/pdf.mjs';
 import mammoth from 'https://esm.sh/mammoth@1.8.0/mammoth.browser?bundle';
 
-// Disable worker for Deno runtime (use main thread parsing)
-GlobalWorkerOptions.workerSrc = '';
+// Set worker for Deno runtime
+GlobalWorkerOptions.workerSrc = 'https://esm.sh/pdfjs-dist@4.0.379/legacy/build/pdf.worker.mjs';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
