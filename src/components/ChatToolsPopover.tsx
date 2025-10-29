@@ -1,8 +1,13 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Sliders, Zap, Bot } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Sliders, Zap, Bot, ClipboardList } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface ChatToolsPopoverProps {
   hardModeEnabled: boolean;
@@ -10,6 +15,9 @@ interface ChatToolsPopoverProps {
   onHardModeToggle: (enabled: boolean) => void;
   onNotionToggle: (enabled: boolean) => void;
   disabled?: boolean;
+  restaurantId: string;
+  conversationId?: string;
+  userId?: string;
 }
 
 export function ChatToolsPopover({
@@ -17,8 +25,45 @@ export function ChatToolsPopover({
   notionEnabled,
   onHardModeToggle,
   onNotionToggle,
-  disabled = false
+  disabled = false,
+  restaurantId,
+  conversationId,
+  userId
 }: ChatToolsPopoverProps) {
+  const [quickTaskTitle, setQuickTaskTitle] = useState("");
+  const [quickTaskDialogOpen, setQuickTaskDialogOpen] = useState(false);
+
+  const handleCreateQuickTask = async () => {
+    if (!userId || !quickTaskTitle.trim()) return;
+
+    const { data: existingTasks } = await supabase
+      .from("restaurant_tasks")
+      .select("sort_order")
+      .eq("user_id", userId)
+      .eq("restaurant_id", restaurantId)
+      .is("archived_at", null);
+
+    const maxSortOrder = existingTasks && existingTasks.length > 0 
+      ? Math.max(...existingTasks.map(t => t.sort_order)) 
+      : -1;
+
+    const { error } = await supabase.from("restaurant_tasks").insert({
+      user_id: userId,
+      restaurant_id: restaurantId,
+      title: quickTaskTitle.trim(),
+      conversation_id: conversationId || null,
+      sort_order: maxSortOrder + 1,
+    });
+
+    if (error) {
+      toast.error("Failed to create task");
+      console.error(error);
+    } else {
+      toast.success("Task created");
+      setQuickTaskTitle("");
+      setQuickTaskDialogOpen(false);
+    }
+  };
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -40,6 +85,38 @@ export function ChatToolsPopover({
               Configure advanced features for this conversation
             </p>
           </div>
+
+          {/* Quick Task Button */}
+          <Dialog open={quickTaskDialogOpen} onOpenChange={setQuickTaskDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="w-full justify-start" size="sm">
+                <ClipboardList className="w-4 h-4 mr-2" />
+                Quick Task
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create Quick Task</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-4">
+                <Input
+                  placeholder="Task title..."
+                  value={quickTaskTitle}
+                  onChange={(e) => setQuickTaskTitle(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleCreateQuickTask()}
+                  autoFocus
+                />
+                <div className="flex justify-end gap-2">
+                  <Button variant="ghost" onClick={() => setQuickTaskDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleCreateQuickTask} disabled={!quickTaskTitle.trim()}>
+                    Create Task
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
 
           {/* Hard Mode Toggle */}
           <div className="flex items-start justify-between space-x-2">

@@ -3771,6 +3771,9 @@ What would you like to work on today?`
                             toast.info(enabled ? 'Notion will be used once you start a conversation' : 'Notion disabled');
                           }
                         }}
+                        restaurantId={id!}
+                        conversationId={currentConversationId || undefined}
+                        userId={user?.id}
                       />
                     </div>
                     <input

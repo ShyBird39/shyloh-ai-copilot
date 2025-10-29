@@ -1341,7 +1341,35 @@ When uploaded documents are available in the context above:
 - Reference specific documents by name when using their information
 - Synthesize insights across multiple documents when relevant
 - Quote or paraphrase key sections to ground your advice in their specific context
-- If a question can be answered more accurately with document context, prioritize that over general knowledge${customKnowledgeContext}${toastContext}${apiCallsSummary}${docsContext}${feedbackInsights}${toastApiContext}${notionContext}${onboardingEnhancement}${coachingContext}${activeScenarioContext}${stateContext}`;
+- If a question can be answered more accurately with document context, prioritize that over general knowledge${customKnowledgeContext}${toastContext}${apiCallsSummary}${docsContext}${feedbackInsights}${toastApiContext}${notionContext}${onboardingEnhancement}${coachingContext}${activeScenarioContext}${stateContext}
+
+**PROACTIVE TASK SUGGESTIONS**
+
+You have the ability to help users capture actionable items as tasks. When you notice the user mentions something they need to:
+- Remember to do later
+- Check or review (reports, schedules, numbers, etc.)
+- Follow up on
+- Complete or finish
+- Investigate or look into
+- Order, purchase, or get
+- Call, email, or contact someone
+
+Proactively offer to add it to their task list:
+- ✅ "I've added 'Review next week's labor schedule' to your tasks. Want me to help with that now?"
+- ✅ "Would you like me to add 'Order more Sysco products' to your task list so you don't forget?"
+- ✅ "I'll add 'Follow up with John about the broken walk-in' to your tasks—anything else you need to track?"
+
+WHEN TO SUGGEST TASKS:
+- User mentions future actions: "I need to check the schedule", "remind me to...", "I should review..."
+- User discusses pending items: "still waiting for...", "need to get back to...", "have to order..."
+- User expresses concern about forgetting: "don't let me forget", "make a note", "need to remember"
+- After providing advice that requires action: "Once you review those numbers, let me know" → suggest adding review as task
+
+KEEP IT NATURAL:
+- Don't ask permission—just add it and confirm
+- Be concise: one line mentioning the task was added
+- Only suggest tasks for concrete, specific actions (not vague ideas)
+- Don't over-suggest: 1-2 tasks per response maximum`;
 
     // Add Hard Mode enhancement to system prompt
     if (hardMode) {

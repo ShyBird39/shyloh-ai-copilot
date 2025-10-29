@@ -562,7 +562,9 @@ export type Database = {
       restaurant_kpis: {
         Row: {
           avg_weekly_sales: number | null
+          boh_hourly_goal: number | null
           created_at: string
+          foh_hourly_goal: number | null
           food_cost_goal: number | null
           id: string
           labor_cost_goal: number | null
@@ -576,7 +578,9 @@ export type Database = {
         }
         Insert: {
           avg_weekly_sales?: number | null
+          boh_hourly_goal?: number | null
           created_at?: string
+          foh_hourly_goal?: number | null
           food_cost_goal?: number | null
           id?: string
           labor_cost_goal?: number | null
@@ -590,7 +594,9 @@ export type Database = {
         }
         Update: {
           avg_weekly_sales?: number | null
+          boh_hourly_goal?: number | null
           created_at?: string
+          foh_hourly_goal?: number | null
           food_cost_goal?: number | null
           id?: string
           labor_cost_goal?: number | null
@@ -698,6 +704,76 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "restaurant_saved_prompts_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      restaurant_tasks: {
+        Row: {
+          archived_at: string | null
+          completed: boolean
+          completed_at: string | null
+          conversation_id: string | null
+          created_at: string
+          id: string
+          message_id: string | null
+          notes: string | null
+          restaurant_id: string
+          sort_order: number
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          completed?: boolean
+          completed_at?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          message_id?: string | null
+          notes?: string | null
+          restaurant_id: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          archived_at?: string | null
+          completed?: boolean
+          completed_at?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          message_id?: string | null
+          notes?: string | null
+          restaurant_id?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_tasks_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restaurant_tasks_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restaurant_tasks_restaurant_id_fkey"
             columns: ["restaurant_id"]
             isOneToOne: false
             referencedRelation: "restaurants"
@@ -885,6 +961,7 @@ export type Database = {
         Args: { _invitation_token: string; _user_id: string }
         Returns: Json
       }
+      archive_completed_tasks: { Args: never; Returns: undefined }
       can_manage_conversation: {
         Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
