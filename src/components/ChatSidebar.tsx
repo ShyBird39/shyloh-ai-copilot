@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { MessageSquare, Upload, Trash2, FileText, Plus, Bot, Lock, Users as UsersIcon, Globe, GripVertical, Share2, ChevronDown, UserPlus, ClipboardList } from "lucide-react";
+import { MessageSquare, Upload, Trash2, FileText, Plus, Bot, Lock, Users as UsersIcon, Globe, GripVertical, Share2, ChevronDown, UserPlus, ClipboardList, Paperclip } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -72,11 +73,33 @@ export function ChatSidebar({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [toggleConfirmOpen, setToggleConfirmOpen] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState<{ id: string; visibility: string } | null>(null);
+  const [fileCounts, setFileCounts] = useState<Record<string, number>>({});
   const { toast } = useToast();
 
   useEffect(() => {
     loadAgents();
   }, [restaurantId]);
+
+  // Load file counts for all conversations
+  useEffect(() => {
+    const loadFileCounts = async () => {
+      if (conversations.length === 0) return;
+
+      const counts: Record<string, number> = {};
+      for (const conv of conversations) {
+        const { count } = await supabase
+          .from('restaurant_files')
+          .select('*', { count: 'exact', head: true })
+          .eq('conversation_id', conv.id)
+          .eq('storage_type', 'temporary');
+        
+        counts[conv.id] = count || 0;
+      }
+      setFileCounts(counts);
+    };
+
+    loadFileCounts();
+  }, [conversations]);
 
   const loadAgents = async () => {
     try {
@@ -334,11 +357,19 @@ export function ChatSidebar({
                               <h3 className="font-medium text-sm truncate">
                                 {conv.title}
                               </h3>
-                              <p className={`text-xs mt-1 ${isSelected ? 'text-[#F3C5B6]' : 'text-[#DD3828]'}`}>
-                                {formatDistanceToNow(new Date(conv.updated_at), {
-                                  addSuffix: true,
-                                })}
-                              </p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <p className={`text-xs ${isSelected ? 'text-[#F3C5B6]' : 'text-[#DD3828]'}`}>
+                                  {formatDistanceToNow(new Date(conv.updated_at), {
+                                    addSuffix: true,
+                                  })}
+                                </p>
+                                {fileCounts[conv.id] > 0 && (
+                                  <span className={`text-xs flex items-center gap-1 ${isSelected ? 'text-[#F3C5B6]' : 'text-[#DD3828]'}`}>
+                                    <Paperclip className="h-3 w-3" />
+                                    {fileCounts[conv.id]}
+                                  </span>
+                                )}
+                              </div>
                               <p className={`text-xs mt-0.5 ${isSelected ? 'text-[#F3C5B6]' : 'text-[#DD3828]'}`}>
                                 {conv.message_count} messages
                               </p>
@@ -407,6 +438,13 @@ export function ChatSidebar({
           </TabsContent>
 
           <TabsContent value="files" className="mt-4 px-4">
+            <Alert className="mb-4 bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
+              <Paperclip className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <AlertDescription className="text-sm text-blue-900 dark:text-blue-100">
+                💡 <strong>Tip:</strong> Files are now shown in the chat header! Click the 📎 badge at the top of your conversation to see files.
+              </AlertDescription>
+            </Alert>
+
             <div className="mb-3">
               <h3 className="text-sm font-medium text-muted-foreground">
                 Files in this conversation

@@ -31,6 +31,8 @@ import KPIInput from "@/components/KPIInput";
 import { useAuth } from "@/hooks/useAuth";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
+import { ConversationFileHeader } from "@/components/ConversationFileHeader";
+import { ConversationFilePanel } from "@/components/ConversationFilePanel";
 
 interface KPIData {
   avg_weekly_sales: number | null;
@@ -275,6 +277,9 @@ const RestaurantFindings = () => {
     { id: 'files', label: 'Files', completed: false, active: false },
     { id: 'rules', label: 'Rules', completed: false, active: false },
   ]);
+
+  // File panel state
+  const [filePanelOpen, setFilePanelOpen] = useState(false);
 
   // Quick Win onboarding state
   const [onboardingPhase, setOnboardingPhase] = useState<'hook' | 'pain_point' | 'quick_win' | 'tuning' | 'data_collection'>('hook');
@@ -1871,6 +1876,7 @@ What would you like to work on today?`
 
   // Reload files when conversation changes (for conversation-scoped files)
   useEffect(() => {
+    setFilePanelOpen(false); // Close panel on conversation switch
     loadFiles();
   }, [currentConversationId]);
 
@@ -3503,6 +3509,26 @@ What would you like to work on today?`
 
             {/* Participant Tags */}
             <ParticipantTags />
+
+            {/* Conversation File Header */}
+            <ConversationFileHeader
+              conversationTitle={conversations.find(c => c.id === currentConversationId)?.title}
+              fileCount={files.length}
+              isOpen={filePanelOpen}
+              onToggle={() => setFilePanelOpen(!filePanelOpen)}
+              hasConversation={!!currentConversationId}
+            />
+
+            {/* Conversation File Panel */}
+            <ConversationFilePanel
+              files={files}
+              conversationId={currentConversationId}
+              isOpen={filePanelOpen}
+              onClose={() => setFilePanelOpen(false)}
+              onFileDelete={handleDeleteFile}
+              onFileUpload={handleFileUpload}
+              onMoveToKnowledgeBase={handleMoveToKnowledgeBase}
+            />
 
             {/* Chat Area */}
             <div className="flex-1 overflow-y-auto">
