@@ -3346,16 +3346,11 @@ What would you like to work on today?`
               <ChatSidebar
                 restaurantId={id || ""}
                 conversations={conversations}
-                files={files}
                 currentConversationId={currentConversationId}
                 onNewConversation={handleNewConversation}
                 onLoadConversation={handleLoadConversation}
                 onDeleteConversation={handleDeleteConversation}
-                onFileUpload={handleFileUpload}
-                onDeleteFile={handleDeleteFile}
-                onMoveToKnowledgeBase={handleMoveToKnowledgeBase}
                 onRefreshConversations={loadConversations}
-                onRefreshFiles={loadFiles}
                 onToggleVisibility={handleToggleVisibility}
                 onOpenShareSettings={(conversationId, visibility) => {
                   setCurrentConversationId(conversationId);
@@ -5182,16 +5177,11 @@ What would you like to work on today?`
               <ChatSidebar
                 restaurantId={id || ""}
                 conversations={conversations}
-                files={files}
                 currentConversationId={currentConversationId}
                 onNewConversation={handleNewConversation}
                 onLoadConversation={handleLoadConversation}
                 onDeleteConversation={handleDeleteConversation}
-                onFileUpload={handleFileUpload}
-                onDeleteFile={handleDeleteFile}
-                onMoveToKnowledgeBase={handleMoveToKnowledgeBase}
                 onRefreshConversations={loadConversations}
-                onRefreshFiles={loadFiles}
               />
             </SheetContent>
           </Sheet>

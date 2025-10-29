@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MessageSquare, Upload, Trash2, FileText, Plus, Bot, Lock, Users as UsersIcon, Globe, GripVertical, Share2, ChevronDown, UserPlus, ClipboardList, Paperclip } from "lucide-react";
+import { MessageSquare, Trash2, Plus, Bot, Lock, Users as UsersIcon, Globe, GripVertical, Share2, ChevronDown, UserPlus, ClipboardList, Paperclip } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -23,29 +23,14 @@ interface Conversation {
   participant_count?: number;
 }
 
-interface RestaurantFile {
-  id: string;
-  file_name: string;
-  file_size: number;
-  file_type: string;
-  uploaded_at: string;
-  processed: boolean;
-  embeddings_generated: boolean;
-}
-
 interface ChatSidebarProps {
   restaurantId: string;
   conversations: Conversation[];
-  files: RestaurantFile[];
   currentConversationId: string | null;
   onNewConversation: () => void;
   onLoadConversation: (id: string) => void;
   onDeleteConversation: (id: string) => void;
-  onFileUpload: (files: FileList) => void;
-  onDeleteFile: (id: string) => void;
-  onMoveToKnowledgeBase?: (fileId: string, fileName: string) => void;
   onRefreshConversations: () => void;
-  onRefreshFiles: () => void;
   onToggleVisibility?: (conversationId: string, currentVisibility: string) => void;
   onOpenShareSettings?: (conversationId: string, visibility: string) => void;
 }
@@ -53,20 +38,14 @@ interface ChatSidebarProps {
 export function ChatSidebar({
   restaurantId,
   conversations,
-  files,
   currentConversationId,
   onNewConversation,
-  onMoveToKnowledgeBase,
   onLoadConversation,
   onDeleteConversation,
-  onFileUpload,
-  onDeleteFile,
   onRefreshConversations,
-  onRefreshFiles,
   onToggleVisibility,
   onOpenShareSettings,
 }: ChatSidebarProps) {
-  const [isDragging, setIsDragging] = useState(false);
   const [agents, setAgents] = useState<any[]>([]);
   const [draggedAgent, setDraggedAgent] = useState<any>(null);
   const [dragOverAgent, setDragOverAgent] = useState<string | null>(null);
@@ -180,12 +159,6 @@ export function ChatSidebar({
     setDraggedAgent(null);
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + " B";
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
-  };
-
   const getVisibilityIcon = (visibility: string) => {
     switch (visibility) {
       case "team":
@@ -194,23 +167,6 @@ export function ChatSidebar({
         return <Globe className="w-3 h-3" />;
       default:
         return <Lock className="w-3 h-3" />;
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    if (e.dataTransfer.files.length > 0) {
-      onFileUpload(e.dataTransfer.files);
     }
   };
 
@@ -289,14 +245,10 @@ export function ChatSidebar({
 
       <div className="flex-1 overflow-hidden">
         <Tabs defaultValue="conversations" className="w-full h-full flex flex-col">
-          <TabsList className="w-full grid grid-cols-4 mx-4 mt-2" style={{ width: 'calc(100% - 2rem)' }}>
+          <TabsList className="w-full grid grid-cols-3 mx-4 mt-2" style={{ width: 'calc(100% - 2rem)' }}>
             <TabsTrigger value="conversations">
               <MessageSquare className="w-4 h-4 mr-2" />
               Chats
-            </TabsTrigger>
-            <TabsTrigger value="files">
-              <FileText className="w-4 h-4 mr-2" />
-              Files
             </TabsTrigger>
             <TabsTrigger value="agents">
               <Bot className="w-4 h-4 mr-2" />
@@ -436,131 +388,6 @@ export function ChatSidebar({
               )}
             </ScrollArea>
           </TabsContent>
-
-          <TabsContent value="files" className="mt-4 px-4">
-            <Alert className="mb-4 bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
-              <Paperclip className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-              <AlertDescription className="text-sm text-blue-900 dark:text-blue-100">
-                💡 <strong>Tip:</strong> Files are now shown in the chat header! Click the 📎 badge at the top of your conversation to see files.
-              </AlertDescription>
-            </Alert>
-
-            <div className="mb-3">
-              <h3 className="text-sm font-medium text-muted-foreground">
-                Files in this conversation
-              </h3>
-            </div>
-
-            {!currentConversationId ? (
-              <div className="text-center text-muted-foreground py-8 text-sm space-y-2">
-                <p>Start a conversation to upload files</p>
-                <p className="text-xs">Files will be linked to the active conversation</p>
-              </div>
-            ) : (
-              <>
-                <div
-                  className={`border-2 border-dashed rounded-lg p-6 mb-4 text-center transition-colors ${
-                    isDragging
-                      ? "border-primary bg-primary/10"
-                      : "border-border hover:border-primary/50"
-                  }`}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                >
-                  <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Drag & drop files here
-                  </p>
-                  <input
-                    type="file"
-                    id="file-upload"
-                    className="hidden"
-                    multiple
-                    onChange={(e) => {
-                      if (e.target.files) {
-                        onFileUpload(e.target.files);
-                      }
-                    }}
-                  />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => document.getElementById("file-upload")?.click()}
-                  >
-                    Browse Files
-                  </Button>
-                </div>
-
-                <ScrollArea className="h-[calc(100vh-380px)]">
-                  {files.length === 0 ? (
-                    <div className="text-center text-muted-foreground py-8 text-sm">
-                      No files in this conversation yet
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {files.map((file) => (
-                        <div
-                          key={file.id}
-                          className="p-3 rounded-lg border border-border bg-card text-card-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-                        >
-                          <div className="space-y-2">
-                            <div className="flex items-start gap-2">
-                              <FileText className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                              <div className="flex-1 min-w-0">
-                                <h3 className="font-medium text-sm break-words" title={file.file_name}>
-                                  {file.file_name}
-                                </h3>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  {formatFileSize(file.file_size)} • {file.file_type}
-                                </p>
-                                <p className="text-xs text-muted-foreground mt-0.5">
-                                  {formatDistanceToNow(new Date(file.uploaded_at), {
-                                    addSuffix: true,
-                                  })}
-                                </p>
-                                {file.processed && (
-                                  <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                                    ✓ {file.embeddings_generated ? "Ready for RAG" : "Processed"}
-                                  </p>
-                                )}
-                                {!file.processed && (
-                                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                                    Processing...
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex gap-2">
-                              {onMoveToKnowledgeBase && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => onMoveToKnowledgeBase(file.id, file.file_name)}
-                                  className="flex-1 text-primary-foreground hover:text-primary-foreground"
-                                >
-                                  Move to KB
-                                </Button>
-                              )}
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => onDeleteFile(file.id)}
-                                className="flex-1"
-                              >
-                                <Trash2 className="w-3 h-3 mr-1" />
-                                Delete
-                              </Button>
-                               </div>
-                             </div>
-                           </div>
-                         ))}
-                       </div>
-                     )}
-                   </ScrollArea>
-                 </>
-               )}
-             </TabsContent>
 
           <TabsContent value="agents" className="mt-4 px-4 flex flex-col h-full">
             <div className="space-y-2 flex-1">
