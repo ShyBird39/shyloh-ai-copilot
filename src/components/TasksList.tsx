@@ -84,7 +84,7 @@ function SortableTask({
 
   return (
     <div ref={setNodeRef} style={style} className="group">
-      <div className="flex items-start gap-2 p-3 rounded-lg bg-card border border-border hover:bg-accent/50 transition-colors">
+      <div className="flex items-start gap-2 p-3 rounded-lg bg-background border border-border hover:bg-muted transition-colors">
         <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing mt-1">
           <GripVertical className="w-4 h-4 text-muted-foreground" />
         </div>
@@ -340,7 +340,7 @@ export function TasksList({ restaurantId, onNavigateToConversation }: TasksListP
   }
 
   return (
-    <>
+    <div className="flex flex-col h-full">
       <div className="px-4 pt-4 pb-2">
         <div className="flex gap-2">
           <Input
@@ -414,6 +414,6 @@ export function TasksList({ restaurantId, onNavigateToConversation }: TasksListP
           )}
         </div>
       </ScrollArea>
-    </>
+    </div>
   );
 }
