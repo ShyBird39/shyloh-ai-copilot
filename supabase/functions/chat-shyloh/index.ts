@@ -573,12 +573,13 @@ ${laborHours > 0 && netSales > 0 ? `- Sales Per Labor Hour: $${(netSales / labor
           .eq('storage_type', 'permanent')
           .order('uploaded_at', { ascending: false });
 
-        // Fetch recent temporary files - conditionally included
+        // Fetch conversation-specific temporary files only
         const { data: tempFiles, error: tempError } = await supabase
           .from('restaurant_files')
           .select('*')
           .eq('restaurant_id', restaurantId)
           .eq('storage_type', 'temporary')
+          .eq('conversation_id', conversationId)
           .order('uploaded_at', { ascending: false })
           .limit(5);
 
@@ -597,7 +598,7 @@ ${laborHours > 0 && netSales > 0 ? `- Sales Per Labor Hour: $${(netSales / labor
             const isPermanent = file.storage_type === 'permanent';
             const fileHeader = isPermanent 
               ? `--- KNOWLEDGE BASE: ${file.file_name}${file.description ? ` (${file.description})` : ''} ---`
-              : `--- TEMP FILE: ${file.file_name} ---`;
+              : `--- CONVERSATION FILE: ${file.file_name} ---`;
             try {
               const { data: blob, error: downloadError } = await supabase.storage
                 .from('restaurant-documents')
@@ -688,8 +689,8 @@ ${laborHours > 0 && netSales > 0 ? `- Sales Per Labor Hour: $${(netSales / labor
 
           if (fileTexts.length > 0) {
             docsContext = `\n\nRESTAURANT DOCUMENTS CONTEXT
-Files marked as "KNOWLEDGE BASE" are permanent reference materials for this restaurant - prioritize them as source of truth.
-Files marked as "TEMP FILE" are temporary session files - use only if relevant to current conversation.
+Files marked as "KNOWLEDGE BASE" are permanent restaurant-wide reference materials - prioritize them as source of truth.
+Files marked as "CONVERSATION FILE" are specific to this conversation only - use when directly relevant to current discussion.
 
 When referencing information, cite the specific document name and prioritize Knowledge Base files. Use this context to provide deeply informed, specific answers:
 

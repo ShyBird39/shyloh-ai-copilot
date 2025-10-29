@@ -466,6 +466,7 @@ export type Database = {
       }
       restaurant_files: {
         Row: {
+          conversation_id: string | null
           description: string | null
           embeddings: Json | null
           embeddings_generated: boolean | null
@@ -481,6 +482,7 @@ export type Database = {
           uploaded_at: string | null
         }
         Insert: {
+          conversation_id?: string | null
           description?: string | null
           embeddings?: Json | null
           embeddings_generated?: boolean | null
@@ -496,6 +498,7 @@ export type Database = {
           uploaded_at?: string | null
         }
         Update: {
+          conversation_id?: string | null
           description?: string | null
           embeddings?: Json | null
           embeddings_generated?: boolean | null
@@ -511,6 +514,13 @@ export type Database = {
           uploaded_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "restaurant_files_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "restaurant_files_restaurant_id_fkey"
             columns: ["restaurant_id"]

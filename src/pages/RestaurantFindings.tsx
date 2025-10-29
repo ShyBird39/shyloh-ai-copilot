@@ -819,6 +819,12 @@ const RestaurantFindings = () => {
   const handleFileUpload = async (fileList: FileList, storageType: 'temporary' | 'permanent' = 'temporary', description?: string) => {
     if (!id) return;
 
+    // Prevent temporary file uploads if no conversation is active
+    if (storageType === 'temporary' && !currentConversationId) {
+      toast.error("Please start a conversation before uploading files");
+      return;
+    }
+
     const fileNames = Array.from(fileList).map(f => f.name);
     setUploadingFiles(prev => [...prev, ...fileNames]);
     setShowFileNotification(true);
@@ -840,11 +846,12 @@ const RestaurantFindings = () => {
         // Detect file type with fallback
         const fileType = getFileType(file);
 
-        // Create database record
+        // Create database record - link temporary files to conversation
         const { error: dbError } = await supabase
           .from("restaurant_files")
           .insert({
             restaurant_id: id,
+            conversation_id: storageType === 'temporary' ? currentConversationId : null,
             file_name: file.name,
             file_path: fileName,
             file_size: file.size,
@@ -877,6 +884,7 @@ const RestaurantFindings = () => {
         .from("restaurant_files")
         .update({ 
           storage_type: 'permanent',
+          conversation_id: null, // Remove conversation link when moving to KB
           description: description || null
         })
         .eq("id", fileId);
@@ -1038,18 +1046,24 @@ const RestaurantFindings = () => {
     if (!id) return;
 
     try {
-      // Load temporary files for left sidebar
-      const { data: tempData, error: tempError } = await supabase
-        .from("restaurant_files")
-        .select("*")
-        .eq("restaurant_id", id)
-        .eq("storage_type", "temporary")
-        .order("uploaded_at", { ascending: false });
+      // Load conversation-specific temporary files for Files tab
+      if (currentConversationId) {
+        const { data: tempData, error: tempError } = await supabase
+          .from("restaurant_files")
+          .select("*")
+          .eq("restaurant_id", id)
+          .eq("storage_type", "temporary")
+          .eq("conversation_id", currentConversationId)
+          .order("uploaded_at", { ascending: false });
 
-      if (tempError) throw tempError;
-      setFiles(tempData || []);
+        if (tempError) throw tempError;
+        setFiles(tempData || []);
+      } else {
+        // No active conversation = no temporary files to show
+        setFiles([]);
+      }
 
-      // Load permanent files for Knowledge Base
+      // Load permanent files for Knowledge Base (unchanged)
       const { data: permData, error: permError } = await supabase
         .from("restaurant_files")
         .select("*")
@@ -1853,6 +1867,11 @@ What would you like to work on today?`
     } else {
       setCurrentParticipants([]);
     }
+  }, [currentConversationId]);
+
+  // Reload files when conversation changes (for conversation-scoped files)
+  useEffect(() => {
+    loadFiles();
   }, [currentConversationId]);
 
   // Real-time message subscription for human-to-human chat
