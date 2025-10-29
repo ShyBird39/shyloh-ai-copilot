@@ -341,7 +341,7 @@ export function TasksList({ restaurantId, onNavigateToConversation }: TasksListP
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-4 pt-4 pb-2">
+      <div className="px-4 pt-2 pb-2">
         <div className="flex gap-2">
           <Input
             placeholder="Add a task..."
