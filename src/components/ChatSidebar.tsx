@@ -425,7 +425,7 @@ export function ChatSidebar({
             </div>
           </TabsContent>
 
-          <TabsContent value="tasks" className="mt-0 h-[calc(100vh-200px)]">
+          <TabsContent value="tasks" className="mt-0 h-[calc(100vh-200px)] flex flex-col">
             <TasksList 
               restaurantId={restaurantId}
               onNavigateToConversation={onLoadConversation}

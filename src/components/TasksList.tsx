@@ -340,8 +340,8 @@ export function TasksList({ restaurantId, onNavigateToConversation }: TasksListP
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="p-4 border-b border-border">
+    <>
+      <div className="px-4 pt-4 pb-2">
         <div className="flex gap-2">
           <Input
             placeholder="Add a task..."
@@ -356,8 +356,8 @@ export function TasksList({ restaurantId, onNavigateToConversation }: TasksListP
         </div>
       </div>
 
-      <ScrollArea className="flex-1">
-        <div className="p-4 space-y-4">
+      <ScrollArea className="flex-1 px-4">
+        <div className="space-y-4 pb-4">
           {activeTasks.length > 0 && (
             <div className="space-y-2">
               <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -414,6 +414,6 @@ export function TasksList({ restaurantId, onNavigateToConversation }: TasksListP
           )}
         </div>
       </ScrollArea>
-    </div>
+    </>
   );
 }
