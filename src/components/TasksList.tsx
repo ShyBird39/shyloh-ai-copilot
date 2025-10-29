@@ -254,18 +254,26 @@ export function TasksList({ restaurantId, onNavigateToConversation }: TasksListP
 
     const maxSortOrder = tasks.length > 0 ? Math.max(...tasks.map((t) => t.sort_order)) : -1;
 
-    const { error } = await supabase.from("restaurant_tasks").insert({
-      user_id: user.id,
-      restaurant_id: restaurantId,
-      title: newTaskTitle.trim(),
-      sort_order: maxSortOrder + 1,
-    });
+    const { data: inserted, error } = await supabase
+      .from("restaurant_tasks")
+      .insert({
+        user_id: user.id,
+        restaurant_id: restaurantId,
+        title: newTaskTitle.trim(),
+        sort_order: maxSortOrder + 1,
+      })
+      .select()
+      .single();
 
     if (error) {
       toast.error("Failed to create task");
       console.error(error);
     } else {
       setNewTaskTitle("");
+      setTasks((prev) => {
+        const next = [...prev, inserted as Task];
+        return next.sort((a, b) => a.sort_order - b.sort_order);
+      });
       toast.success("Task created");
     }
   };
