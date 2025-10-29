@@ -196,7 +196,7 @@ export function TasksList({ restaurantId, onNavigateToConversation }: TasksListP
     if (user) {
       loadTasks();
       archiveOldTasks();
-      setupRealtimeSubscription();
+      return setupRealtimeSubscription();
     }
   }, [user, restaurantId]);
 
