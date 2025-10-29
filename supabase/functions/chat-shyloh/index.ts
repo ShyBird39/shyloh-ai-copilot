@@ -1,11 +1,11 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.0';
-import { getDocument, GlobalWorkerOptions } from 'https://esm.sh/pdfjs-dist@4.0.379/legacy/build/pdf.mjs';
+import { getDocument, GlobalWorkerOptions, version } from 'https://esm.sh/pdfjs-dist@4.0.379/legacy/build/pdf.mjs';
 import mammoth from 'https://esm.sh/mammoth@1.8.0/mammoth.browser?bundle';
 
-// Configure PDF.js worker for Deno runtime
-GlobalWorkerOptions.workerSrc = 'https://esm.sh/pdfjs-dist@4.0.379/legacy/build/pdf.worker.mjs';
+// Disable worker for Deno runtime (use main thread parsing)
+GlobalWorkerOptions.workerSrc = '';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -636,21 +636,31 @@ ${laborHours > 0 && netSales > 0 ? `- Sales Per Labor Hour: $${(netSales / labor
 
               try {
                 if (effectiveFileType === 'application/pdf') {
-                  const arrayBuffer = await blob.arrayBuffer();
-                  const typedArray = new Uint8Array(arrayBuffer);
-                  const loadingTask = getDocument({ data: typedArray });
-                  const pdfDoc = await loadingTask.promise;
+                  try {
+                    const arrayBuffer = await blob.arrayBuffer();
+                    const typedArray = new Uint8Array(arrayBuffer);
+                    const loadingTask = getDocument({ 
+                      data: typedArray,
+                      useWorkerFetch: false,
+                      isEvalSupported: false,
+                      useSystemFonts: true
+                    });
+                    const pdfDoc = await loadingTask.promise;
 
-                  const textParts: string[] = [];
-                  const numPages = Math.min(pdfDoc.numPages, 50);
-                  for (let i = 1; i <= numPages; i++) {
-                    const page = await pdfDoc.getPage(i);
-                    const textContent = await page.getTextContent();
-                    const pageText = (textContent.items as any[]).map((it: any) => it.str).join(' ');
-                    textParts.push(pageText);
+                    const textParts: string[] = [];
+                    const numPages = Math.min(pdfDoc.numPages, 50);
+                    for (let i = 1; i <= numPages; i++) {
+                      const page = await pdfDoc.getPage(i);
+                      const textContent = await page.getTextContent();
+                      const pageText = (textContent.items as any[]).map((it: any) => it.str).join(' ');
+                      textParts.push(pageText);
+                    }
+                    extractedText = textParts.join('\n\n');
+                    console.log(`Successfully parsed PDF ${file.file_name} - ${numPages} pages`);
+                  } catch (pdfError) {
+                    console.error(`PDF parsing failed for ${file.file_name}, will skip:`, pdfError);
+                    extractedText = `[PDF file: ${file.file_name} - Text extraction unavailable]`;
                   }
-                  extractedText = textParts.join('\n\n');
-                  console.log(`Successfully parsed PDF ${file.file_name} - ${numPages} pages`);
                 } else if (effectiveFileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
                   const arrayBuffer = await blob.arrayBuffer();
                   const result = await mammoth.extractRawText({ arrayBuffer });
