@@ -260,7 +260,7 @@ export function ChatSidebar({
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="conversations" className="mt-4 px-4">
+          <TabsContent value="conversations" className="px-4 pt-4">
             <Button
               onClick={onNewConversation}
               className="w-full mb-4"
@@ -389,7 +389,7 @@ export function ChatSidebar({
             </ScrollArea>
           </TabsContent>
 
-          <TabsContent value="agents" className="mt-4 px-4 flex flex-col h-full">
+          <TabsContent value="agents" className="px-4 pt-4 flex flex-col h-full">
             <div className="space-y-2 flex-1">
               <p className="text-sm text-muted-foreground mb-2">
                 AI-powered agents to help with specific tasks. Drag to reorder.
