@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, ChevronDown, ChevronUp, RotateCcw, Paperclip, UtensilsCrossed, Sparkles, Users, Clock, Settings, Heart, UserCog, Trash2, Brain, AlertCircle, Edit, Crown, Bot, Zap } from "lucide-react";
+import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, ChevronDown, ChevronUp, RotateCcw, Paperclip, UtensilsCrossed, Sparkles, Users, Clock, Settings, Heart, UserCog, Trash2, Brain, AlertCircle, Edit, Crown, Bot, Zap, ClipboardList } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -5091,6 +5091,40 @@ What would you like to work on today?`
                         </CollapsibleContent>
                       </div>
                     </Collapsible>
+                  </div>
+                </CollapsibleContent>
+              </div>
+            </Collapsible>
+
+            {/* Manager Tools Section */}
+            <Collapsible defaultOpen={true}>
+              <div className="space-y-3">
+                <CollapsibleTrigger className="flex items-center justify-between w-full group">
+                  <div className="flex items-center gap-2">
+                    <ClipboardList className="w-4 h-4 text-primary-foreground/60" />
+                    <h3 className="text-sm font-semibold text-primary-foreground uppercase tracking-wide">Manager Tools</h3>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-primary-foreground/60 group-hover:text-primary-foreground transition-colors" />
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="space-y-2">
+                    <Card className="bg-background/50 border-accent/20 p-3">
+                      <Button
+                        onClick={() => navigate(`/restaurant/${id}/shift-log`)}
+                        variant="outline"
+                        size="sm"
+                        className="w-full text-xs border-accent/40 hover:bg-accent/10 hover:border-accent text-primary-foreground"
+                      >
+                        <ClipboardList className="w-4 h-4 mr-2" />
+                        Open Shift Log
+                      </Button>
+                      <p className="text-xs text-primary-foreground/60 mt-2">
+                        Document shift notes, generate AI summaries, and search historical records
+                      </p>
+                      <div className="flex items-center gap-2 mt-2 text-xs text-primary-foreground/50">
+                        <span>Today • {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                      </div>
+                    </Card>
                   </div>
                 </CollapsibleContent>
               </div>

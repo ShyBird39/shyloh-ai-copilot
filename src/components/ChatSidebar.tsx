@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { MessageSquare, Trash2, Plus, Bot, Lock, Users as UsersIcon, Globe, GripVertical, Share2, ChevronDown, UserPlus, ClipboardList, Paperclip } from "lucide-react";
+import { MessageSquare, Trash2, Plus, Bot, Lock, Users as UsersIcon, Globe, GripVertical, Share2, ChevronDown, UserPlus, ClipboardList, Paperclip, FileText } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -54,6 +55,7 @@ export function ChatSidebar({
   const [selectedConversation, setSelectedConversation] = useState<{ id: string; visibility: string } | null>(null);
   const [fileCounts, setFileCounts] = useState<Record<string, number>>({});
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadAgents();
@@ -240,7 +242,18 @@ export function ChatSidebar({
 
       <div className="h-full flex flex-col border-r border-border bg-background">
       <div className="border-b border-border p-4">
-        <h2 className="text-lg font-semibold">Chat & Files</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Chat & Files</h2>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(`/restaurant/${restaurantId}/shift-log`)}
+            className="h-8 w-8"
+            title="Manager Shift Log"
+          >
+            <FileText className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-hidden">
