@@ -99,3 +99,36 @@ All colors MUST be HSL.
     @apply font-oswald;
   }
 }
+
+@layer utilities {
+  /* Notification pulse animation */
+  @keyframes notification-pulse {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(1.05);
+    }
+  }
+  
+  .notification-pulse {
+    animation: notification-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  /* Notification dot for sidebar */
+  .notification-dot {
+    @apply w-2 h-2 rounded-full flex-shrink-0;
+  }
+  
+  .notification-dot-mention {
+    @apply bg-destructive;
+    box-shadow: 0 0 8px hsl(var(--destructive) / 0.5);
+  }
+  
+  .notification-dot-invite {
+    @apply bg-accent;
+    box-shadow: 0 0 8px hsl(var(--accent) / 0.5);
+  }
+}

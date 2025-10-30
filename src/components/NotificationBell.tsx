@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
+import { showMentionToast, showInviteToast, requestNotificationPermission, showBrowserNotification } from "@/lib/notifications";
 
 interface Notification {
   id: string;
@@ -29,10 +30,14 @@ interface NotificationBellProps {
 export function NotificationBell({ restaurantId, onNavigate }: NotificationBellProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadMentions, setUnreadMentions] = useState(0);
+  const [unreadInvites, setUnreadInvites] = useState(0);
   const [open, setOpen] = useState(false);
+  const [hasNewNotification, setHasNewNotification] = useState(false);
 
   useEffect(() => {
     loadNotifications();
+    requestNotificationPermission();
     
     // Subscribe to new notifications
     const channel = supabase
@@ -42,7 +47,49 @@ export function NotificationBell({ restaurantId, onNavigate }: NotificationBellP
         schema: 'public',
         table: 'notifications',
         filter: `restaurant_id=eq.${restaurantId}`
-      }, () => {
+      }, async (payload) => {
+        const newNotif = payload.new as Notification;
+        
+        // Fetch profile for the new notification
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('display_name, email')
+          .eq('id', newNotif.mentioned_by)
+          .single();
+        
+        const displayName = profile?.display_name || profile?.email || 'Someone';
+        
+        // Show toast notification
+        if (newNotif.type === 'mention') {
+          showMentionToast({
+            content: newNotif.content,
+            displayName,
+            conversationId: newNotif.conversation_id,
+            onNavigate,
+          });
+          showBrowserNotification(
+            `${displayName} mentioned you`,
+            newNotif.content,
+            () => onNavigate(newNotif.conversation_id)
+          );
+        } else if (newNotif.type === 'conversation_shared') {
+          showInviteToast({
+            content: newNotif.content,
+            displayName,
+            conversationId: newNotif.conversation_id,
+            onNavigate,
+          });
+          showBrowserNotification(
+            'New conversation invite',
+            newNotif.content,
+            () => onNavigate(newNotif.conversation_id)
+          );
+        }
+        
+        // Trigger bounce animation
+        setHasNewNotification(true);
+        setTimeout(() => setHasNewNotification(false), 1000);
+        
         loadNotifications();
       })
       .on('postgres_changes', {
@@ -58,7 +105,7 @@ export function NotificationBell({ restaurantId, onNavigate }: NotificationBellP
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [restaurantId]);
+  }, [restaurantId, onNavigate]);
 
   const loadNotifications = async () => {
     // Fetch notifications
@@ -93,7 +140,10 @@ export function NotificationBell({ restaurantId, onNavigate }: NotificationBellP
     }));
 
     setNotifications(enrichedNotifications as any);
-    setUnreadCount(enrichedNotifications.filter(n => !n.is_read).length);
+    const unread = enrichedNotifications.filter(n => !n.is_read);
+    setUnreadCount(unread.length);
+    setUnreadMentions(unread.filter(n => n.type === 'mention').length);
+    setUnreadInvites(unread.filter(n => n.type === 'conversation_shared').length);
   };
 
   const markAsRead = async (notificationId: string) => {
@@ -125,11 +175,14 @@ export function NotificationBell({ restaurantId, onNavigate }: NotificationBellP
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
-          <Bell className="w-5 h-5" />
+          <Bell className={`w-5 h-5 ${hasNewNotification ? 'animate-bounce' : ''}`} />
           {unreadCount > 0 && (
             <Badge 
-              variant="destructive" 
-              className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
+              className={`absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs ${
+                unreadMentions > 0 
+                  ? 'bg-destructive text-destructive-foreground notification-pulse' 
+                  : 'bg-accent text-accent-foreground notification-pulse'
+              }`}
             >
               {unreadCount > 9 ? '9+' : unreadCount}
             </Badge>

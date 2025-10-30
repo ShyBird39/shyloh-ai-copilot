@@ -305,6 +305,9 @@ const RestaurantFindings = () => {
   // Center view toggle
   const [centerView, setCenterView] = useState<'chat' | 'shift-log'>('chat');
 
+  // Track unread notifications for tab title
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+
   const samplePrompts = [
     "I am here to...",
     "Strategy Session",
@@ -1427,6 +1430,49 @@ What would you like to work on today?`
       return () => clearTimeout(timer);
     }
   }, [files, uploadingFiles, showFileNotification]);
+
+  // Update document title with unread notification count
+  useEffect(() => {
+    if (!id || !user) return;
+
+    const loadUnreadCount = async () => {
+      const { count } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('restaurant_id', id)
+        .eq('is_read', false);
+      
+      const unreadCount = count || 0;
+      setUnreadNotificationCount(unreadCount);
+      
+      // Update tab title
+      if (unreadCount > 0) {
+        document.title = `(${unreadCount}) ${data?.name || 'Restaurant'}`;
+      } else {
+        document.title = data?.name || 'Restaurant';
+      }
+    };
+
+    loadUnreadCount();
+
+    // Subscribe to notification changes
+    const channel = supabase
+      .channel('tab-title-notifications')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'notifications',
+        filter: `restaurant_id=eq.${id}`
+      }, () => {
+        loadUnreadCount();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      document.title = data?.name || 'Restaurant'; // Reset title on unmount
+    };
+  }, [id, user, data?.name]);
 
   // Function to refresh restaurant data
   const refreshRestaurantData = async () => {

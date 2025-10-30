@@ -54,7 +54,9 @@ export function ChatSidebar({
   const [toggleConfirmOpen, setToggleConfirmOpen] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState<{ id: string; visibility: string } | null>(null);
   const [fileCounts, setFileCounts] = useState<Record<string, number>>({});
+  const [notificationCounts, setNotificationCounts] = useState<Record<string, { mentions: number; invites: number }>>({});
   const { toast } = useToast();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -81,6 +83,50 @@ export function ChatSidebar({
 
     loadFileCounts();
   }, [conversations]);
+
+  // Load notification counts for all conversations
+  useEffect(() => {
+    const loadNotificationCounts = async () => {
+      if (!user || conversations.length === 0) return;
+
+      const counts: Record<string, { mentions: number; invites: number }> = {};
+      
+      for (const conv of conversations) {
+        const { data: notifications } = await supabase
+          .from('notifications')
+          .select('type, is_read')
+          .eq('conversation_id', conv.id)
+          .eq('restaurant_id', restaurantId)
+          .eq('is_read', false);
+        
+        const mentions = notifications?.filter(n => n.type === 'mention').length || 0;
+        const invites = notifications?.filter(n => n.type === 'conversation_shared').length || 0;
+        
+        counts[conv.id] = { mentions, invites };
+      }
+      
+      setNotificationCounts(counts);
+    };
+
+    loadNotificationCounts();
+
+    // Subscribe to notification changes
+    const channel = supabase
+      .channel('sidebar-notifications')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'notifications',
+        filter: `restaurant_id=eq.${restaurantId}`
+      }, () => {
+        loadNotificationCounts();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [conversations, restaurantId, user]);
 
   const loadAgents = async () => {
     try {
@@ -310,8 +356,15 @@ export function ChatSidebar({
                             </Button>
                             
                             <div className="flex-1 min-w-0">
-                              <h3 className="font-medium text-sm truncate">
+                              <h3 className="font-medium text-sm truncate flex items-center gap-2">
                                 {conv.title}
+                                {/* Notification indicators */}
+                                {notificationCounts[conv.id]?.mentions > 0 && (
+                                  <span className="notification-dot notification-dot-mention" title={`${notificationCounts[conv.id].mentions} unread mention(s)`} />
+                                )}
+                                {notificationCounts[conv.id]?.invites > 0 && notificationCounts[conv.id]?.mentions === 0 && (
+                                  <span className="notification-dot notification-dot-invite" title={`${notificationCounts[conv.id].invites} unread invite(s)`} />
+                                )}
                               </h3>
                               <div className="flex items-center gap-2 mt-1">
                                 <p className={`text-xs ${isSelected ? 'text-[#F3C5B6]' : 'text-[#DD3828]'}`}>
