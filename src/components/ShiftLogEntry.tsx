@@ -90,7 +90,7 @@ export function ShiftLogEntry({ restaurantId, shiftDate, shiftType, onEntrySaved
   return (
     <Card className="p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">New Shift Log Entry</h3>
+        <h3 className="text-lg font-semibold">New SLT Log Entry</h3>
         {isUrgent && (
           <Badge variant="destructive" className="flex items-center gap-1">
             <AlertCircle className="h-3 w-3" />
@@ -144,7 +144,7 @@ export function ShiftLogEntry({ restaurantId, shiftDate, shiftType, onEntrySaved
           <Textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Enter shift log details..."
+            placeholder="Enter SLT log details..."
             className="min-h-[120px] resize-none"
           />
         </div>

@@ -3468,7 +3468,7 @@ What would you like to work on today?`
                   >
                     <div className="flex items-center gap-2">
                       <ClipboardList className="w-4 h-4" />
-                      Shift Log
+                      SLT Log
                     </div>
                   </button>
                 </div>

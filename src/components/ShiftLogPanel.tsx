@@ -19,7 +19,7 @@ export function ShiftLogPanel({ restaurantId }: ShiftLogPanelProps) {
     <div className="h-full flex flex-col">
       <div className="border-b bg-background p-4 space-y-4">
         <div>
-          <h2 className="text-2xl font-semibold">Manager Shift Log</h2>
+          <h2 className="text-2xl font-semibold">Manager SLT Log</h2>
           <p className="text-sm text-muted-foreground">
             Document shift events, generate summaries, and search historical data
           </p>
