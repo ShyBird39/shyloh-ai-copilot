@@ -84,7 +84,7 @@ function SortableTask({
 
   return (
     <div ref={setNodeRef} style={style} className="group">
-      <div className="flex items-start gap-2 p-3 rounded-lg bg-background border border-border hover:bg-muted transition-colors">
+      <div className="flex items-start gap-2 p-3 rounded-lg bg-background border border-border hover:bg-accent/10 transition-colors">
         <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing mt-1">
           <GripVertical className="w-4 h-4 text-muted-foreground" />
         </div>
@@ -282,17 +282,31 @@ export function TasksList({ restaurantId, onNavigateToConversation }: TasksListP
     const task = tasks.find((t) => t.id === id);
     if (!task) return;
 
+    const newCompleted = !task.completed;
+    const newCompletedAt = newCompleted ? new Date().toISOString() : null;
+
+    // Optimistic update
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === id
+          ? { ...t, completed: newCompleted, completed_at: newCompletedAt }
+          : t
+      )
+    );
+
     const { error } = await supabase
       .from("restaurant_tasks")
       .update({
-        completed: !task.completed,
-        completed_at: !task.completed ? new Date().toISOString() : null,
+        completed: newCompleted,
+        completed_at: newCompletedAt,
       })
       .eq("id", id);
 
     if (error) {
       toast.error("Failed to update task");
       console.error(error);
+      // Revert optimistic update on error
+      loadTasks();
     }
   };
 
