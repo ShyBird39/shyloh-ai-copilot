@@ -923,6 +923,129 @@ export type Database = {
         }
         Relationships: []
       }
+      shift_log_embeddings: {
+        Row: {
+          chunk_text: string
+          created_at: string
+          embedding: string | null
+          id: string
+          shift_log_id: string | null
+          shift_summary_id: string | null
+        }
+        Insert: {
+          chunk_text: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          shift_log_id?: string | null
+          shift_summary_id?: string | null
+        }
+        Update: {
+          chunk_text?: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          shift_log_id?: string | null
+          shift_summary_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shift_log_embeddings_shift_log_id_fkey"
+            columns: ["shift_log_id"]
+            isOneToOne: false
+            referencedRelation: "shift_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_log_embeddings_shift_summary_id_fkey"
+            columns: ["shift_summary_id"]
+            isOneToOne: false
+            referencedRelation: "shift_summaries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shift_logs: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          log_category: string
+          metadata: Json | null
+          restaurant_id: string
+          shift_date: string
+          shift_type: string
+          updated_at: string
+          urgency_level: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          log_category: string
+          metadata?: Json | null
+          restaurant_id: string
+          shift_date?: string
+          shift_type?: string
+          updated_at?: string
+          urgency_level?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          log_category?: string
+          metadata?: Json | null
+          restaurant_id?: string
+          shift_date?: string
+          shift_type?: string
+          updated_at?: string
+          urgency_level?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      shift_summaries: {
+        Row: {
+          action_items: Json | null
+          created_at: string
+          generated_by: string
+          id: string
+          restaurant_id: string
+          shift_date: string
+          shift_type: string
+          summary_markdown: string
+          toast_metrics: Json | null
+          updated_at: string
+        }
+        Insert: {
+          action_items?: Json | null
+          created_at?: string
+          generated_by: string
+          id?: string
+          restaurant_id: string
+          shift_date: string
+          shift_type: string
+          summary_markdown: string
+          toast_metrics?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          action_items?: Json | null
+          created_at?: string
+          generated_by?: string
+          id?: string
+          restaurant_id?: string
+          shift_date?: string
+          shift_type?: string
+          summary_markdown?: string
+          toast_metrics?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
