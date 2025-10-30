@@ -33,6 +33,7 @@ import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import { ConversationFileHeader } from "@/components/ConversationFileHeader";
 import { ConversationFilePanel } from "@/components/ConversationFilePanel";
+import { ShiftLogPanel } from "@/components/ShiftLogPanel";
 
 interface KPIData {
   avg_weekly_sales: number | null;
@@ -300,6 +301,9 @@ const RestaurantFindings = () => {
       { id: 'complete', label: 'Ready!', completed: false, active: false },
     ]
   });
+
+  // Center view toggle
+  const [centerView, setCenterView] = useState<'chat' | 'shift-log'>('chat');
 
   const samplePrompts = [
     "I am here to...",
@@ -3369,7 +3373,7 @@ What would you like to work on today?`
           <div className="h-full flex flex-col">
             {/* Header */}
             <div className="border-b border-accent/20 bg-background/80 backdrop-blur-sm">
-              <div className="container mx-auto px-4 py-4">
+              <div className="container mx-auto px-4 py-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Button
@@ -3437,6 +3441,43 @@ What would you like to work on today?`
               </div>
             </div>
 
+            {/* View Toggle */}
+            <div className="border-b border-accent/20 bg-background/50 backdrop-blur-sm">
+              <div className="container mx-auto px-4">
+                <div className="flex gap-1 -mb-px">
+                  <button
+                    onClick={() => setCenterView('chat')}
+                    className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
+                      centerView === 'chat'
+                        ? 'border-accent text-accent-foreground bg-background/80'
+                        : 'border-transparent text-muted-foreground hover:text-primary-foreground hover:bg-background/40'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Bot className="w-4 h-4" />
+                      Chat
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setCenterView('shift-log')}
+                    className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
+                      centerView === 'shift-log'
+                        ? 'border-accent text-accent-foreground bg-background/80'
+                        : 'border-transparent text-muted-foreground hover:text-primary-foreground hover:bg-background/40'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <ClipboardList className="w-4 h-4" />
+                      Shift Log
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Conditional Content Rendering */}
+            {centerView === 'chat' ? (
+              <>
             {/* Onboarding Progress */}
             {(isOnboarding || (!hasCompletedKPIs && !data?.tuning_completed && onboardingPhase !== 'hook')) && (
               <OnboardingProgress 
@@ -3858,6 +3899,10 @@ What would you like to work on today?`
                 </div>
               </div>
             </div>
+              </>
+            ) : (
+              <ShiftLogPanel restaurantId={id || ""} />
+            )}
           </div>
         </ResizablePanel>
 
@@ -5091,40 +5136,6 @@ What would you like to work on today?`
                         </CollapsibleContent>
                       </div>
                     </Collapsible>
-                  </div>
-                </CollapsibleContent>
-              </div>
-            </Collapsible>
-
-            {/* Manager Tools Section */}
-            <Collapsible defaultOpen={true}>
-              <div className="space-y-3">
-                <CollapsibleTrigger className="flex items-center justify-between w-full group">
-                  <div className="flex items-center gap-2">
-                    <ClipboardList className="w-4 h-4 text-primary-foreground/60" />
-                    <h3 className="text-sm font-semibold text-primary-foreground uppercase tracking-wide">Manager Tools</h3>
-                  </div>
-                  <ChevronDown className="w-4 h-4 text-primary-foreground/60 group-hover:text-primary-foreground transition-colors" />
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <div className="space-y-2">
-                    <Card className="bg-background/50 border-accent/20 p-3">
-                      <Button
-                        onClick={() => navigate(`/restaurant/${id}/shift-log`)}
-                        variant="outline"
-                        size="sm"
-                        className="w-full text-xs border-accent/40 hover:bg-accent/10 hover:border-accent text-primary-foreground"
-                      >
-                        <ClipboardList className="w-4 h-4 mr-2" />
-                        Open Shift Log
-                      </Button>
-                      <p className="text-xs text-primary-foreground/60 mt-2">
-                        Document shift notes, generate AI summaries, and search historical records
-                      </p>
-                      <div className="flex items-center gap-2 mt-2 text-xs text-primary-foreground/50">
-                        <span>Today • {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                      </div>
-                    </Card>
                   </div>
                 </CollapsibleContent>
               </div>
