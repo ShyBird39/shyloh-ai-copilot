@@ -698,7 +698,7 @@ const RestaurantFindings = () => {
         setHardModeEnabled(convMeta.hard_mode_enabled || false);
       }
 
-      // Auto-add current user as participant if they're not already
+      // Verify user is actually a participant
       if (user?.id) {
         const { data: existingParticipant } = await supabase
           .from('chat_conversation_participants')
@@ -708,14 +708,9 @@ const RestaurantFindings = () => {
           .maybeSingle();
 
         if (!existingParticipant) {
-          await supabase
-            .from('chat_conversation_participants')
-            .insert({
-              conversation_id: conversationId,
-              user_id: user.id,
-              role: 'member',
-            });
-          console.log('Auto-added user as conversation participant');
+          toast.error("You don't have access to this conversation");
+          handleNewConversation();
+          return;
         }
       }
 
@@ -2549,7 +2544,7 @@ What would you like to work on today?`
               });
           }
         } else {
-          // Ensure current user is a participant
+          // Verify user is a participant (should already be if they have access)
           if (user?.id) {
             const { data: existingParticipant } = await supabase
               .from('chat_conversation_participants')
@@ -2559,13 +2554,7 @@ What would you like to work on today?`
               .maybeSingle();
 
             if (!existingParticipant) {
-              await supabase
-                .from('chat_conversation_participants')
-                .insert({
-                  conversation_id: convId,
-                  user_id: user.id,
-                  role: 'member',
-                });
+              throw new Error("You don't have access to this conversation");
             }
           }
         }
@@ -2674,7 +2663,7 @@ What would you like to work on today?`
             });
         }
       } else {
-        // For existing conversations, ensure current user is a participant
+        // Verify user is a participant (should already be if they have access)
         if (user?.id) {
           const { data: existingParticipant } = await supabase
             .from('chat_conversation_participants')
@@ -2684,14 +2673,7 @@ What would you like to work on today?`
             .maybeSingle();
 
           if (!existingParticipant) {
-            await supabase
-              .from('chat_conversation_participants')
-              .insert({
-                conversation_id: convId,
-                user_id: user.id,
-                role: 'member',
-              });
-            console.log('Auto-added user as conversation participant');
+            throw new Error("You don't have access to this conversation");
           }
         }
       }

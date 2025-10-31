@@ -128,6 +128,28 @@ serve(async (req) => {
       throw updateError;
     }
 
+    // Add mentioned users as conversation participants (if not already)
+    for (const userId of mentionedArray) {
+      const { data: existingParticipant } = await supabase
+        .from('chat_conversation_participants')
+        .select('id')
+        .eq('conversation_id', conversationId)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (!existingParticipant) {
+        await supabase
+          .from('chat_conversation_participants')
+          .insert({
+            conversation_id: conversationId,
+            user_id: userId,
+            role: 'member',
+            added_by: senderId
+          });
+        console.log(`Added user ${userId} as participant via mention`);
+      }
+    }
+
     // Create notification records
     const notifications = mentionedArray.map(userId => ({
       user_id: userId,
