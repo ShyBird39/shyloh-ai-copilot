@@ -123,7 +123,7 @@ export function ShiftLogEntry({ restaurantId, shiftDate, shiftType, onEntrySaved
           <div className="space-y-2">
             <label className="text-sm font-medium">Urgency</label>
             <Button
-              variant={isUrgent ? "destructive" : "outline"}
+              variant={isUrgent ? "destructive" : "secondary"}
               className="w-full"
               onClick={() => setIsUrgent(!isUrgent)}
             >
@@ -155,7 +155,7 @@ export function ShiftLogEntry({ restaurantId, shiftDate, shiftType, onEntrySaved
             {QUICK_TEMPLATES.map((template, idx) => (
               <Button
                 key={idx}
-                variant="outline"
+                variant="secondary"
                 size="sm"
                 onClick={() => handleQuickTemplate(template)}
               >
