@@ -3514,7 +3514,7 @@ What would you like to work on today?`
                   >
                     <div className="flex items-center gap-2">
                       <ClipboardList className="w-4 h-4" />
-                      SLT Log
+                      Manager Log
                     </div>
                   </button>
                 </div>

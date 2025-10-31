@@ -50,11 +50,11 @@ export function ShiftLogSearch({ restaurantId }: ShiftLogSearchProps) {
       setResults(data.results || []);
       
       if (data.results?.length === 0) {
-        toast.info('No matching SLT logs found');
+        toast.info('No matching Manager Logs found');
       }
     } catch (error) {
-      console.error('Error searching SLT logs:', error);
-      toast.error('Failed to search SLT logs');
+      console.error('Error searching Manager Logs:', error);
+      toast.error('Failed to search Manager Logs');
     } finally {
       setIsSearching(false);
     }
@@ -76,7 +76,7 @@ export function ShiftLogSearch({ restaurantId }: ShiftLogSearchProps) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Search SLT logs... (e.g., 'ice machine issues last month')"
+              placeholder="Search Manager Logs... (e.g., 'ice machine issues last month')"
               className="pl-10"
             />
           </div>
