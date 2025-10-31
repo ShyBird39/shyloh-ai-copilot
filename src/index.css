@@ -117,18 +117,80 @@ All colors MUST be HSL.
     animation: notification-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
   
+  /* Shake animation for alerts */
+  @keyframes shake {
+    0%, 100% {
+      transform: translateX(0);
+    }
+    10%, 30%, 50%, 70%, 90% {
+      transform: translateX(-8px);
+    }
+    20%, 40%, 60%, 80% {
+      transform: translateX(8px);
+    }
+  }
+  
+  /* Dramatic glow effects for notifications */
+  .notification-glow-destructive {
+    box-shadow: 
+      0 0 30px hsl(var(--destructive) / 0.6),
+      0 0 60px hsl(var(--destructive) / 0.4),
+      0 4px 20px rgba(0, 0, 0, 0.3);
+    animation: glow-pulse-destructive 2s ease-in-out infinite;
+  }
+  
+  .notification-glow-accent {
+    box-shadow: 
+      0 0 30px hsl(var(--accent) / 0.6),
+      0 0 60px hsl(var(--accent) / 0.4),
+      0 4px 20px rgba(0, 0, 0, 0.3);
+    animation: glow-pulse-accent 2s ease-in-out infinite;
+  }
+  
+  @keyframes glow-pulse-destructive {
+    0%, 100% {
+      box-shadow: 
+        0 0 30px hsl(var(--destructive) / 0.6),
+        0 0 60px hsl(var(--destructive) / 0.4),
+        0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+    50% {
+      box-shadow: 
+        0 0 40px hsl(var(--destructive) / 0.8),
+        0 0 80px hsl(var(--destructive) / 0.6),
+        0 6px 30px rgba(0, 0, 0, 0.4);
+    }
+  }
+  
+  @keyframes glow-pulse-accent {
+    0%, 100% {
+      box-shadow: 
+        0 0 30px hsl(var(--accent) / 0.6),
+        0 0 60px hsl(var(--accent) / 0.4),
+        0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+    50% {
+      box-shadow: 
+        0 0 40px hsl(var(--accent) / 0.8),
+        0 0 80px hsl(var(--accent) / 0.6),
+        0 6px 30px rgba(0, 0, 0, 0.4);
+    }
+  }
+  
   /* Notification dot for sidebar */
   .notification-dot {
-    @apply w-2 h-2 rounded-full flex-shrink-0;
+    @apply w-2.5 h-2.5 rounded-full flex-shrink-0;
   }
   
   .notification-dot-mention {
     @apply bg-destructive;
-    box-shadow: 0 0 8px hsl(var(--destructive) / 0.5);
+    box-shadow: 0 0 12px hsl(var(--destructive) / 0.8);
+    animation: notification-pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
   
   .notification-dot-invite {
     @apply bg-accent;
-    box-shadow: 0 0 8px hsl(var(--accent) / 0.5);
+    box-shadow: 0 0 12px hsl(var(--accent) / 0.8);
+    animation: notification-pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 }

@@ -15,16 +15,16 @@ export const showMentionToast = (data: NotificationToastData) => {
   
   toast.custom(
     (t) => (
-      <div className="bg-card border-2 border-destructive rounded-lg shadow-lg p-4 min-w-[320px] max-w-[400px]">
-        <div className="flex items-start gap-3">
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-destructive/20 flex items-center justify-center">
-            <span className="text-lg">🔔</span>
+      <div className="bg-card border-4 border-destructive rounded-lg shadow-2xl p-5 min-w-[360px] max-w-[480px] animate-[shake_0.5s_ease-in-out] notification-glow-destructive">
+        <div className="flex items-start gap-4">
+          <div className="flex-shrink-0 w-12 h-12 rounded-full bg-destructive flex items-center justify-center animate-pulse">
+            <span className="text-2xl">🔔</span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm text-foreground mb-1">
+            <p className="font-bold text-base text-foreground mb-2 uppercase tracking-wide">
               {data.displayName} mentioned you
             </p>
-            <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+            <p className="text-sm text-foreground/80 line-clamp-3 mb-4 font-medium">
               {data.content}
             </p>
             <div className="flex gap-2">
@@ -33,13 +33,13 @@ export const showMentionToast = (data: NotificationToastData) => {
                   data.onNavigate(data.conversationId);
                   toast.dismiss(t);
                 }}
-                className="px-3 py-1.5 bg-destructive text-destructive-foreground rounded-md text-xs font-medium hover:bg-destructive/90 transition-colors"
+                className="px-4 py-2 bg-destructive text-destructive-foreground rounded-md text-sm font-bold hover:bg-destructive/90 transition-all hover:scale-105 shadow-lg"
               >
-                View Conversation
+                View Conversation →
               </button>
               <button
                 onClick={() => toast.dismiss(t)}
-                className="px-3 py-1.5 bg-muted text-muted-foreground rounded-md text-xs font-medium hover:bg-muted/80 transition-colors"
+                className="px-4 py-2 bg-muted text-muted-foreground rounded-md text-sm font-medium hover:bg-muted/80 transition-colors"
               >
                 Dismiss
               </button>
@@ -49,8 +49,8 @@ export const showMentionToast = (data: NotificationToastData) => {
       </div>
     ),
     {
-      duration: 8000,
-      position: 'top-right',
+      duration: 12000,
+      position: 'top-center',
     }
   );
 };
@@ -63,16 +63,16 @@ export const showInviteToast = (data: NotificationToastData) => {
   
   toast.custom(
     (t) => (
-      <div className="bg-card border-2 border-accent rounded-lg shadow-lg p-4 min-w-[320px] max-w-[400px]">
-        <div className="flex items-start gap-3">
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center">
-            <span className="text-lg">💬</span>
+      <div className="bg-card border-4 border-accent rounded-lg shadow-2xl p-5 min-w-[360px] max-w-[480px] animate-[shake_0.5s_ease-in-out] notification-glow-accent">
+        <div className="flex items-start gap-4">
+          <div className="flex-shrink-0 w-12 h-12 rounded-full bg-accent flex items-center justify-center animate-pulse">
+            <span className="text-2xl">💬</span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm text-foreground mb-1">
-              {data.displayName} invited you to a conversation
+            <p className="font-bold text-base text-foreground mb-2 uppercase tracking-wide">
+              {data.displayName} invited you
             </p>
-            <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+            <p className="text-sm text-foreground/80 line-clamp-3 mb-4 font-medium">
               {data.content}
             </p>
             <div className="flex gap-2">
@@ -81,13 +81,13 @@ export const showInviteToast = (data: NotificationToastData) => {
                   data.onNavigate(data.conversationId);
                   toast.dismiss(t);
                 }}
-                className="px-3 py-1.5 bg-accent text-accent-foreground rounded-md text-xs font-medium hover:bg-accent/90 transition-colors"
+                className="px-4 py-2 bg-accent text-accent-foreground rounded-md text-sm font-bold hover:bg-accent/90 transition-all hover:scale-105 shadow-lg"
               >
-                View Conversation
+                View Conversation →
               </button>
               <button
                 onClick={() => toast.dismiss(t)}
-                className="px-3 py-1.5 bg-muted text-muted-foreground rounded-md text-xs font-medium hover:bg-muted/80 transition-colors"
+                className="px-4 py-2 bg-muted text-muted-foreground rounded-md text-sm font-medium hover:bg-muted/80 transition-colors"
               >
                 Dismiss
               </button>
@@ -97,33 +97,37 @@ export const showInviteToast = (data: NotificationToastData) => {
       </div>
     ),
     {
-      duration: 8000,
-      position: 'top-right',
+      duration: 12000,
+      position: 'top-center',
     }
   );
 };
 
 /**
- * Plays a notification sound if permitted
+ * Plays a notification sound if permitted - triple beep for emphasis
  */
 export const playNotificationSound = () => {
   try {
-    // Create a simple beep using Web Audio API
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
     
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    oscillator.frequency.value = 800;
-    oscillator.type = 'sine';
-    
-    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-    
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 0.3);
+    // Play 3 beeps in succession for more attention
+    [0, 0.2, 0.4].forEach((delay) => {
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 900; // Slightly higher pitch
+      oscillator.type = 'sine';
+      
+      const startTime = audioContext.currentTime + delay;
+      gainNode.gain.setValueAtTime(0.4, startTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.15);
+      
+      oscillator.start(startTime);
+      oscillator.stop(startTime + 0.15);
+    });
   } catch (error) {
     // Silently fail if audio is not supported
     console.debug('Notification sound not available');

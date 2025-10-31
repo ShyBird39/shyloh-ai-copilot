@@ -175,13 +175,13 @@ export function NotificationBell({ restaurantId, onNavigate }: NotificationBellP
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
-          <Bell className={`w-5 h-5 ${hasNewNotification ? 'animate-bounce' : ''}`} />
+          <Bell className={`w-6 h-6 ${hasNewNotification ? 'animate-[shake_0.5s_ease-in-out]' : ''} ${unreadMentions > 0 ? 'text-destructive' : ''}`} />
           {unreadCount > 0 && (
             <Badge 
-              className={`absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs ${
+              className={`absolute -top-1 -right-1 h-6 w-6 rounded-full p-0 flex items-center justify-center text-xs font-bold border-2 border-background ${
                 unreadMentions > 0 
-                  ? 'bg-destructive text-destructive-foreground notification-pulse' 
-                  : 'bg-accent text-accent-foreground notification-pulse'
+                  ? 'bg-destructive text-destructive-foreground notification-pulse shadow-lg shadow-destructive/50' 
+                  : 'bg-accent text-accent-foreground notification-pulse shadow-lg shadow-accent/50'
               }`}
             >
               {unreadCount > 9 ? '9+' : unreadCount}
