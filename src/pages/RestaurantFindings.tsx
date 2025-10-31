@@ -698,8 +698,14 @@ const RestaurantFindings = () => {
         setHardModeEnabled(convMeta.hard_mode_enabled || false);
       }
 
-      // Verify user is actually a participant
+      // Verify user can access this conversation (participant OR team member for team conversations)
       if (user?.id) {
+        const { data: conversation } = await supabase
+          .from('chat_conversations')
+          .select('visibility')
+          .eq('id', conversationId)
+          .single();
+
         const { data: existingParticipant } = await supabase
           .from('chat_conversation_participants')
           .select('id')
@@ -707,7 +713,9 @@ const RestaurantFindings = () => {
           .eq('user_id', user.id)
           .maybeSingle();
 
-        if (!existingParticipant) {
+        const canAccess = existingParticipant || (conversation?.visibility === 'team');
+
+        if (!canAccess) {
           toast.error("You don't have access to this conversation");
           handleNewConversation();
           return;
@@ -2544,8 +2552,14 @@ What would you like to work on today?`
               });
           }
         } else {
-          // Verify user is a participant (should already be if they have access)
+          // Verify user can access this conversation (participant OR team member for team conversations)
           if (user?.id) {
+            const { data: conversation } = await supabase
+              .from('chat_conversations')
+              .select('visibility')
+              .eq('id', convId)
+              .single();
+
             const { data: existingParticipant } = await supabase
               .from('chat_conversation_participants')
               .select('id')
@@ -2553,7 +2567,9 @@ What would you like to work on today?`
               .eq('user_id', user.id)
               .maybeSingle();
 
-            if (!existingParticipant) {
+            const canAccess = existingParticipant || (conversation?.visibility === 'team');
+
+            if (!canAccess) {
               throw new Error("You don't have access to this conversation");
             }
           }
@@ -2663,8 +2679,14 @@ What would you like to work on today?`
             });
         }
       } else {
-        // Verify user is a participant (should already be if they have access)
+        // Verify user can access this conversation (participant OR team member for team conversations)
         if (user?.id) {
+          const { data: conversation } = await supabase
+            .from('chat_conversations')
+            .select('visibility')
+            .eq('id', convId)
+            .single();
+
           const { data: existingParticipant } = await supabase
             .from('chat_conversation_participants')
             .select('id')
@@ -2672,7 +2694,9 @@ What would you like to work on today?`
             .eq('user_id', user.id)
             .maybeSingle();
 
-          if (!existingParticipant) {
+          const canAccess = existingParticipant || (conversation?.visibility === 'team');
+
+          if (!canAccess) {
             throw new Error("You don't have access to this conversation");
           }
         }
