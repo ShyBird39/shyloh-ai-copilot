@@ -2528,6 +2528,9 @@ What would you like to work on today?`
     // Detect AI mention to route message appropriately
     const mentionsAI = /@shyloh|@ai|\/ask|\/shyloh/i.test(messageText);
     
+    // Check if message starts with a mention to someone other than Shyloh
+    const startsWithUserMention = /^@(?!shyloh|ai)\w+/i.test(messageText.trim());
+    
     // Check if this is a 1-on-1 conversation (only user + Shyloh)
     // In 1-on-1 chats, auto-route to Shyloh without requiring @shyloh mention
     const isOneOnOneWithShyloh = currentParticipants.length === 1 && 
@@ -2536,8 +2539,8 @@ What would you like to work on today?`
     // Auto-route to Shyloh if:
     // 1. User explicitly mentions @shyloh, OR
     // 2. It's a 1-on-1 conversation (just user, no other humans), OR
-    // 3. New conversation (no participants yet)
-    const shouldRouteToAI = mentionsAI || isOneOnOneWithShyloh || !currentConversationId;
+    // 3. New conversation (no participants yet) AND doesn't start with a user mention
+    const shouldRouteToAI = mentionsAI || isOneOnOneWithShyloh || (!currentConversationId && !startsWithUserMention);
     
     // Detect Notion mention and strip it from the message
     const mentionedNotion = /@notion|\/notion/i.test(messageText);
