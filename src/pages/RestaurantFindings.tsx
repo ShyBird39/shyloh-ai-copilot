@@ -2327,13 +2327,17 @@ What would you like to work on today?`
       ].filter(Boolean).join(', ');
       
       try {
+        // Get user's JWT for authentication
+        const { data: { session } } = await supabase.auth.getSession();
+        const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
         const response = await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-shyloh`,
           {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+              'Authorization': `Bearer ${authToken}`,
             },
             body: JSON.stringify({
               messages: [...messages, userMessage],
@@ -2348,7 +2352,19 @@ What would you like to work on today?`
           }
         );
 
-        if (!response.ok) throw new Error('Failed to get AI response');
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          const errorMsg = errorData.error || `AI request failed with status ${response.status}`;
+          console.error('AI Error:', errorMsg, errorData);
+          
+          if (response.status === 429) {
+            throw new Error('Rate limit exceeded. Please try again in a moment.');
+          } else if (response.status === 402) {
+            throw new Error('Payment required. Please add credits to your workspace.');
+          }
+          
+          throw new Error(errorMsg);
+        }
 
         const reader = response.body?.getReader();
         if (!reader) throw new Error('No response stream');
@@ -2397,13 +2413,17 @@ What would you like to work on today?`
       ].filter(Boolean).join(', ');
       
       try {
+        // Get user's JWT for authentication
+        const { data: { session } } = await supabase.auth.getSession();
+        const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
         const response = await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-shyloh`,
           {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+              'Authorization': `Bearer ${authToken}`,
             },
             body: JSON.stringify({
               messages: [...messages, userMessage],
@@ -2418,7 +2438,19 @@ What would you like to work on today?`
           }
         );
 
-        if (!response.ok) throw new Error('Failed to get AI response');
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          const errorMsg = errorData.error || `AI request failed with status ${response.status}`;
+          console.error('AI Error:', errorMsg, errorData);
+          
+          if (response.status === 429) {
+            throw new Error('Rate limit exceeded. Please try again in a moment.');
+          } else if (response.status === 402) {
+            throw new Error('Payment required. Please add credits to your workspace.');
+          }
+          
+          throw new Error(errorMsg);
+        }
 
         const reader = response.body?.getReader();
         if (!reader) throw new Error('No response stream');
@@ -2747,13 +2779,17 @@ What would you like to work on today?`
         }
       }
 
+      // Get user's JWT for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-shyloh`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'Authorization': `Bearer ${authToken}`,
           },
           body: JSON.stringify({
             messages: [...messages, userMessage],
@@ -2769,7 +2805,17 @@ What would you like to work on today?`
       );
 
       if (!response.ok) {
-        throw new Error('Failed to get AI response');
+        const errorData = await response.json().catch(() => ({}));
+        const errorMsg = errorData.error || `AI request failed with status ${response.status}`;
+        console.error('AI Error:', errorMsg, errorData);
+        
+        if (response.status === 429) {
+          throw new Error('Rate limit exceeded. Please try again in a moment.');
+        } else if (response.status === 402) {
+          throw new Error('Payment required. Please add credits to your workspace.');
+        }
+        
+        throw new Error(errorMsg);
       }
 
       const reader = response.body?.getReader();
