@@ -104,7 +104,7 @@ export function ShiftLogEntry({ restaurantId, shiftDate, shiftType, onEntrySaved
           <div className="space-y-2">
             <label className="text-sm font-medium">Category</label>
             <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger>
+              <SelectTrigger className="bg-background text-foreground">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -145,7 +145,7 @@ export function ShiftLogEntry({ restaurantId, shiftDate, shiftType, onEntrySaved
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="Enter Manager Log details..."
-            className="min-h-[120px] resize-none"
+            className="min-h-[120px] resize-none bg-background text-foreground"
           />
         </div>
 
