@@ -35,6 +35,8 @@ import { ConversationFileHeader } from "@/components/ConversationFileHeader";
 import { ConversationFilePanel } from "@/components/ConversationFilePanel";
 import { ShiftLogPanel } from "@/components/ShiftLogPanel";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { MobileBottomNav } from "@/components/mobile/MobileBottomNav";
+import { MobileHeader } from "@/components/mobile/MobileHeader";
 
 interface KPIData {
   avg_weekly_sales: number | null;
@@ -3447,9 +3449,6 @@ What would you like to work on today?`
 
   // Mobile Layout
   if (isMobile) {
-    const { MobileBottomNav } = require('@/components/mobile/MobileBottomNav');
-    const { MobileHeader } = require('@/components/mobile/MobileHeader');
-    
     return (
       <div className="min-h-screen bg-gradient-hero flex flex-col">
         <MobileHeader
