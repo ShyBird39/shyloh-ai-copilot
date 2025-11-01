@@ -21,6 +21,13 @@ All colors MUST be HSL.
     --primary-foreground: 18 68% 95%;
     --primary-glow: 354 70% 35%;
 
+    /* Shyloh Brand Colors */
+    --shyloh-background: 0 0% 4%;
+    --shyloh-text: 18 46% 82%;
+    --shyloh-primary: 142 67% 14%;
+    --shyloh-accent: 39 93% 53%;
+    --shyloh-error: 4 71% 52%;
+
     --secondary: 18 50% 90%;
     --secondary-foreground: 354 80% 21%;
 

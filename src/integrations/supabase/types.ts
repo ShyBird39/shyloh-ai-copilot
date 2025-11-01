@@ -1085,6 +1085,62 @@ export type Database = {
           },
         ]
       }
+      voice_memos: {
+        Row: {
+          audio_url: string
+          category: string | null
+          created_at: string | null
+          duration_seconds: number
+          id: string
+          metadata: Json | null
+          restaurant_id: string
+          shift_date: string
+          shift_type: string
+          transcription: string | null
+          transcription_status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          audio_url: string
+          category?: string | null
+          created_at?: string | null
+          duration_seconds: number
+          id?: string
+          metadata?: Json | null
+          restaurant_id: string
+          shift_date?: string
+          shift_type: string
+          transcription?: string | null
+          transcription_status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          audio_url?: string
+          category?: string | null
+          created_at?: string | null
+          duration_seconds?: number
+          id?: string
+          metadata?: Json | null
+          restaurant_id?: string
+          shift_date?: string
+          shift_type?: string
+          transcription?: string | null
+          transcription_status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_memos_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

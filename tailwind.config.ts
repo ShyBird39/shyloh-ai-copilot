@@ -23,6 +23,13 @@ export default {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        shyloh: {
+          background: "hsl(var(--shyloh-background))",
+          text: "hsl(var(--shyloh-text))",
+          primary: "hsl(var(--shyloh-primary))",
+          accent: "hsl(var(--shyloh-accent))",
+          error: "hsl(var(--shyloh-error))",
+        },
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
