@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, ChevronDown, ChevronUp, RotateCcw, Paperclip, UtensilsCrossed, Sparkles, Users, Clock, Settings, Heart, UserCog, Trash2, Brain, AlertCircle, Edit, Crown, Bot, Zap, ClipboardList } from "lucide-react";
+import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, ChevronDown, ChevronUp, RotateCcw, Paperclip, UtensilsCrossed, Sparkles, Users, Clock, Settings, Heart, UserCog, Trash2, Brain, AlertCircle, Edit, Crown, Bot, Zap, ClipboardList, MessageSquare, Plus, Menu } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -3606,57 +3606,59 @@ What would you like to work on today?`
                   
                   {/* Mobile Input Area */}
                   <div className="sticky bottom-0 border-t border-accent/20 bg-background/95 backdrop-blur-sm p-4">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={(e) => {
-                      if (e.target.files) {
-                        handleFileUpload(e.target.files);
-                      }
-                    }}
-                    className="hidden"
-                    multiple
-                  />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="shrink-0"
-                  >
-                    <Paperclip className="h-5 w-5" />
-                  </Button>
-                  <MentionInput
-                    restaurantId={id || ""}
-                    value={currentInput}
-                    onChange={setCurrentInput}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendMessage();
-                      }
-                    }}
-                    disabled={isTyping}
-                    placeholder="Message Shyloh..."
-                    className="flex-1"
-                  />
-                  <ChatToolsPopover
-                    restaurantId={id || ""}
-                    hardModeEnabled={hardModeEnabled}
-                    onHardModeToggle={() => setHardModeEnabled(!hardModeEnabled)}
-                    notionEnabled={notionEnabled}
-                    onNotionToggle={() => setNotionEnabled(!notionEnabled)}
-                  />
-                  <Button
-                    onClick={() => handleSendMessage()}
-                    disabled={!currentInput.trim() || isTyping}
-                    size="icon"
-                    className="shrink-0"
-                  >
-                    <Send className="h-5 w-5" />
-                  </Button>
-                </div>
-              </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={(e) => {
+                          if (e.target.files) {
+                            handleFileUpload(e.target.files);
+                          }
+                        }}
+                        className="hidden"
+                        multiple
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="shrink-0"
+                      >
+                        <Paperclip className="h-5 w-5" />
+                      </Button>
+                      <MentionInput
+                        restaurantId={id || ""}
+                        value={currentInput}
+                        onChange={setCurrentInput}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSendMessage();
+                          }
+                        }}
+                        disabled={isTyping}
+                        placeholder="Message Shyloh..."
+                        className="flex-1"
+                      />
+                      <ChatToolsPopover
+                        restaurantId={id || ""}
+                        hardModeEnabled={hardModeEnabled}
+                        onHardModeToggle={() => setHardModeEnabled(!hardModeEnabled)}
+                        notionEnabled={notionEnabled}
+                        onNotionToggle={() => setNotionEnabled(!notionEnabled)}
+                      />
+                      <Button
+                        onClick={() => handleSendMessage()}
+                        disabled={!currentInput.trim() || isTyping}
+                        size="icon"
+                        className="shrink-0"
+                      >
+                        <Send className="h-5 w-5" />
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
           
