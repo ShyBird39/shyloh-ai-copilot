@@ -80,9 +80,9 @@ export const VoiceMemoItem = ({ memo }: VoiceMemoItemProps) => {
   };
 
   return (
-    <div className="bg-card border border-border rounded-lg p-4 space-y-3">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
+    <div className="bg-card border border-border rounded-lg p-4">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-sm text-muted-foreground">
               {format(new Date(memo.created_at), 'h:mm a')}
@@ -101,6 +101,12 @@ export const VoiceMemoItem = ({ memo }: VoiceMemoItemProps) => {
               <Badge variant="outline">{memo.category}</Badge>
             )}
           </div>
+
+          {memo.transcription && (
+            <p className="text-sm text-foreground/80 italic mt-3">
+              "{memo.transcription}"
+            </p>
+          )}
         </div>
 
         <Button
@@ -108,23 +114,17 @@ export const VoiceMemoItem = ({ memo }: VoiceMemoItemProps) => {
           variant="ghost"
           onClick={handlePlayPause}
           disabled={isLoading}
-          className="shrink-0"
+          className="shrink-0 h-12 w-12 rounded-full bg-shyloh-primary/10 hover:bg-shyloh-primary/20 text-shyloh-primary"
         >
           {isLoading ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
+            <Loader2 className="h-6 w-6 animate-spin" />
           ) : isPlaying ? (
-            <Pause className="h-5 w-5" />
+            <Pause className="h-6 w-6" />
           ) : (
-            <Play className="h-5 w-5" />
+            <Play className="h-6 w-6 ml-0.5" />
           )}
         </Button>
       </div>
-
-      {memo.transcription && (
-        <p className="text-sm text-foreground/80 italic">
-          "{memo.transcription}"
-        </p>
-      )}
     </div>
   );
 };
