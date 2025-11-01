@@ -34,6 +34,7 @@ import rehypeRaw from "rehype-raw";
 import { ConversationFileHeader } from "@/components/ConversationFileHeader";
 import { ConversationFilePanel } from "@/components/ConversationFilePanel";
 import { ShiftLogPanel } from "@/components/ShiftLogPanel";
+import { InstallPrompt } from "@/components/InstallPrompt";
 
 interface KPIData {
   avg_weekly_sales: number | null;
@@ -5459,6 +5460,9 @@ What would you like to work on today?`
       )}
       
       {/* KPI Collection - Removed blocking modal, users access via settings panel */}
+      
+      {/* PWA Install Prompt */}
+      <InstallPrompt />
     </SidebarProvider>
   );
 };
