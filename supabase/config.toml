@@ -1,4 +1,52 @@
 project_id = "mihkqpovzubwcvurfrbb"
+[api]
+enabled = true
+port = 54321
+max_rows = 1000
+schemas = ["public", "graphql_public"]
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[db.pooler]
+enabled = false
+port = 54329
+pool_mode = "transaction"
+default_pool_size = 20
+max_client_conn = 100
+
+[realtime]
+enabled = true
+ip_version = "ipv6"
+port = 54323
+max_header_length = 4096
+
+[studio]
+enabled = true
+port = 54324
+api_url = "http://127.0.0.1"
+
+[inbucket]
+enabled = true
+port = 54325
+smtp_port = 54326
+pop3_port = 54327
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:3000"
+additional_redirect_urls = ["https://127.0.0.1:3000"]
+jwt_expiry = 3600
+enable_signup = true
+
+[functions.chat-shyloh]
+verify_jwt = false
 
 [functions.toast-auth]
 verify_jwt = false
@@ -7,6 +55,9 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.toast-reporting]
+verify_jwt = false
+
+[functions.transcribe-voice-memo]
 verify_jwt = false
 
 [functions.chat-shyloh]

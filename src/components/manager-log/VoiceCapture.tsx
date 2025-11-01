@@ -34,6 +34,19 @@ export const VoiceCapture = ({ restaurantId, shiftDate, shiftType }: VoiceCaptur
     fetchMemos();
   }, [restaurantId, shiftDate, shiftType]);
 
+  // Poll for transcription updates
+  useEffect(() => {
+    const hasPending = memos.some(m => m.transcription_status === 'pending' || m.transcription_status === 'processing');
+    
+    if (hasPending) {
+      const interval = setInterval(() => {
+        fetchMemos();
+      }, 3000); // Poll every 3 seconds
+      
+      return () => clearInterval(interval);
+    }
+  }, [memos]);
+
   useEffect(() => {
     if (audioBlob && !isRecording) {
       handleUpload();
@@ -83,6 +96,20 @@ export const VoiceCapture = ({ restaurantId, shiftDate, shiftType }: VoiceCaptur
         });
 
       if (dbError) throw dbError;
+
+      // Get the created memo ID
+      const { data: memoData } = await supabase
+        .from('voice_memos')
+        .select('id')
+        .eq('audio_url', fileName)
+        .single();
+
+      // Trigger transcription
+      if (memoData?.id) {
+        supabase.functions.invoke('transcribe-voice-memo', {
+          body: { memoId: memoData.id }
+        }).catch(err => console.error('Transcription trigger error:', err));
+      }
 
       toast({
         title: 'Voice memo saved',
