@@ -46,20 +46,39 @@ export const VoiceMemoItem = ({ memo }: VoiceMemoItemProps) => {
     } else {
       setIsLoading(true);
       try {
+        console.log('Attempting to play audio:', memo.audio_url);
+        
         // Get signed URL from Supabase storage
         const { data, error } = await supabase.storage
           .from('voice-memos')
           .createSignedUrl(memo.audio_url, 3600); // 1 hour expiry
 
-        if (error) throw error;
+        console.log('Signed URL response:', { data, error });
+
+        if (error) {
+          console.error('Signed URL error:', error);
+          throw error;
+        }
         if (!data?.signedUrl) throw new Error('No signed URL returned');
 
+        console.log('Setting audio source:', data.signedUrl);
         audio.src = data.signedUrl;
+        
+        // Add load event listener for debugging
+        audio.addEventListener('loadeddata', () => {
+          console.log('Audio loaded successfully');
+        }, { once: true });
+        
+        audio.addEventListener('error', (e) => {
+          console.error('Audio element error:', e, audio.error);
+        }, { once: true });
+        
         await audio.play();
         setIsPlaying(true);
+        console.log('Audio playback started');
       } catch (error) {
         console.error('Error playing audio:', error);
-        toast.error('Failed to load audio');
+        toast.error(`Failed to load audio: ${error.message}`);
       } finally {
         setIsLoading(false);
       }
