@@ -68,16 +68,34 @@ serve(async (req) => {
       throw logsError;
     }
 
-    if (!shiftLogs || shiftLogs.length === 0) {
+    // 2. Fetch all voice memos for this shift
+    const { data: voiceMemos, error: memosError } = await supabase
+      .from('voice_memos')
+      .select('*')
+      .eq('restaurant_id', restaurantId)
+      .eq('shift_date', shiftDate)
+      .eq('shift_type', shiftType)
+      .order('created_at', { ascending: true });
+
+    if (memosError) {
+      console.error('Error fetching voice memos:', memosError);
+      throw memosError;
+    }
+
+    // Check if we have any data at all
+    const hasShiftLogs = shiftLogs && shiftLogs.length > 0;
+    const hasVoiceMemos = voiceMemos && voiceMemos.length > 0;
+
+    if (!hasShiftLogs && !hasVoiceMemos) {
       return new Response(
-        JSON.stringify({ error: 'No shift logs found for this shift' }),
+        JSON.stringify({ error: 'No shift logs or voice memos found for this shift' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Found ${shiftLogs.length} shift log entries`);
+    console.log(`Found ${shiftLogs?.length || 0} shift log entries and ${voiceMemos?.length || 0} voice memos`);
 
-    // 2. Fetch Toast POS data for this date
+    // 3. Fetch Toast POS data for this date
     let toastMetrics: {
       netSales?: number;
       guestCount?: number;
@@ -112,10 +130,19 @@ serve(async (req) => {
       console.error('Error fetching Toast data:', error);
     }
 
-    // 3. Build context for Claude
-    const logsText = shiftLogs.map(log => 
+    // 4. Build context for Claude from both text logs and voice memos
+    const textLogsFormatted = (shiftLogs || []).map(log => 
       `[${log.log_category.toUpperCase()}] ${log.urgency_level === 'urgent' ? '🔴 URGENT' : ''}\n${log.content}\n`
-    ).join('\n---\n\n');
+    );
+
+    const voiceMemosFormatted = (voiceMemos || [])
+      .filter(memo => memo.transcription && memo.transcription_status === 'completed')
+      .map(memo => 
+        `[VOICE MEMO${memo.category ? ` - ${memo.category.toUpperCase()}` : ''}]\n${memo.transcription}\n`
+      );
+
+    const allEntries = [...textLogsFormatted, ...voiceMemosFormatted];
+    const logsText = allEntries.join('\n---\n\n');
 
     const prompt = `You are analyzing a ${shiftType} shift at a restaurant on ${shiftDate}.
 
@@ -139,7 +166,7 @@ Generate a comprehensive shift summary in markdown format. Include:
 
 Write in a concise, professional manager voice. Focus on actionable insights.`;
 
-    // 4. Call Claude to generate summary
+    // 5. Call Claude to generate summary
     console.log('Calling Claude for summary generation...');
     const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -165,7 +192,7 @@ Write in a concise, professional manager voice. Focus on actionable insights.`;
     const summaryMarkdown = claudeData.content[0].text;
     console.log('Summary generated');
 
-    // 5. Extract action items from summary
+    // 6. Extract action items from summary
     const actionItemMatches = summaryMarkdown.match(/(?:^|\n)[-*]\s+(.+)/gm) || [];
     const actionItems = actionItemMatches
       .filter((item: string) => item.toLowerCase().includes('action items') === false)
@@ -178,7 +205,7 @@ Write in a concise, professional manager voice. Focus on actionable insights.`;
 
     console.log(`Extracted ${actionItems.length} action items`);
 
-    // 6. Store summary in database
+    // 7. Store summary in database
     const { data: summary, error: summaryError } = await supabase
       .from('shift_summaries')
       .upsert({
@@ -202,7 +229,7 @@ Write in a concise, professional manager voice. Focus on actionable insights.`;
 
     console.log('Summary stored with ID:', summary.id);
 
-    // 7. Generate embeddings for semantic search
+    // 8. Generate embeddings for semantic search
     // Chunk the summary into 500-word chunks with 50-word overlap
     const words = summaryMarkdown.split(/\s+/);
     const chunkSize = 500;
@@ -218,12 +245,16 @@ Write in a concise, professional manager voice. Focus on actionable insights.`;
 
     console.log(`Generated ${chunks.length} text chunks for embedding`);
 
-    // Also include individual urgent log entries as separate chunks
-    const urgentLogs = shiftLogs
+    // Also include individual urgent log entries and voice memos as separate chunks
+    const urgentLogs = (shiftLogs || [])
       .filter(log => log.urgency_level === 'urgent')
       .map(log => `[URGENT - ${log.log_category}] ${log.content}`);
     
-    chunks.push(...urgentLogs);
+    const completedMemoTranscriptions = (voiceMemos || [])
+      .filter(memo => memo.transcription && memo.transcription_status === 'completed')
+      .map(memo => `[VOICE MEMO${memo.category ? ` - ${memo.category}` : ''}] ${memo.transcription}`);
+    
+    chunks.push(...urgentLogs, ...completedMemoTranscriptions);
 
     // Generate OpenAI embeddings for each chunk
     const embeddingsToInsert: any[] = [];
@@ -260,7 +291,7 @@ Write in a concise, professional manager voice. Focus on actionable insights.`;
       }
     }
 
-    // 8. Store embeddings in database
+    // 9. Store embeddings in database
     if (embeddingsToInsert.length > 0) {
       const { error: embeddingsError } = await supabase
         .from('shift_log_embeddings')
@@ -273,8 +304,8 @@ Write in a concise, professional manager voice. Focus on actionable insights.`;
       }
     }
 
-    // 9. Also generate embeddings for individual log entries
-    for (const log of shiftLogs) {
+    // 10. Also generate embeddings for individual log entries
+    for (const log of (shiftLogs || [])) {
       try {
         const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
           method: 'POST',
