@@ -1,9 +1,11 @@
-import { useState } from 'react';
-import { Play, Pause } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Play, Pause, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { VoiceMemo } from '@/types/log';
 import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface VoiceMemoItemProps {
   memo: VoiceMemo;
@@ -11,7 +13,25 @@ interface VoiceMemoItemProps {
 
 export const VoiceMemoItem = ({ memo }: VoiceMemoItemProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [audio] = useState(() => new Audio());
+
+  useEffect(() => {
+    const handleEnded = () => setIsPlaying(false);
+    const handleError = () => {
+      setIsPlaying(false);
+      toast.error('Failed to play audio');
+    };
+
+    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('error', handleError);
+
+    return () => {
+      audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('error', handleError);
+      audio.pause();
+    };
+  }, [audio]);
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -24,10 +44,25 @@ export const VoiceMemoItem = ({ memo }: VoiceMemoItemProps) => {
       audio.pause();
       setIsPlaying(false);
     } else {
-      // In a real implementation, you'd get the signed URL from Supabase
-      // audio.src = await getSignedUrl(memo.audio_url);
-      audio.play();
-      setIsPlaying(true);
+      setIsLoading(true);
+      try {
+        // Get signed URL from Supabase storage
+        const { data, error } = await supabase.storage
+          .from('voice-memos')
+          .createSignedUrl(memo.audio_url, 3600); // 1 hour expiry
+
+        if (error) throw error;
+        if (!data?.signedUrl) throw new Error('No signed URL returned');
+
+        audio.src = data.signedUrl;
+        await audio.play();
+        setIsPlaying(true);
+      } catch (error) {
+        console.error('Error playing audio:', error);
+        toast.error('Failed to load audio');
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -72,9 +107,12 @@ export const VoiceMemoItem = ({ memo }: VoiceMemoItemProps) => {
           size="icon"
           variant="ghost"
           onClick={handlePlayPause}
+          disabled={isLoading}
           className="shrink-0"
         >
-          {isPlaying ? (
+          {isLoading ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : isPlaying ? (
             <Pause className="h-5 w-5" />
           ) : (
             <Play className="h-5 w-5" />
