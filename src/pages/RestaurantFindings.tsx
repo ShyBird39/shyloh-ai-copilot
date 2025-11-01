@@ -3449,21 +3449,32 @@ What would you like to work on today?`
 
   // Mobile Layout
   if (isMobile) {
+    console.log('Mobile layout rendering', { mobileTab, data: !!data, id });
+    
     return (
       <div className="min-h-screen bg-gradient-hero flex flex-col">
         <MobileHeader
-          restaurantName={data.name}
-          location={data.location}
+          restaurantName={data?.name || 'Restaurant'}
+          location={data?.location}
           onLogout={() => navigate('/')}
         />
         
+        {/* Debug info */}
+        <div className="p-4 text-white">
+          <p>Mobile tab: {mobileTab}</p>
+          <p>Restaurant ID: {id}</p>
+          <p>Data loaded: {data ? 'Yes' : 'No'}</p>
+        </div>
+        
         <div className="flex-1 overflow-hidden pb-16">
           {mobileTab === 'voice' && (
-            <ShiftLogPanel restaurantId={id || ""} />
+            <div className="h-full bg-background p-4">
+              <ShiftLogPanel restaurantId={id || ""} />
+            </div>
           )}
           
           {mobileTab === 'chat' && (
-            <div className="h-full flex flex-col">
+            <div className="h-full flex flex-col bg-background">
               {/* Simplified chat interface for mobile */}
               <div className="flex-1 overflow-y-auto">
                 <div className="px-4 py-8 space-y-6">
