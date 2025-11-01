@@ -26,7 +26,6 @@ const App = () => (
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/restaurant/:id" element={<ProtectedRoute><RestaurantFindings /></ProtectedRoute>} />
             <Route path="/restaurant/:id/tuning" element={<ProtectedRoute><TuningSettings /></ProtectedRoute>} />
-            <Route path="/restaurant/:id/manager-log" element={<ProtectedRoute><ManagerLog /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -5,7 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ShiftLogEntry } from "@/components/ShiftLogEntry";
 import { ShiftSummaryView } from "@/components/ShiftSummaryView";
 import { ShiftLogSearch } from "@/components/ShiftLogSearch";
-import { Calendar, BookOpen, Search } from "lucide-react";
+import { Calendar, BookOpen, Search, Mic } from "lucide-react";
+import { VoiceCapture } from "@/components/manager-log/VoiceCapture";
 
 interface ShiftLogPanelProps {
   restaurantId: string;
@@ -50,11 +51,15 @@ export function ShiftLogPanel({ restaurantId }: ShiftLogPanelProps) {
         </div>
       </div>
 
-      <Tabs defaultValue="entry" className="flex-1 flex flex-col">
+      <Tabs defaultValue="voice" className="flex-1 flex flex-col">
         <TabsList className="w-full justify-start rounded-none border-b bg-background px-4">
+          <TabsTrigger value="voice" className="gap-2">
+            <Mic className="h-4 w-4" />
+            Voice
+          </TabsTrigger>
           <TabsTrigger value="entry" className="gap-2">
             <BookOpen className="h-4 w-4" />
-            Log Entry
+            Text Entry
           </TabsTrigger>
           <TabsTrigger value="summary" className="gap-2">
             <Calendar className="h-4 w-4" />
@@ -67,6 +72,14 @@ export function ShiftLogPanel({ restaurantId }: ShiftLogPanelProps) {
         </TabsList>
 
         <div className="flex-1 overflow-auto p-4">
+          <TabsContent value="voice" className="mt-0 h-full">
+            <VoiceCapture
+              restaurantId={restaurantId}
+              shiftDate={shiftDate}
+              shiftType={shiftType}
+            />
+          </TabsContent>
+
           <TabsContent value="entry" className="mt-0">
             <ShiftLogEntry
               restaurantId={restaurantId}
