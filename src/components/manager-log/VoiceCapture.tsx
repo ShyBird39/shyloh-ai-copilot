@@ -7,6 +7,8 @@ import { VoiceMemo } from '@/types/log';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { VoiceMemoDrawer } from '@/components/mobile/VoiceMemoDrawer';
 
 interface VoiceCaptureProps {
   restaurantId: string;
@@ -17,8 +19,10 @@ interface VoiceCaptureProps {
 export const VoiceCapture = ({ restaurantId, shiftDate, shiftType }: VoiceCaptureProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [memos, setMemos] = useState<VoiceMemo[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [wakeLock, setWakeLock] = useState<any>(null);
   
   const {
     isRecording,
@@ -136,11 +140,30 @@ export const VoiceCapture = ({ restaurantId, shiftDate, shiftType }: VoiceCaptur
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleRecordClick = () => {
+  const handleRecordClick = async () => {
+    // Haptic feedback
+    if ('vibrate' in navigator) {
+      navigator.vibrate(50);
+    }
+    
     if (isRecording) {
       stopRecording();
+      // Release wake lock
+      if (wakeLock) {
+        wakeLock.release();
+        setWakeLock(null);
+      }
     } else {
       startRecording();
+      // Request wake lock to prevent screen sleep
+      if ('wakeLock' in navigator) {
+        try {
+          const lock = await (navigator as any).wakeLock.request('screen');
+          setWakeLock(lock);
+        } catch (err) {
+          console.error('Wake lock failed:', err);
+        }
+      }
     }
   };
 
@@ -152,6 +175,10 @@ export const VoiceCapture = ({ restaurantId, shiftDate, shiftType }: VoiceCaptur
     });
   }
 
+  const buttonSize = isMobile ? 'h-40 w-40' : 'h-32 w-32';
+  const iconSize = isMobile ? 'h-16 w-16' : 'h-12 w-12';
+  const timerSize = isMobile ? 'text-5xl' : 'text-4xl';
+
   return (
     <div className="flex flex-col h-full">
       {/* Recording Section */}
@@ -161,18 +188,18 @@ export const VoiceCapture = ({ restaurantId, shiftDate, shiftType }: VoiceCaptur
             size="lg"
             onClick={handleRecordClick}
             disabled={isUploading}
-            className={`h-32 w-32 rounded-full transition-all ${
+            className={`${buttonSize} rounded-full transition-all mobile-tap-target ${
               isRecording
                 ? 'bg-shyloh-error hover:bg-shyloh-error/90 animate-pulse'
                 : 'bg-shyloh-primary hover:bg-shyloh-primary/90'
             }`}
           >
             {isUploading ? (
-              <Loader2 className="h-12 w-12 animate-spin" />
+              <Loader2 className={`${iconSize} animate-spin`} />
             ) : isRecording ? (
-              <Square className="h-12 w-12 fill-current" />
+              <Square className={`${iconSize} fill-current`} />
             ) : (
-              <Mic className="h-12 w-12" />
+              <Mic className={iconSize} />
             )}
           </Button>
 
@@ -187,7 +214,7 @@ export const VoiceCapture = ({ restaurantId, shiftDate, shiftType }: VoiceCaptur
 
         {/* Duration Timer */}
         {isRecording && (
-          <div className="text-4xl font-mono text-shyloh-text">
+          <div className={`${timerSize} font-mono text-shyloh-text`}>
             {formatTime(duration)}
           </div>
         )}
@@ -203,8 +230,8 @@ export const VoiceCapture = ({ restaurantId, shiftDate, shiftType }: VoiceCaptur
         )}
       </div>
 
-      {/* Memos List */}
-      {memos.length > 0 && (
+      {/* Memos List - Desktop */}
+      {!isMobile && memos.length > 0 && (
         <div className="border-t border-border p-6 space-y-4 max-h-96 overflow-y-auto">
           <h3 className="text-lg font-semibold text-shyloh-text">
             Today's Recordings ({memos.length})
@@ -216,6 +243,9 @@ export const VoiceCapture = ({ restaurantId, shiftDate, shiftType }: VoiceCaptur
           </div>
         </div>
       )}
+
+      {/* Memos Drawer - Mobile */}
+      {isMobile && <VoiceMemoDrawer memos={memos} />}
     </div>
   );
 };

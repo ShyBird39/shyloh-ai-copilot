@@ -309,6 +309,9 @@ const RestaurantFindings = () => {
   // Track unread notifications for tab title
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
 
+  // Mobile tab state
+  const [mobileTab, setMobileTab] = useState<'voice' | 'chat' | 'more'>('voice');
+
   const samplePrompts = [
     "I am here to...",
     "Strategy Session",
@@ -3442,6 +3445,176 @@ What would you like to work on today?`
     },
   ];
 
+  // Mobile Layout
+  if (isMobile) {
+    const { MobileBottomNav } = require('@/components/mobile/MobileBottomNav');
+    const { MobileHeader } = require('@/components/mobile/MobileHeader');
+    
+    return (
+      <div className="min-h-screen bg-gradient-hero flex flex-col">
+        <MobileHeader
+          restaurantName={data.name}
+          location={data.location}
+          onLogout={() => navigate('/')}
+        />
+        
+        <div className="flex-1 overflow-hidden pb-16">
+          {mobileTab === 'voice' && (
+            <ShiftLogPanel restaurantId={id || ""} />
+          )}
+          
+          {mobileTab === 'chat' && (
+            <div className="h-full flex flex-col">
+              {/* Simplified chat interface for mobile */}
+              <div className="flex-1 overflow-y-auto">
+                <div className="px-4 py-8 space-y-6">
+                  {messages.map((message, idx) => {
+                    const renderMessageContent = (content: string) => {
+                      const processedContent = content.replace(
+                        /(@[A-Za-z0-9\s\-_.]+?)(?=\s|$|[.,!?])/g,
+                        '<span class="bg-accent/30 text-accent-foreground font-medium px-1.5 py-0.5 rounded">$1</span>'
+                      );
+                      
+                      return (
+                        <ReactMarkdown rehypePlugins={[rehypeRaw]}>
+                          {processedContent}
+                        </ReactMarkdown>
+                      );
+                    };
+
+                    const isAI = message.role === 'assistant';
+                    const isCurrentUser = message.user_id === user?.id;
+
+                    return (
+                      <div
+                        key={idx}
+                        className={`flex ${isCurrentUser ? "justify-end" : "justify-start"} animate-fade-in`}
+                      >
+                        <div
+                          className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+                            isAI
+                              ? "bg-[hsl(354,70%,35%)] text-white"
+                              : "bg-green-600 text-white"
+                          }`}
+                        >
+                          {isAI && (
+                            <div className="flex items-center gap-2 mb-1">
+                              <Bot className="w-4 h-4" />
+                              <span className="text-xs font-medium">Shyloh AI</span>
+                            </div>
+                          )}
+                          <div className="text-sm leading-relaxed">
+                            {renderMessageContent(message.content)}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {isTyping && (
+                    <div className="flex justify-start animate-fade-in">
+                      <div className="bg-background/50 backdrop-blur-sm border border-accent/20 rounded-2xl p-4">
+                        <div className="flex items-center gap-1">
+                          <div className="w-2 h-2 rounded-full bg-primary-foreground/60 animate-bounce [animation-delay:-0.3s]"></div>
+                          <div className="w-2 h-2 rounded-full bg-primary-foreground/60 animate-bounce [animation-delay:-0.15s]"></div>
+                          <div className="w-2 h-2 rounded-full bg-primary-foreground/60 animate-bounce"></div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+              </div>
+              
+              {/* Mobile Input Area */}
+              <div className="sticky bottom-0 border-t border-accent/20 bg-background/95 backdrop-blur-sm p-4">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={(e) => {
+                      if (e.target.files) {
+                        handleFileUpload(e.target.files);
+                      }
+                    }}
+                    className="hidden"
+                    multiple
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="shrink-0"
+                  >
+                    <Paperclip className="h-5 w-5" />
+                  </Button>
+                  <MentionInput
+                    restaurantId={id || ""}
+                    value={currentInput}
+                    onChange={setCurrentInput}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
+                    disabled={isTyping}
+                    placeholder="Message Shyloh..."
+                    className="flex-1"
+                  />
+                  <ChatToolsPopover
+                    restaurantId={id || ""}
+                    hardModeEnabled={hardModeEnabled}
+                    onHardModeToggle={() => setHardModeEnabled(!hardModeEnabled)}
+                    notionEnabled={notionEnabled}
+                    onNotionToggle={() => setNotionEnabled(!notionEnabled)}
+                  />
+                  <Button
+                    onClick={() => handleSendMessage()}
+                    disabled={!currentInput.trim() || isTyping}
+                    size="icon"
+                    className="shrink-0"
+                  >
+                    <Send className="h-5 w-5" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {mobileTab === 'more' && (
+            <div className="h-full overflow-y-auto p-4 space-y-4">
+              <Card className="p-4">
+                <h3 className="font-semibold mb-2">Settings</h3>
+                <p className="text-sm text-muted-foreground">
+                  Settings panel coming soon
+                </p>
+              </Card>
+            </div>
+          )}
+        </div>
+        
+        <MobileBottomNav activeTab={mobileTab} onTabChange={setMobileTab} />
+        
+        {/* Dialogs */}
+        <PinInput
+          open={pinDialogOpen}
+          onOpenChange={setPinDialogOpen}
+          onPinSubmit={handlePinSubmit}
+          mode={pinMode}
+          isLoading={pinLoading}
+        />
+        <TuningSheet 
+          open={tuningSheetOpen} 
+          onOpenChange={setTuningSheetOpen}
+          restaurantId={id!}
+          onSave={refreshRestaurantData}
+        />
+        <InstallPrompt />
+      </div>
+    );
+  }
+
+  // Desktop Layout
   return (
     <SidebarProvider>
       <ResizablePanelGroup direction="horizontal" className="min-h-screen bg-gradient-hero w-full">

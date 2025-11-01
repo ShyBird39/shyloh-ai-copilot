@@ -93,6 +93,25 @@ All colors MUST be HSL.
   }
 }
 
+/* Mobile-specific utilities */
+.mobile-tap-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.safe-area-inset-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Mobile text inputs - prevent iOS zoom */
+@media (max-width: 768px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
 @layer base {
   * {
     @apply border-border;
