@@ -23,16 +23,25 @@ export const MobileBottomNav = ({ activeTab, onTabChange }: MobileBottomNavProps
           return (
             <button
               key={tab.id}
-              onClick={() => onTabChange(tab.id)}
+              onClick={() => {
+                if ('vibrate' in navigator) navigator.vibrate(30);
+                onTabChange(tab.id);
+              }}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 flex-1 h-full transition-colors mobile-tap-target",
+                "flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all mobile-tap-target",
                 isActive 
                   ? "text-primary" 
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <Icon className={cn("h-6 w-6", isActive && "scale-110 transition-transform")} />
-              <span className="text-xs font-medium">{tab.label}</span>
+              <Icon className={cn(
+                "h-6 w-6 transition-all duration-200", 
+                isActive && "scale-110"
+              )} />
+              <span className={cn(
+                "text-xs font-medium transition-all duration-200",
+                isActive && "font-semibold"
+              )}>{tab.label}</span>
             </button>
           );
         })}

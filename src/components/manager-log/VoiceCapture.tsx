@@ -14,12 +14,14 @@ interface VoiceCaptureProps {
   restaurantId: string;
   shiftDate: string;
   shiftType: string;
+  isMobile?: boolean;
 }
 
-export const VoiceCapture = ({ restaurantId, shiftDate, shiftType }: VoiceCaptureProps) => {
+export const VoiceCapture = ({ restaurantId, shiftDate, shiftType, isMobile: isMobileProp }: VoiceCaptureProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const isMobile = useIsMobile();
+  const isMobileDetect = useIsMobile();
+  const isMobile = isMobileProp ?? isMobileDetect;
   const [memos, setMemos] = useState<VoiceMemo[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [wakeLock, setWakeLock] = useState<any>(null);
@@ -175,9 +177,9 @@ export const VoiceCapture = ({ restaurantId, shiftDate, shiftType }: VoiceCaptur
     });
   }
 
-  const buttonSize = isMobile ? 'h-40 w-40' : 'h-32 w-32';
-  const iconSize = isMobile ? 'h-16 w-16' : 'h-12 w-12';
-  const timerSize = isMobile ? 'text-5xl' : 'text-4xl';
+  const buttonSize = isMobile ? 'h-44 w-44' : 'h-32 w-32';
+  const iconSize = isMobile ? 'h-20 w-20' : 'h-12 w-12';
+  const timerSize = isMobile ? 'text-6xl' : 'text-4xl';
 
   return (
     <div className="flex flex-col h-full">
@@ -191,7 +193,9 @@ export const VoiceCapture = ({ restaurantId, shiftDate, shiftType }: VoiceCaptur
             className={`${buttonSize} rounded-full transition-all mobile-tap-target ${
               isRecording
                 ? 'bg-shyloh-error hover:bg-shyloh-error/90 animate-pulse'
-                : 'bg-shyloh-primary hover:bg-shyloh-primary/90'
+                : isMobile 
+                  ? 'bg-shyloh-primary hover:bg-shyloh-primary/90 record-button-ready'
+                  : 'bg-shyloh-primary hover:bg-shyloh-primary/90'
             }`}
           >
             {isUploading ? (

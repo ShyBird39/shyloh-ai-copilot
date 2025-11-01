@@ -220,3 +220,90 @@ All colors MUST be HSL.
     animation: notification-pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 }
+
+/* Mobile-specific enhancements */
+@media (max-width: 768px) {
+  .bg-gradient-hero {
+    background: linear-gradient(135deg, hsl(354 70% 30%) 0%, hsl(354 60% 25%) 100%);
+  }
+  
+  /* Improve text contrast on mobile */
+  .mobile-high-contrast {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Better card styling */
+  .mobile-card {
+    @apply bg-card/95 backdrop-blur-sm border border-border rounded-xl shadow-card;
+  }
+  
+  /* Conversation list item */
+  .conversation-item {
+    @apply mobile-tap-target bg-card hover:bg-accent/10 active:bg-accent/20 transition-colors rounded-lg p-3 border-b border-border/50;
+  }
+  
+  .conversation-item-active {
+    @apply bg-accent/20 border-l-4 border-l-primary;
+  }
+  
+  /* Smooth transitions */
+  .mobile-transition {
+    transition: all 0.2s ease-out;
+  }
+  
+  /* Slide-in animation */
+  @keyframes slide-in-left {
+    from {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  
+  /* Fade-in animation */
+  @keyframes fade-in-up {
+    from {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  .animate-slide-in-left {
+    animation: slide-in-left 0.3s ease-out;
+  }
+  
+  .animate-fade-in-up {
+    animation: fade-in-up 0.3s ease-out;
+  }
+  
+  /* Button press effect */
+  .mobile-tap-target:active {
+    transform: scale(0.98);
+  }
+  
+  /* Smooth tab transitions */
+  .mobile-tab-transition {
+    animation: fade-in-up 0.2s ease-out;
+  }
+  
+  /* Record button pulse */
+  @keyframes record-pulse {
+    0%, 100% {
+      box-shadow: 0 0 0 0 hsl(var(--shyloh-primary) / 0.7);
+    }
+    50% {
+      box-shadow: 0 0 0 20px hsl(var(--shyloh-primary) / 0);
+    }
+  }
+  
+  .record-button-ready {
+    animation: record-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}

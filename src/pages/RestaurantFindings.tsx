@@ -10,6 +10,7 @@ import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -37,6 +38,9 @@ import { ShiftLogPanel } from "@/components/ShiftLogPanel";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { MobileBottomNav } from "@/components/mobile/MobileBottomNav";
 import { MobileHeader } from "@/components/mobile/MobileHeader";
+import { MobileConversationDrawer } from "@/components/mobile/MobileConversationDrawer";
+import { MobileSettings } from "@/components/mobile/MobileSettings";
+import { VoiceCapture } from "@/components/manager-log/VoiceCapture";
 
 interface KPIData {
   avg_weekly_sales: number | null;
@@ -313,6 +317,8 @@ const RestaurantFindings = () => {
 
   // Mobile tab state
   const [mobileTab, setMobileTab] = useState<'voice' | 'chat' | 'more'>('voice');
+  const [conversationDrawerOpen, setConversationDrawerOpen] = useState(false);
+  const [lastMessagePreviews, setLastMessagePreviews] = useState<Record<string, string>>({});
 
   const samplePrompts = [
     "I am here to...",
@@ -1439,6 +1445,34 @@ What would you like to work on today?`
       return () => clearTimeout(timer);
     }
   }, [files, uploadingFiles, showFileNotification]);
+
+  // Load last message previews for conversations (mobile)
+  useEffect(() => {
+    const loadLastMessages = async () => {
+      if (conversations.length === 0) {
+        setLastMessagePreviews({});
+        return;
+      }
+      
+      const previews: Record<string, string> = {};
+      for (const conv of conversations) {
+        const { data } = await supabase
+          .from('chat_messages')
+          .select('content')
+          .eq('conversation_id', conv.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        if (data) {
+          previews[conv.id] = data.content;
+        }
+      }
+      setLastMessagePreviews(previews);
+    };
+    
+    loadLastMessages();
+  }, [conversations]);
 
   // Update document title with unread notification count
   useEffect(() => {
@@ -3449,94 +3483,129 @@ What would you like to work on today?`
 
   // Mobile Layout
   if (isMobile) {
-    console.log('Mobile layout rendering', { mobileTab, data: !!data, id });
-    
     return (
       <div className="min-h-screen bg-gradient-hero flex flex-col">
         <MobileHeader
           restaurantName={data?.name || 'Restaurant'}
           location={data?.location}
           onLogout={() => navigate('/')}
+          showMenuButton={mobileTab === 'chat'}
+          onMenuClick={() => setConversationDrawerOpen(true)}
+          title={mobileTab === 'chat' && currentConversationId 
+            ? conversations.find(c => c.id === currentConversationId)?.title 
+            : undefined
+          }
         />
         
-        {/* Debug info */}
-        <div className="p-4 text-white">
-          <p>Mobile tab: {mobileTab}</p>
-          <p>Restaurant ID: {id}</p>
-          <p>Data loaded: {data ? 'Yes' : 'No'}</p>
-        </div>
-        
-        <div className="flex-1 overflow-hidden pb-16">
+        <div className="flex-1 overflow-hidden pb-16 mobile-tab-transition">
           {mobileTab === 'voice' && (
-            <div className="h-full bg-background p-4">
-              <ShiftLogPanel restaurantId={id || ""} />
+            <div className="h-full bg-background flex flex-col items-center p-6">
+              <VoiceCapture 
+                restaurantId={id || ""}
+                shiftDate={format(new Date(), 'yyyy-MM-dd')}
+                shiftType="dinner"
+                isMobile={true}
+              />
             </div>
           )}
           
           {mobileTab === 'chat' && (
             <div className="h-full flex flex-col bg-background">
-              {/* Simplified chat interface for mobile */}
-              <div className="flex-1 overflow-y-auto">
-                <div className="px-4 py-8 space-y-6">
-                  {messages.map((message, idx) => {
-                    const renderMessageContent = (content: string) => {
-                      const processedContent = content.replace(
-                        /(@[A-Za-z0-9\s\-_.]+?)(?=\s|$|[.,!?])/g,
-                        '<span class="bg-accent/30 text-accent-foreground font-medium px-1.5 py-0.5 rounded">$1</span>'
-                      );
-                      
-                      return (
-                        <ReactMarkdown rehypePlugins={[rehypeRaw]}>
-                          {processedContent}
-                        </ReactMarkdown>
-                      );
-                    };
+              {conversations.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center p-8 text-center animate-fade-in-up">
+                  <MessageSquare className="h-16 w-16 text-muted-foreground mb-6" />
+                  <h2 className="text-2xl font-semibold mb-3">Welcome to Shyloh AI</h2>
+                  <p className="text-muted-foreground mb-8 max-w-sm">
+                    Start a conversation to get insights, ask questions, and manage your restaurant with AI assistance.
+                  </p>
+                  <Button 
+                    size="lg" 
+                    onClick={handleNewConversation}
+                    className="mobile-tap-target"
+                  >
+                    <Plus className="h-5 w-5 mr-2" />
+                    Start Your First Conversation
+                  </Button>
+                </div>
+              ) : !currentConversationId ? (
+                <div className="flex-1 flex flex-col items-center justify-center p-8 text-center animate-fade-in-up">
+                  <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground mb-6">
+                    Select a conversation from the menu
+                  </p>
+                  <Button 
+                    variant="outline"
+                    onClick={() => setConversationDrawerOpen(true)}
+                    className="mobile-tap-target"
+                  >
+                    <Menu className="h-4 w-4 mr-2" />
+                    View Conversations
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  {/* Messages area */}
+                  <div className="flex-1 overflow-y-auto">
+                    <div className="px-4 py-8 space-y-6">
+                      {messages.map((message, idx) => {
+                        const renderMessageContent = (content: string) => {
+                          const processedContent = content.replace(
+                            /(@[A-Za-z0-9\s\-_.]+?)(?=\s|$|[.,!?])/g,
+                            '<span class="bg-accent/30 text-accent-foreground font-medium px-1.5 py-0.5 rounded">$1</span>'
+                          );
+                          
+                          return (
+                            <ReactMarkdown rehypePlugins={[rehypeRaw]}>
+                              {processedContent}
+                            </ReactMarkdown>
+                          );
+                        };
 
-                    const isAI = message.role === 'assistant';
-                    const isCurrentUser = message.user_id === user?.id;
+                        const isAI = message.role === 'assistant';
+                        const isCurrentUser = message.user_id === user?.id;
 
-                    return (
-                      <div
-                        key={idx}
-                        className={`flex ${isCurrentUser ? "justify-end" : "justify-start"} animate-fade-in`}
-                      >
-                        <div
-                          className={`max-w-[85%] rounded-2xl px-4 py-3 ${
-                            isAI
-                              ? "bg-[hsl(354,70%,35%)] text-white"
-                              : "bg-green-600 text-white"
-                          }`}
-                        >
-                          {isAI && (
-                            <div className="flex items-center gap-2 mb-1">
-                              <Bot className="w-4 h-4" />
-                              <span className="text-xs font-medium">Shyloh AI</span>
+                        return (
+                          <div
+                            key={idx}
+                            className={`flex ${isCurrentUser ? "justify-end" : "justify-start"} animate-fade-in`}
+                          >
+                            <div
+                              className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+                                isAI
+                                  ? "bg-[hsl(354,70%,35%)] text-white"
+                                  : "bg-green-600 text-white"
+                              }`}
+                            >
+                              {isAI && (
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Bot className="w-4 h-4" />
+                                  <span className="text-xs font-medium">Shyloh AI</span>
+                                </div>
+                              )}
+                              <div className="text-sm leading-relaxed">
+                                {renderMessageContent(message.content)}
+                              </div>
                             </div>
-                          )}
-                          <div className="text-sm leading-relaxed">
-                            {renderMessageContent(message.content)}
+                          </div>
+                        );
+                      })}
+                      {isTyping && (
+                        <div className="flex justify-start animate-fade-in">
+                          <div className="bg-background/50 backdrop-blur-sm border border-accent/20 rounded-2xl p-4">
+                            <div className="flex items-center gap-1">
+                              <div className="w-2 h-2 rounded-full bg-primary-foreground/60 animate-bounce [animation-delay:-0.3s]"></div>
+                              <div className="w-2 h-2 rounded-full bg-primary-foreground/60 animate-bounce [animation-delay:-0.15s]"></div>
+                              <div className="w-2 h-2 rounded-full bg-primary-foreground/60 animate-bounce"></div>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                  {isTyping && (
-                    <div className="flex justify-start animate-fade-in">
-                      <div className="bg-background/50 backdrop-blur-sm border border-accent/20 rounded-2xl p-4">
-                        <div className="flex items-center gap-1">
-                          <div className="w-2 h-2 rounded-full bg-primary-foreground/60 animate-bounce [animation-delay:-0.3s]"></div>
-                          <div className="w-2 h-2 rounded-full bg-primary-foreground/60 animate-bounce [animation-delay:-0.15s]"></div>
-                          <div className="w-2 h-2 rounded-full bg-primary-foreground/60 animate-bounce"></div>
-                        </div>
-                      </div>
+                      )}
+                      <div ref={messagesEndRef} />
                     </div>
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
-              </div>
-              
-              {/* Mobile Input Area */}
-              <div className="sticky bottom-0 border-t border-accent/20 bg-background/95 backdrop-blur-sm p-4">
+                  </div>
+                  
+                  {/* Mobile Input Area */}
+                  <div className="sticky bottom-0 border-t border-accent/20 bg-background/95 backdrop-blur-sm p-4">
                 <div className="flex items-center gap-2">
                   <input
                     type="file"
@@ -3592,18 +3661,25 @@ What would you like to work on today?`
           )}
           
           {mobileTab === 'more' && (
-            <div className="h-full overflow-y-auto p-4 space-y-4">
-              <Card className="p-4">
-                <h3 className="font-semibold mb-2">Settings</h3>
-                <p className="text-sm text-muted-foreground">
-                  Settings panel coming soon
-                </p>
-              </Card>
-            </div>
+            <MobileSettings 
+              restaurantId={id || ""}
+              onOpenTuning={() => setTuningSheetOpen(true)}
+            />
           )}
         </div>
         
         <MobileBottomNav activeTab={mobileTab} onTabChange={setMobileTab} />
+        
+        <MobileConversationDrawer
+          open={conversationDrawerOpen}
+          onOpenChange={setConversationDrawerOpen}
+          conversations={conversations}
+          currentConversationId={currentConversationId}
+          onLoadConversation={handleLoadConversation}
+          onNewConversation={handleNewConversation}
+          onDeleteConversation={handleDeleteConversation}
+          lastMessages={lastMessagePreviews}
+        />
         
         {/* Dialogs */}
         <PinInput
