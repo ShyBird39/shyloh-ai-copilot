@@ -3527,7 +3527,7 @@ What would you like to work on today?`
                     Start Your First Conversation
                   </Button>
                 </div>
-              ) : !currentConversationId ? (
+              ) : !currentConversationId && messages.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center p-8 text-center animate-fade-in-up">
                   <MessageSquare className="h-16 w-16 text-muted-foreground mb-6" />
                   <h2 className="text-xl font-semibold mb-3">Ready to Chat?</h2>
