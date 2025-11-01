@@ -3495,6 +3495,16 @@ What would you like to work on today?`
                     <Button
                       variant="ghost"
                       size="icon"
+                      onClick={() => navigate(`/restaurant/${id}/manager-log`)}
+                      className="text-primary-foreground hover:bg-background/20"
+                      title="Voice memos"
+                    >
+                      <ClipboardList className="w-4 h-4" />
+                    </Button>
+                    
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={handleRefreshChat}
                       className="text-primary-foreground hover:bg-background/20"
                       title="Refresh chat"
