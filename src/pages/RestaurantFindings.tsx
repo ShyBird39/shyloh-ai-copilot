@@ -3529,18 +3529,30 @@ What would you like to work on today?`
                 </div>
               ) : !currentConversationId ? (
                 <div className="flex-1 flex flex-col items-center justify-center p-8 text-center animate-fade-in-up">
-                  <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground mb-6">
-                    Select a conversation from the menu
+                  <MessageSquare className="h-16 w-16 text-muted-foreground mb-6" />
+                  <h2 className="text-xl font-semibold mb-3">Ready to Chat?</h2>
+                  <p className="text-muted-foreground mb-8 max-w-sm">
+                    Start a new conversation or select an existing one from the menu
                   </p>
-                  <Button 
-                    variant="outline"
-                    onClick={() => setConversationDrawerOpen(true)}
-                    className="mobile-tap-target"
-                  >
-                    <Menu className="h-4 w-4 mr-2" />
-                    View Conversations
-                  </Button>
+                  <div className="flex flex-col gap-3 w-full max-w-xs">
+                    <Button 
+                      size="lg"
+                      onClick={handleNewConversation}
+                      className="mobile-tap-target"
+                    >
+                      <Plus className="h-5 w-5 mr-2" />
+                      New Conversation
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      size="lg"
+                      onClick={() => setConversationDrawerOpen(true)}
+                      className="mobile-tap-target"
+                    >
+                      <Menu className="h-4 w-4 mr-2" />
+                      View Conversations
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <>
