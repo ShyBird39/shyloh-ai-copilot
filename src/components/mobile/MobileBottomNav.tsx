@@ -15,7 +15,7 @@ export const MobileBottomNav = ({ activeTab, onTabChange }: MobileBottomNavProps
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50 safe-area-inset-bottom">
-      <div className="flex items-center justify-around h-16">
+      <div className="grid grid-cols-3 items-stretch h-16">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -28,7 +28,7 @@ export const MobileBottomNav = ({ activeTab, onTabChange }: MobileBottomNavProps
                 onTabChange(tab.id);
               }}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all mobile-tap-target relative",
+                "flex flex-col items-center justify-center gap-1 w-full h-full transition-all mobile-tap-target relative",
                 isActive 
                   ? "text-primary before:absolute before:top-0 before:left-1/2 before:-translate-x-1/2 before:w-12 before:h-1 before:bg-primary before:rounded-b-full" 
                   : "text-muted-foreground hover:text-foreground"
