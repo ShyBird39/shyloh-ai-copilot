@@ -3694,19 +3694,21 @@ What would you like to work on today?`
                   </div>
                   
                   {/* Mobile Input Area */}
-                  <div className="sticky bottom-0 border-t border-accent/20 bg-background/95 backdrop-blur-sm p-4">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={(e) => {
-                          if (e.target.files) {
-                            handleFileUpload(e.target.files);
-                          }
-                        }}
-                        className="hidden"
-                        multiple
-                      />
+                  <div className="sticky bottom-0 border-t border-accent/20 bg-background/95 backdrop-blur-sm p-3">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={(e) => {
+                        if (e.target.files) {
+                          handleFileUpload(e.target.files);
+                        }
+                      }}
+                      className="hidden"
+                      multiple
+                    />
+                    
+                    {/* Top row: Paperclip and Filter */}
+                    <div className="flex items-center gap-2 mb-2">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -3715,6 +3717,18 @@ What would you like to work on today?`
                       >
                         <Paperclip className="h-5 w-5" />
                       </Button>
+                      <ChatToolsPopover
+                        restaurantId={id || ""}
+                        hardModeEnabled={hardModeEnabled}
+                        onHardModeToggle={() => setHardModeEnabled(!hardModeEnabled)}
+                        notionEnabled={notionEnabled}
+                        onNotionToggle={() => setNotionEnabled(!notionEnabled)}
+                      />
+                      <div className="flex-1" />
+                    </div>
+                    
+                    {/* Bottom row: Input and Send */}
+                    <div className="flex items-center gap-2">
                       <MentionInput
                         restaurantId={id || ""}
                         value={currentInput}
@@ -3728,13 +3742,6 @@ What would you like to work on today?`
                         disabled={isTyping}
                         placeholder="Message Shyloh..."
                         className="flex-1"
-                      />
-                      <ChatToolsPopover
-                        restaurantId={id || ""}
-                        hardModeEnabled={hardModeEnabled}
-                        onHardModeToggle={() => setHardModeEnabled(!hardModeEnabled)}
-                        notionEnabled={notionEnabled}
-                        onNotionToggle={() => setNotionEnabled(!notionEnabled)}
                       />
                       <Button
                         onClick={() => handleSendMessage()}
