@@ -3497,7 +3497,7 @@ What would you like to work on today?`
           }
         />
         
-        <div className="flex-1 overflow-hidden pb-16 mobile-tab-transition">
+        <div className="flex-1 min-h-0 overflow-hidden pb-[calc(env(safe-area-inset-bottom)+64px)] mobile-tab-transition">
           {mobileTab === 'voice' && (
             <div className="h-full bg-background flex flex-col items-center p-6">
               <VoiceCapture 

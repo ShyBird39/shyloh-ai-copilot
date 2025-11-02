@@ -23,6 +23,7 @@ export const MobileBottomNav = ({ activeTab, onTabChange }: MobileBottomNavProps
           return (
             <button
               key={tab.id}
+              aria-current={isActive ? 'page' : undefined}
               onClick={() => {
                 if ('vibrate' in navigator) navigator.vibrate(30);
                 onTabChange(tab.id);
