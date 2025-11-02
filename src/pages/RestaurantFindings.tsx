@@ -3765,7 +3765,17 @@ What would you like to work on today?`
           )}
         </div>
         
-        <MobileBottomNav activeTab={mobileTab} onTabChange={setMobileTab} />
+        <MobileBottomNav 
+          activeTab={mobileTab} 
+          onTabChange={(tab) => {
+            // If tapping Chat tab while already on chat and viewing a thread, go back to list
+            if (tab === 'chat' && mobileTab === 'chat' && showConversationThread) {
+              setShowConversationThread(false);
+            } else {
+              setMobileTab(tab);
+            }
+          }} 
+        />
         
         <MobileConversationDrawer
           open={conversationDrawerOpen}
