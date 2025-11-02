@@ -320,6 +320,11 @@ const RestaurantFindings = () => {
   const [conversationDrawerOpen, setConversationDrawerOpen] = useState(false);
   const [lastMessagePreviews, setLastMessagePreviews] = useState<Record<string, string>>({});
 
+  // Ensure Chat tab is active on mobile by default
+  useEffect(() => {
+    if (isMobile) setMobileTab('chat');
+  }, [isMobile]);
+
   const samplePrompts = [
     "I am here to...",
     "Strategy Session",

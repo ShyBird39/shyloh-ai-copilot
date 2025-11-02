@@ -13,12 +13,14 @@ export const MobileBottomNav = ({ activeTab, onTabChange }: MobileBottomNavProps
     { id: 'text' as const, icon: FileText, label: 'Text Log' },
   ];
 
+  const current = tabs.some(t => t.id === activeTab) ? activeTab : 'chat';
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50 safe-area-inset-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50 safe-area-inset-bottom pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
       <div className="grid grid-cols-3 items-stretch h-16">
         {tabs.map((tab) => {
           const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
+          const isActive = current === tab.id;
           
           return (
             <button
