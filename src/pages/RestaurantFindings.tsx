@@ -6,11 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, ChevronDown, ChevronUp, RotateCcw, Paperclip, UtensilsCrossed, Sparkles, Users, Clock, Settings, Heart, UserCog, Trash2, Brain, AlertCircle, Edit, Crown, Bot, Zap, ClipboardList, MessageSquare, Plus, Menu } from "lucide-react";
+import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, ChevronDown, ChevronUp, RotateCcw, Paperclip, UtensilsCrossed, Sparkles, Users, Clock, Settings, Heart, UserCog, Trash2, Brain, AlertCircle, Edit, Crown, Bot, Zap, ClipboardList, MessageSquare, Plus, Menu, Lock, Globe, ChevronRight } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -319,6 +319,7 @@ const RestaurantFindings = () => {
   const [mobileTab, setMobileTab] = useState<'chat' | 'voice' | 'text'>('chat');
   const [conversationDrawerOpen, setConversationDrawerOpen] = useState(false);
   const [lastMessagePreviews, setLastMessagePreviews] = useState<Record<string, string>>({});
+  const [showConversationThread, setShowConversationThread] = useState(false);
 
   // Ensure Chat tab is active on mobile by default and validate tab value
   useEffect(() => {
@@ -326,6 +327,10 @@ const RestaurantFindings = () => {
       const validTabs = ['chat', 'voice', 'text'];
       if (!validTabs.includes(mobileTab)) {
         setMobileTab('chat');
+      }
+      // Reset to conversation list when switching away from chat tab
+      if (mobileTab !== 'chat') {
+        setShowConversationThread(false);
       }
     }
   }, [isMobile, mobileTab]);
@@ -3521,50 +3526,112 @@ What would you like to work on today?`
           
           {mobileTab === 'chat' && (
             <div className="h-full flex flex-col bg-background">
-              {conversations.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center p-8 text-center animate-fade-in-up">
-                  <MessageSquare className="h-16 w-16 text-muted-foreground mb-6" />
-                  <h2 className="text-2xl font-semibold mb-3">Welcome to Shyloh AI</h2>
-                  <p className="text-muted-foreground mb-8 max-w-sm">
-                    Start a conversation to get insights, ask questions, and manage your restaurant with AI assistance.
-                  </p>
-                  <Button 
-                    size="lg" 
-                    onClick={handleNewConversation}
-                    className="mobile-tap-target"
-                  >
-                    <Plus className="h-5 w-5 mr-2" />
-                    Start Your First Conversation
-                  </Button>
-                </div>
-              ) : !currentConversationId && messages.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center p-8 text-center animate-fade-in-up">
-                  <MessageSquare className="h-16 w-16 text-muted-foreground mb-6" />
-                  <h2 className="text-xl font-semibold mb-3">Ready to Chat?</h2>
-                  <p className="text-muted-foreground mb-8 max-w-sm">
-                    Start a new conversation or select an existing one from the menu
-                  </p>
-                  <div className="flex flex-col gap-3 w-full max-w-xs">
+              {!showConversationThread ? (
+                /* Conversation List View */
+                <div className="h-full flex flex-col">
+                  <div className="p-3 border-b border-border/50">
                     <Button 
+                      onClick={() => {
+                        if ('vibrate' in navigator) navigator.vibrate(30);
+                        handleNewConversation();
+                        setShowConversationThread(true);
+                      }}
+                      className="w-full mobile-tap-target"
                       size="lg"
-                      onClick={handleNewConversation}
-                      className="mobile-tap-target"
                     >
                       <Plus className="h-5 w-5 mr-2" />
-                      New Conversation
+                      New Chat
                     </Button>
-                    <Button 
-                      variant="outline"
-                      size="lg"
-                      onClick={() => setConversationDrawerOpen(true)}
-                      className="mobile-tap-target"
-                    >
-                      <Menu className="h-4 w-4 mr-2" />
-                      View Conversations
-                    </Button>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto">
+                    {conversations.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center p-8 text-center animate-fade-in-up">
+                        <MessageSquare className="h-16 w-16 text-muted-foreground mb-6" />
+                        <h2 className="text-2xl font-semibold mb-3">Welcome to Shyloh AI</h2>
+                        <p className="text-muted-foreground mb-4 max-w-sm">
+                          Start your first conversation to get insights, ask questions, and manage your restaurant with AI assistance.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="px-3 py-2">
+                        {conversations.map((conv) => {
+                          const isActive = conv.id === currentConversationId;
+                          const fileCount = files.filter(f => f.conversation_id === conv.id).length;
+                          const lastMessage = lastMessagePreviews[conv.id] || "";
+                          const preview = lastMessage.length > 60 
+                            ? lastMessage.substring(0, 60) + "..." 
+                            : lastMessage;
+
+                          return (
+                            <button
+                              key={conv.id}
+                              onClick={() => {
+                                if ('vibrate' in navigator) navigator.vibrate(30);
+                                handleLoadConversation(conv.id);
+                                setShowConversationThread(true);
+                              }}
+                              className={`w-full text-left p-3 rounded-lg transition-colors mobile-tap-target mb-2 ${
+                                isActive 
+                                  ? 'bg-accent/50' 
+                                  : 'hover:bg-accent/20 active:bg-accent/30'
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <h4 className="font-medium truncate text-sm">{conv.title}</h4>
+                                    {conv.visibility === 'private' && (
+                                      <Lock className="h-3 w-3 text-muted-foreground shrink-0" />
+                                    )}
+                                    {conv.visibility === 'public' && (
+                                      <Globe className="h-3 w-3 text-muted-foreground shrink-0" />
+                                    )}
+                                    {(conv.participant_count || 0) > 1 && (
+                                      <div className="flex items-center gap-1 shrink-0">
+                                        <Users className="h-3 w-3 text-muted-foreground" />
+                                        <span className="text-xs text-muted-foreground">
+                                          {conv.participant_count}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  
+                                  {preview && (
+                                    <p className="text-xs text-muted-foreground truncate mb-1">
+                                      {preview}
+                                    </p>
+                                  )}
+                                  
+                                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    <span>{formatDistanceToNow(new Date(conv.updated_at), { addSuffix: true })}</span>
+                                    {conv.message_count > 0 && (
+                                      <>
+                                        <span>•</span>
+                                        <span>{conv.message_count} msgs</span>
+                                      </>
+                                    )}
+                                    {fileCount > 0 && (
+                                      <>
+                                        <span>•</span>
+                                        <Paperclip className="h-3 w-3 inline" />
+                                        <span>{fileCount}</span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (
+                /* Message Thread View */
                 <>
                   {/* Messages area */}
                   <div className="flex-1 overflow-y-auto">
