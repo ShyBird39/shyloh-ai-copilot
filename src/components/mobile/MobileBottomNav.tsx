@@ -1,16 +1,16 @@
-import { Mic, MessageSquare, Menu } from "lucide-react";
+import { Mic, MessageSquare, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface MobileBottomNavProps {
-  activeTab: 'voice' | 'chat' | 'more';
-  onTabChange: (tab: 'voice' | 'chat' | 'more') => void;
+  activeTab: 'chat' | 'voice' | 'text';
+  onTabChange: (tab: 'chat' | 'voice' | 'text') => void;
 }
 
 export const MobileBottomNav = ({ activeTab, onTabChange }: MobileBottomNavProps) => {
   const tabs = [
-    { id: 'voice' as const, icon: Mic, label: 'Voice Log' },
     { id: 'chat' as const, icon: MessageSquare, label: 'Chat' },
-    { id: 'more' as const, icon: Menu, label: 'More' },
+    { id: 'voice' as const, icon: Mic, label: 'Voice Log' },
+    { id: 'text' as const, icon: FileText, label: 'Text Log' },
   ];
 
   return (

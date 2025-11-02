@@ -316,7 +316,7 @@ const RestaurantFindings = () => {
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
 
   // Mobile tab state
-  const [mobileTab, setMobileTab] = useState<'voice' | 'chat' | 'more'>('voice');
+  const [mobileTab, setMobileTab] = useState<'chat' | 'voice' | 'text'>('chat');
   const [conversationDrawerOpen, setConversationDrawerOpen] = useState(false);
   const [lastMessagePreviews, setLastMessagePreviews] = useState<Record<string, string>>({});
 
@@ -3674,11 +3674,10 @@ What would you like to work on today?`
             </div>
           )}
           
-          {mobileTab === 'more' && (
-            <MobileSettings 
-              restaurantId={id || ""}
-              onOpenTuning={() => setTuningSheetOpen(true)}
-            />
+          {mobileTab === 'text' && (
+            <div className="h-full overflow-auto p-4">
+              <ShiftLogPanel restaurantId={id || ""} />
+            </div>
           )}
         </div>
         
