@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, ChevronDown, ChevronUp, RotateCcw, Paperclip, UtensilsCrossed, Sparkles, Users, Clock, Settings, Heart, UserCog, Trash2, Brain, AlertCircle, Edit, Crown, Bot, Zap, ClipboardList, MessageSquare, Plus, Menu, Lock, Globe, ChevronRight } from "lucide-react";
+import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, ChevronDown, ChevronUp, RotateCcw, Paperclip, UtensilsCrossed, Sparkles, Users, Clock, Settings, Heart, UserCog, Trash2, Brain, AlertCircle, Edit, Crown, Bot, Zap, ClipboardList, MessageSquare, Plus, Menu, Lock, Globe, ChevronRight, CheckSquare } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -40,6 +40,7 @@ import { MobileBottomNav } from "@/components/mobile/MobileBottomNav";
 import { MobileHeader } from "@/components/mobile/MobileHeader";
 import { MobileConversationDrawer } from "@/components/mobile/MobileConversationDrawer";
 import { MobileSettings } from "@/components/mobile/MobileSettings";
+import { MobileNavigationMenu } from "@/components/mobile/MobileNavigationMenu";
 import { VoiceCapture } from "@/components/manager-log/VoiceCapture";
 
 interface KPIData {
@@ -318,6 +319,8 @@ const RestaurantFindings = () => {
   // Mobile tab state
   const [mobileTab, setMobileTab] = useState<'chat' | 'voice' | 'text'>('chat');
   const [conversationDrawerOpen, setConversationDrawerOpen] = useState(false);
+  const [navigationMenuOpen, setNavigationMenuOpen] = useState(false);
+  const [currentNavSection, setCurrentNavSection] = useState<'chats' | 'agents' | 'tasks' | 'manager-log'>('chats');
   const [lastMessagePreviews, setLastMessagePreviews] = useState<Record<string, string>>({});
   const [showConversationThread, setShowConversationThread] = useState(false);
 
@@ -3504,12 +3507,25 @@ What would you like to work on today?`
           restaurantName={data?.name || 'Restaurant'}
           location={data?.location}
           onLogout={() => navigate('/')}
-          showMenuButton={mobileTab === 'chat'}
-          onMenuClick={() => setConversationDrawerOpen(true)}
-          title={mobileTab === 'chat' && currentConversationId 
-            ? conversations.find(c => c.id === currentConversationId)?.title 
-            : undefined
+          showMenuButton={mobileTab === 'chat' && !showConversationThread}
+          onMenuClick={() => setNavigationMenuOpen(true)}
+          title={
+            mobileTab === 'chat' && showConversationThread && currentConversationId 
+              ? conversations.find(c => c.id === currentConversationId)?.title 
+              : mobileTab === 'chat' && showConversationThread
+              ? 'New Chat'
+              : mobileTab === 'chat'
+              ? currentNavSection === 'agents'
+                ? 'Agents'
+                : currentNavSection === 'tasks'
+                ? 'Tasks'
+                : currentNavSection === 'manager-log'
+                ? 'Manager Log'
+                : 'Chats'
+              : undefined
           }
+          showBackButton={mobileTab === 'chat' && showConversationThread}
+          onBackClick={() => setShowConversationThread(false)}
         />
         
         <div className="flex-1 min-h-0 overflow-hidden pb-[calc(env(safe-area-inset-bottom)+64px)] mobile-tab-transition">
@@ -3526,9 +3542,40 @@ What would you like to work on today?`
           
           {mobileTab === 'chat' && (
             <div className="h-full flex flex-col bg-background">
-              {!showConversationThread ? (
-                /* Conversation List View */
+              {currentNavSection === 'agents' && (
+                <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+                  <Bot className="h-16 w-16 text-muted-foreground mb-6" />
+                  <h2 className="text-2xl font-semibold mb-3">Agents</h2>
+                  <p className="text-muted-foreground max-w-sm">
+                    AI agents feature coming soon. Create specialized agents to help with specific restaurant tasks.
+                  </p>
+                </div>
+              )}
+              
+              {currentNavSection === 'tasks' && (
+                <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+                  <CheckSquare className="h-16 w-16 text-muted-foreground mb-6" />
+                  <h2 className="text-2xl font-semibold mb-3">Tasks</h2>
+                  <p className="text-muted-foreground max-w-sm">
+                    Task management feature coming soon. Create, assign, and track tasks for your team.
+                  </p>
+                </div>
+              )}
+              
+              {currentNavSection === 'manager-log' && (
+                <div className="h-full bg-background flex flex-col items-center p-6">
+                  <VoiceCapture 
+                    restaurantId={id || ""}
+                    shiftDate={format(new Date(), 'yyyy-MM-dd')}
+                    shiftType="dinner"
+                    isMobile={true}
+                  />
+                </div>
+              )}
+              
+              {currentNavSection === 'chats' && !showConversationThread && (
                 <div className="h-full flex flex-col">
+                  {/* Conversation List View */}
                   <div className="p-3 border-b border-border/50">
                     <Button 
                       onClick={() => {
@@ -3630,8 +3677,9 @@ What would you like to work on today?`
                     )}
                   </div>
                 </div>
-              ) : (
-                /* Message Thread View */
+              )}
+              
+              {currentNavSection === 'chats' && showConversationThread && (
                 <>
                   {/* Messages area */}
                   <div className="flex-1 overflow-y-auto">
@@ -3786,6 +3834,19 @@ What would you like to work on today?`
           onNewConversation={handleNewConversation}
           onDeleteConversation={handleDeleteConversation}
           lastMessages={lastMessagePreviews}
+        />
+        
+        <MobileNavigationMenu
+          open={navigationMenuOpen}
+          onOpenChange={setNavigationMenuOpen}
+          currentSection={currentNavSection}
+          onNavigate={(section) => {
+            setCurrentNavSection(section);
+            if (section === 'chats') {
+              setShowConversationThread(false);
+            }
+            // TODO: Handle navigation to other sections (agents, tasks, manager-log)
+          }}
         />
         
         {/* Dialogs */}
