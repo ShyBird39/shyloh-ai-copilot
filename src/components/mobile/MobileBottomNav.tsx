@@ -7,11 +7,15 @@ interface MobileBottomNavProps {
 }
 
 export const MobileBottomNav = ({ activeTab, onTabChange }: MobileBottomNavProps) => {
+  console.log('MobileBottomNav render:', { activeTab });
+  
   const tabs = [
     { id: 'chat' as const, icon: MessageSquare, label: 'Chat' },
     { id: 'voice' as const, icon: Mic, label: 'Voice Log' },
     { id: 'text' as const, icon: FileText, label: 'Text Log' },
   ];
+
+  console.log('tabs array:', tabs);
 
   const current = tabs.some(t => t.id === activeTab) ? activeTab : 'chat';
 
@@ -33,7 +37,7 @@ export const MobileBottomNav = ({ activeTab, onTabChange }: MobileBottomNavProps
               className={cn(
                 "flex flex-1 flex-col items-center justify-center gap-1 h-full transition-all mobile-tap-target relative min-w-0",
                 isActive 
-                  ? "text-primary before:absolute before:top-0 before:left-1/2 before:-translate-x-1/2 before:w-12 before:h-1 before:bg-primary before:rounded-b-full" 
+                  ? "text-foreground before:absolute before:top-0 before:left-1/2 before:-translate-x-1/2 before:w-12 before:h-1 before:bg-primary-foreground/80 before:rounded-b-full" 
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
