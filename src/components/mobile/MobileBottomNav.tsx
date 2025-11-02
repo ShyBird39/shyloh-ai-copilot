@@ -28,9 +28,9 @@ export const MobileBottomNav = ({ activeTab, onTabChange }: MobileBottomNavProps
                 onTabChange(tab.id);
               }}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all mobile-tap-target",
+                "flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all mobile-tap-target relative",
                 isActive 
-                  ? "text-primary" 
+                  ? "text-primary before:absolute before:top-0 before:left-1/2 before:-translate-x-1/2 before:w-12 before:h-1 before:bg-primary before:rounded-b-full" 
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
