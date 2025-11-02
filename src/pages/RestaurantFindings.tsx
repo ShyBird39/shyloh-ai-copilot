@@ -320,10 +320,15 @@ const RestaurantFindings = () => {
   const [conversationDrawerOpen, setConversationDrawerOpen] = useState(false);
   const [lastMessagePreviews, setLastMessagePreviews] = useState<Record<string, string>>({});
 
-  // Ensure Chat tab is active on mobile by default
+  // Ensure Chat tab is active on mobile by default and validate tab value
   useEffect(() => {
-    if (isMobile) setMobileTab('chat');
-  }, [isMobile]);
+    if (isMobile) {
+      const validTabs = ['chat', 'voice', 'text'];
+      if (!validTabs.includes(mobileTab)) {
+        setMobileTab('chat');
+      }
+    }
+  }, [isMobile, mobileTab]);
 
   const samplePrompts = [
     "I am here to...",

@@ -16,8 +16,8 @@ export const MobileBottomNav = ({ activeTab, onTabChange }: MobileBottomNavProps
   const current = tabs.some(t => t.id === activeTab) ? activeTab : 'chat';
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50 safe-area-inset-bottom pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
-      <div className="grid grid-cols-3 items-stretch h-16">
+    <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-[100] safe-area-inset-bottom pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] pointer-events-auto min-w-0">
+      <div className="flex h-16 w-full">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = current === tab.id;
@@ -31,7 +31,7 @@ export const MobileBottomNav = ({ activeTab, onTabChange }: MobileBottomNavProps
                 onTabChange(tab.id);
               }}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 w-full h-full transition-all mobile-tap-target relative",
+                "flex flex-1 flex-col items-center justify-center gap-1 h-full transition-all mobile-tap-target relative min-w-0",
                 isActive 
                   ? "text-primary before:absolute before:top-0 before:left-1/2 before:-translate-x-1/2 before:w-12 before:h-1 before:bg-primary before:rounded-b-full" 
                   : "text-muted-foreground hover:text-foreground"
@@ -42,7 +42,7 @@ export const MobileBottomNav = ({ activeTab, onTabChange }: MobileBottomNavProps
                 isActive && "scale-110"
               )} />
               <span className={cn(
-                "text-xs font-medium transition-all duration-200",
+                "text-xs font-medium transition-all duration-200 whitespace-nowrap",
                 isActive && "font-semibold"
               )}>{tab.label}</span>
             </button>
