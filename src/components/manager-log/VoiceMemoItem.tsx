@@ -14,22 +14,38 @@ interface VoiceMemoItemProps {
 export const VoiceMemoItem = ({ memo }: VoiceMemoItemProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [audio] = useState(() => new Audio());
+  const [audio] = useState(() => {
+    const audioElement = new Audio();
+    // Configure for mobile compatibility
+    audioElement.preload = 'metadata';
+    audioElement.setAttribute('playsinline', 'true');
+    audioElement.setAttribute('webkit-playsinline', 'true');
+    return audioElement;
+  });
 
   useEffect(() => {
     const handleEnded = () => setIsPlaying(false);
-    const handleError = () => {
+    const handleError = (e: ErrorEvent) => {
+      console.error('Audio error event:', e, audio.error);
       setIsPlaying(false);
-      toast.error('Failed to play audio');
+      const errorMsg = audio.error?.message || 'Unknown error';
+      toast.error(`Failed to play audio: ${errorMsg}`);
+    };
+    const handleLoadError = () => {
+      console.error('Failed to load audio');
+      toast.error('Failed to load audio: The operation is not supported.');
     };
 
     audio.addEventListener('ended', handleEnded);
-    audio.addEventListener('error', handleError);
+    audio.addEventListener('error', handleError as any);
+    audio.addEventListener('abort', handleLoadError);
 
     return () => {
       audio.removeEventListener('ended', handleEnded);
-      audio.removeEventListener('error', handleError);
+      audio.removeEventListener('error', handleError as any);
+      audio.removeEventListener('abort', handleLoadError);
       audio.pause();
+      audio.src = '';
     };
   }, [audio]);
 
@@ -62,23 +78,56 @@ export const VoiceMemoItem = ({ memo }: VoiceMemoItemProps) => {
         if (!data?.signedUrl) throw new Error('No signed URL returned');
 
         console.log('Setting audio source:', data.signedUrl);
+        
+        // Reset audio element before setting new source
+        audio.pause();
+        audio.currentTime = 0;
+        audio.src = '';
+        
+        // Load the new source
         audio.src = data.signedUrl;
         
-        // Add load event listener for debugging
-        audio.addEventListener('loadeddata', () => {
-          console.log('Audio loaded successfully');
-        }, { once: true });
+        // Wait for audio to be ready
+        await new Promise((resolve, reject) => {
+          const loadTimeout = setTimeout(() => {
+            reject(new Error('Audio load timeout'));
+          }, 10000); // 10 second timeout
+          
+          const handleCanPlay = () => {
+            clearTimeout(loadTimeout);
+            audio.removeEventListener('canplay', handleCanPlay);
+            audio.removeEventListener('error', handleLoadError);
+            console.log('Audio can play');
+            resolve(true);
+          };
+          
+          const handleLoadError = (e: any) => {
+            clearTimeout(loadTimeout);
+            audio.removeEventListener('canplay', handleCanPlay);
+            audio.removeEventListener('error', handleLoadError);
+            console.error('Audio load error:', e, audio.error);
+            reject(new Error(audio.error?.message || 'Failed to load audio'));
+          };
+          
+          audio.addEventListener('canplay', handleCanPlay, { once: true });
+          audio.addEventListener('error', handleLoadError, { once: true });
+          
+          audio.load();
+        });
         
-        audio.addEventListener('error', (e) => {
-          console.error('Audio element error:', e, audio.error);
-        }, { once: true });
+        // Attempt to play with better promise handling
+        const playPromise = audio.play();
         
-        await audio.play();
+        if (playPromise !== undefined) {
+          await playPromise;
+        }
+        
         setIsPlaying(true);
         console.log('Audio playback started');
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error playing audio:', error);
-        toast.error(`Failed to load audio: ${error.message}`);
+        setIsPlaying(false);
+        toast.error(error?.message || 'Failed to play audio');
       } finally {
         setIsLoading(false);
       }
