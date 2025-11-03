@@ -2885,24 +2885,40 @@ What would you like to work on today?`
         throw new Error('No response stream');
       }
 
+      console.log('Starting to read AI response stream...');
       const decoder = new TextDecoder();
       let assistantMessage = "";
+      let chunkCount = 0;
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value);
-        assistantMessage += chunk;
-
-        // Update the last message or add new assistant message
-        setMessages((prev) => {
-          const lastMsg = prev[prev.length - 1];
-          if (lastMsg?.role === 'assistant') {
-            return [...prev.slice(0, -1), { ...lastMsg, content: assistantMessage }];
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            console.log(`Stream completed after ${chunkCount} chunks, total length: ${assistantMessage.length}`);
+            break;
           }
-          return [...prev, { role: 'assistant', content: assistantMessage }];
+
+          chunkCount++;
+          const chunk = decoder.decode(value);
+          assistantMessage += chunk;
+
+          // Update the last message or add new assistant message
+          setMessages((prev) => {
+            const lastMsg = prev[prev.length - 1];
+            if (lastMsg?.role === 'assistant') {
+              return [...prev.slice(0, -1), { ...lastMsg, content: assistantMessage }];
+            }
+            return [...prev, { role: 'assistant', content: assistantMessage }];
+          });
+        }
+      } catch (streamError) {
+        console.error('Stream reading error:', {
+          error: streamError,
+          message: streamError instanceof Error ? streamError.message : String(streamError),
+          chunksRead: chunkCount,
+          partialMessage: assistantMessage.substring(0, 200),
         });
+        throw new Error(`Stream reading failed after ${chunkCount} chunks: ${streamError instanceof Error ? streamError.message : 'Unknown error'}`);
       }
 
       // Save assistant message
