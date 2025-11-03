@@ -175,7 +175,7 @@ export const VoiceMemoItem = ({ memo, onUpdate }: VoiceMemoItemProps) => {
 
           {memo.transcription && (
             <div className="mt-3">
-              <p className="text-sm text-foreground italic font-medium">
+              <p className="text-sm text-card-foreground italic font-medium">
                 "{memo.transcription}"
               </p>
               {memo.transcription_status === 'completed' && (
