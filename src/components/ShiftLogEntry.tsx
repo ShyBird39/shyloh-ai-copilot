@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, GripVertical } from "lucide-react";
 import { PredictiveTags } from "./manager-log/PredictiveTags";
 
 interface ShiftLogEntryProps {
@@ -133,12 +133,17 @@ export function ShiftLogEntry({ restaurantId, shiftDate, shiftType, onEntrySaved
 
         <div className="space-y-2">
           <label className="text-sm font-medium">Log Entry</label>
-          <Textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Enter Manager Log details..."
-            className="min-h-[300px] resize-y bg-background text-foreground"
-          />
+          <div className="relative">
+            <Textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Enter Manager Log details..."
+              className="min-h-[300px] resize-y bg-background text-foreground pr-8"
+            />
+            <div className="absolute bottom-1 right-1 pointer-events-none text-muted-foreground opacity-50">
+              <GripVertical className="h-5 w-5" />
+            </div>
+          </div>
         </div>
 
         {/* Predictive Tags */}
