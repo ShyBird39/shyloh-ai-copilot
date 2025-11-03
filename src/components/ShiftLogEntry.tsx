@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -31,6 +31,26 @@ export function ShiftLogEntry({ restaurantId, shiftDate, shiftType, onEntrySaved
   const [content, setContent] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const [textHeight, setTextHeight] = useState<number>(300);
+
+  const startResize = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    const startY = e.clientY;
+    const startH = textareaRef.current?.offsetHeight ?? textHeight;
+
+    const onMove = (ev: MouseEvent) => {
+      const delta = ev.clientY - startY;
+      setTextHeight(Math.max(160, startH + delta));
+    };
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  }, [textHeight]);
 
   const handleSave = async () => {
     if (!content.trim()) {
@@ -135,13 +155,20 @@ export function ShiftLogEntry({ restaurantId, shiftDate, shiftType, onEntrySaved
           <label className="text-sm font-medium">Log Entry</label>
           <div className="relative">
             <Textarea
+              ref={textareaRef}
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Enter Manager Log details..."
-              className="min-h-[300px] resize-y bg-background text-foreground pr-8"
+              className="min-h-[160px] resize-none bg-background text-foreground pr-10 pb-10"
+              style={{ height: textHeight }}
             />
-            <div className="absolute bottom-2 right-2 pointer-events-none text-muted-foreground opacity-60">
-              <UnfoldVertical className="h-5 w-5" />
+            <div
+              className="absolute bottom-3 right-3 text-muted-foreground opacity-60 cursor-se-resize select-none"
+              onMouseDown={startResize}
+              role="button"
+              aria-label="Resize log entry"
+            >
+              <UnfoldVertical className="h-4 w-4" />
             </div>
           </div>
         </div>
