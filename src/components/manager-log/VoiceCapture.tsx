@@ -34,6 +34,8 @@ export const VoiceCapture = ({ restaurantId, shiftDate, shiftType, isMobile: isM
     stopRecording,
     clearRecording,
     error,
+    mimeType,
+    fileExtension,
   } = useAudioRecorder();
 
   useEffect(() => {
@@ -80,12 +82,12 @@ export const VoiceCapture = ({ restaurantId, shiftDate, shiftType, isMobile: isM
 
     setIsUploading(true);
     try {
-      const fileName = `${restaurantId}/${Date.now()}.webm`;
+      const fileName = `${restaurantId}/${Date.now()}.${fileExtension}`;
       
-      // Upload to Supabase storage
+      // Upload to storage with correct content type
       const { error: uploadError } = await supabase.storage
         .from('voice-memos')
-        .upload(fileName, audioBlob);
+        .upload(fileName, audioBlob, { contentType: mimeType });
 
       if (uploadError) throw uploadError;
 
