@@ -35,6 +35,7 @@ import rehypeRaw from "rehype-raw";
 import { ConversationFileHeader } from "@/components/ConversationFileHeader";
 import { ConversationFilePanel } from "@/components/ConversationFilePanel";
 import { ShiftLogPanel } from "@/components/ShiftLogPanel";
+import { ShiftLogEntry } from "@/components/ShiftLogEntry";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { MobileBottomNav } from "@/components/mobile/MobileBottomNav";
 import { MobileHeader } from "@/components/mobile/MobileHeader";
@@ -3808,7 +3809,11 @@ What would you like to work on today?`
           
           {mobileTab === 'text' && (
             <div className="h-full overflow-auto p-4">
-              <ShiftLogPanel restaurantId={id || ""} />
+              <ShiftLogEntry
+                restaurantId={id || ""}
+                shiftDate={format(new Date(), 'yyyy-MM-dd')}
+                shiftType="dinner"
+              />
             </div>
           )}
         </div>
