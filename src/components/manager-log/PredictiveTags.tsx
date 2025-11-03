@@ -131,7 +131,7 @@ export function PredictiveTags({ content, selectedTags, onTagsChange }: Predicti
               <Badge
                 key={tag.tag_name}
                 variant="outline"
-                className="h-10 px-3 cursor-pointer hover:bg-accent transition-colors"
+                className="h-10 px-3 cursor-pointer hover:bg-accent transition-colors text-foreground border-border"
                 onClick={() => toggleTag(tag.tag_name)}
               >
                 {tag.display_name}
@@ -166,7 +166,9 @@ export function PredictiveTags({ content, selectedTags, onTagsChange }: Predicti
                     <Badge
                       key={tag.tag_name}
                       variant={selectedTags.includes(tag.tag_name) ? "default" : "outline"}
-                      className="h-9 px-3 cursor-pointer hover:bg-accent transition-colors"
+                      className={`h-9 px-3 cursor-pointer hover:bg-accent transition-colors ${
+                        selectedTags.includes(tag.tag_name) ? "" : "text-foreground border-border"
+                      }`}
                       onClick={() => toggleTag(tag.tag_name)}
                     >
                       {tag.display_name}
