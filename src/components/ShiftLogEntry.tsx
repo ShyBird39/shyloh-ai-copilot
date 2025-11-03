@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AlertCircle, CheckCircle2, UnfoldVertical } from "lucide-react";
 import { PredictiveTags } from "./manager-log/PredictiveTags";
+import { TextLogDrawer } from "./mobile/TextLogDrawer";
 
 interface ShiftLogEntryProps {
   restaurantId: string;
@@ -31,6 +32,7 @@ export function ShiftLogEntry({ restaurantId, shiftDate, shiftType, onEntrySaved
   const [content, setContent] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [todaysLogs, setTodaysLogs] = useState<any[]>([]);
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [textHeight, setTextHeight] = useState<number>(300);
@@ -51,6 +53,27 @@ export function ShiftLogEntry({ restaurantId, shiftDate, shiftType, onEntrySaved
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
   }, [textHeight]);
+
+  const fetchTodaysLogs = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('shift_logs')
+        .select('*')
+        .eq('restaurant_id', restaurantId)
+        .eq('shift_date', shiftDate)
+        .eq('shift_type', shiftType)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setTodaysLogs(data || []);
+    } catch (error) {
+      console.error('Error fetching logs:', error);
+    }
+  }, [restaurantId, shiftDate, shiftType]);
+
+  useEffect(() => {
+    fetchTodaysLogs();
+  }, [fetchTodaysLogs]);
 
   const handleSave = async () => {
     if (!content.trim()) {
@@ -90,6 +113,8 @@ export function ShiftLogEntry({ restaurantId, shiftDate, shiftType, onEntrySaved
       setIsUrgent(false);
       setSelectedTags([]);
       
+      // Refresh logs
+      await fetchTodaysLogs();
       onEntrySaved?.();
     } catch (error) {
       console.error('Error saving log entry:', error);
@@ -100,7 +125,8 @@ export function ShiftLogEntry({ restaurantId, shiftDate, shiftType, onEntrySaved
   };
 
   return (
-    <Card className="p-6 space-y-4">
+    <>
+      <Card className="p-6 space-y-4 mb-20">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">New Manager Log Entry</h3>
         {isUrgent && (
@@ -189,5 +215,8 @@ export function ShiftLogEntry({ restaurantId, shiftDate, shiftType, onEntrySaved
         </Button>
       </div>
     </Card>
+
+    <TextLogDrawer logs={todaysLogs} onUpdate={fetchTodaysLogs} />
+    </>
   );
 }
