@@ -3,9 +3,11 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Search, Calendar, AlertCircle } from "lucide-react";
+import { getInitials } from "@/lib/utils";
 
 interface ShiftLogSearchProps {
   restaurantId: string;
@@ -128,6 +130,18 @@ export function ShiftLogSearch({ restaurantId }: ShiftLogSearchProps) {
                     <Badge variant="outline" className="text-xs">
                       {result.data.log_category.replace('_', ' ')}
                     </Badge>
+                    {result.data.profiles?.display_name && (
+                      <div className="flex items-center gap-1.5 ml-auto">
+                        <Avatar className="h-5 w-5">
+                          <AvatarFallback className="text-xs">
+                            {getInitials(result.data.profiles.display_name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-xs font-medium">
+                          {getInitials(result.data.profiles.display_name)}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <p className="text-sm">{result.data.content}</p>
                 </div>

@@ -113,7 +113,12 @@ serve(async (req) => {
       if (logIds.length > 0) {
         const { data: logsData } = await supabase
           .from('shift_logs')
-          .select('*')
+          .select(`
+            *,
+            profiles:user_id (
+              display_name
+            )
+          `)
           .in('id', logIds);
         logs = logsData || [];
       }
