@@ -3046,8 +3046,20 @@ What would you like to work on today?`
         }
       }
     } catch (error) {
-      console.error('Chat error:', error);
-      toast.error('Failed to get response from AI');
+      console.error('Chat error - Full details:', {
+        error,
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        timestamp: new Date().toISOString(),
+        conversationId: convId,
+        hardMode: useHardMode,
+        useNotion: useNotion,
+        restaurantId: id,
+        messageCount: messages.length,
+      });
+      
+      const errorMessage = error instanceof Error ? error.message : 'Failed to get response from AI';
+      toast.error(errorMessage);
     } finally {
       setIsTyping(false);
     }
