@@ -137,7 +137,7 @@ export function ShiftLogEntry({ restaurantId, shiftDate, shiftType, onEntrySaved
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="Enter Manager Log details..."
-            className="min-h-[120px] resize-none bg-background text-foreground"
+            className="min-h-[300px] resize-y bg-background text-foreground"
           />
         </div>
 
