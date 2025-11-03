@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
-import { X, ChevronDown, ChevronUp } from "lucide-react";
+import { X, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface PredefinedTag {
   id: string;
@@ -22,6 +23,9 @@ interface PredictiveTagsProps {
 export function PredictiveTags({ content, selectedTags, onTagsChange }: PredictiveTagsProps) {
   const [allTags, setAllTags] = useState<PredefinedTag[]>([]);
   const [showAllTags, setShowAllTags] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<any[]>([]);
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchTags = async () => {
@@ -39,43 +43,41 @@ export function PredictiveTags({ content, selectedTags, onTagsChange }: Predicti
     fetchTags();
   }, []);
 
-  // Predict tags based on content
-  const suggestedTags = useMemo(() => {
-    if (!content.trim() || content.length < 3) return [];
+  // AI-powered tag suggestions
+  useEffect(() => {
+    if (!content || content.trim().length < 20 || allTags.length === 0) {
+      setAiSuggestions([]);
+      return;
+    }
 
-    const contentLower = content.toLowerCase();
-    const words = contentLower.split(/\s+/);
-    
-    const tagScores = allTags.map(tag => {
-      let score = 0;
-      
-      tag.keywords.forEach(keyword => {
-        const keywordLower = keyword.toLowerCase();
-        
-        // Exact phrase match
-        if (contentLower.includes(keywordLower)) {
-          score += 3;
-        }
-        
-        // Individual word matches
-        const keywordWords = keywordLower.split(/\s+/);
-        keywordWords.forEach(kw => {
-          if (words.includes(kw)) {
-            score += 1;
-          }
+    const timer = setTimeout(async () => {
+      setIsLoadingAI(true);
+      setAiError(null);
+
+      try {
+        const { data, error } = await supabase.functions.invoke('suggest-log-tags', {
+          body: { content, tags: allTags }
         });
-      });
-      
-      return { tag, score };
-    });
 
-    return tagScores
-      .filter(({ score }) => score > 0)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 6)
-      .map(({ tag }) => tag)
-      .filter(tag => !selectedTags.includes(tag.tag_name));
-  }, [content, allTags, selectedTags]);
+        if (error) throw error;
+
+        setAiSuggestions(data?.suggestions || []);
+      } catch (error) {
+        console.error('Error getting AI suggestions:', error);
+        setAiError('Failed to get AI suggestions');
+        setAiSuggestions([]);
+      } finally {
+        setIsLoadingAI(false);
+      }
+    }, 1000); // Debounce: wait 1 second after user stops typing
+
+    return () => clearTimeout(timer);
+  }, [content, allTags]);
+
+  // Filter out already selected tags from AI suggestions
+  const filteredAiSuggestions = useMemo(() => {
+    return aiSuggestions.filter(s => !selectedTags.includes(s.tag_name));
+  }, [aiSuggestions, selectedTags]);
 
   const toggleTag = (tagName: string) => {
     if (selectedTags.includes(tagName)) {
@@ -122,22 +124,44 @@ export function PredictiveTags({ content, selectedTags, onTagsChange }: Predicti
         </div>
       )}
 
-      {/* Suggested Tags */}
-      {suggestedTags.length > 0 && (
+      {/* AI Suggested Tags */}
+      {(isLoadingAI || filteredAiSuggestions.length > 0) && (
         <div className="space-y-2">
-          <label className="text-sm font-medium text-muted-foreground">Suggested Tags</label>
-          <div className="flex flex-wrap gap-2">
-            {suggestedTags.map(tag => (
-              <Badge
-                key={tag.tag_name}
-                variant="secondary"
-                className="h-10 px-3 cursor-pointer hover:bg-accent transition-colors"
-                onClick={() => toggleTag(tag.tag_name)}
-              >
-                {tag.display_name}
-              </Badge>
-            ))}
-          </div>
+          <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+            <Sparkles className="h-3.5 w-3.5" />
+            AI Suggested Tags
+          </label>
+          {isLoadingAI ? (
+            <div className="flex flex-wrap gap-2">
+              {[1, 2, 3].map(i => (
+                <Skeleton key={i} className="h-10 w-24" />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {filteredAiSuggestions.map(suggestion => {
+                const tag = allTags.find(t => t.tag_name === suggestion.tag_name);
+                if (!tag) return null;
+                
+                return (
+                  <Badge
+                    key={suggestion.tag_name}
+                    variant="secondary"
+                    className="h-10 px-3 cursor-pointer hover:bg-accent transition-colors"
+                    onClick={() => toggleTag(suggestion.tag_name)}
+                    style={{ opacity: 0.7 + suggestion.confidence * 0.3 }}
+                    title={suggestion.reason}
+                  >
+                    {tag.display_name}
+                    <Sparkles className="ml-1 h-3 w-3" />
+                  </Badge>
+                );
+              })}
+            </div>
+          )}
+          {aiError && (
+            <p className="text-xs text-destructive">{aiError}</p>
+          )}
         </div>
       )}
 
