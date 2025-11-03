@@ -344,6 +344,39 @@ export type Database = {
           },
         ]
       }
+      predefined_tags: {
+        Row: {
+          category: string
+          created_at: string
+          display_name: string
+          id: string
+          is_active: boolean
+          keywords: string[]
+          sort_order: number
+          tag_name: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          display_name: string
+          id?: string
+          is_active?: boolean
+          keywords?: string[]
+          sort_order?: number
+          tag_name: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          display_name?: string
+          id?: string
+          is_active?: boolean
+          keywords?: string[]
+          sort_order?: number
+          tag_name?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -975,6 +1008,7 @@ export type Database = {
           restaurant_id: string
           shift_date: string
           shift_type: string
+          tags: string[] | null
           updated_at: string
           urgency_level: string
           user_id: string
@@ -988,6 +1022,7 @@ export type Database = {
           restaurant_id: string
           shift_date?: string
           shift_type?: string
+          tags?: string[] | null
           updated_at?: string
           urgency_level?: string
           user_id: string
@@ -1001,6 +1036,7 @@ export type Database = {
           restaurant_id?: string
           shift_date?: string
           shift_type?: string
+          tags?: string[] | null
           updated_at?: string
           urgency_level?: string
           user_id?: string

@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { PredictiveTags } from "./manager-log/PredictiveTags";
 
 interface ShiftLogEntryProps {
   restaurantId: string;
@@ -24,23 +25,12 @@ const CATEGORIES = [
   { value: 'shout_outs', label: 'Shout-Outs', description: 'Team member recognition' },
 ];
 
-const QUICK_TEMPLATES = [
-  { category: 'maintenance', text: 'Ice machine down. Called for repair.' },
-  { category: 'eighty_sixed', text: '86 - ' },
-  { category: 'incident', text: 'Guest complaint: ' },
-  { category: 'shout_outs', text: 'Great work by ' },
-];
-
 export function ShiftLogEntry({ restaurantId, shiftDate, shiftType, onEntrySaved }: ShiftLogEntryProps) {
   const [category, setCategory] = useState<string>('staff_notes');
   const [isUrgent, setIsUrgent] = useState(false);
   const [content, setContent] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-
-  const handleQuickTemplate = (template: typeof QUICK_TEMPLATES[0]) => {
-    setCategory(template.category);
-    setContent(template.text);
-  };
 
   const handleSave = async () => {
     if (!content.trim()) {
@@ -66,6 +56,7 @@ export function ShiftLogEntry({ restaurantId, shiftDate, shiftType, onEntrySaved
           log_category: category,
           urgency_level: isUrgent ? 'urgent' : 'normal',
           content: content.trim(),
+          tags: selectedTags,
         });
 
       if (error) throw error;
@@ -77,6 +68,7 @@ export function ShiftLogEntry({ restaurantId, shiftDate, shiftType, onEntrySaved
       // Reset form
       setContent('');
       setIsUrgent(false);
+      setSelectedTags([]);
       
       onEntrySaved?.();
     } catch (error) {
@@ -149,28 +141,19 @@ export function ShiftLogEntry({ restaurantId, shiftDate, shiftType, onEntrySaved
           />
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Quick Templates</label>
-          <div className="flex flex-wrap gap-2">
-            {QUICK_TEMPLATES.map((template, idx) => (
-              <Button
-                key={idx}
-                variant="secondary"
-                size="sm"
-                onClick={() => handleQuickTemplate(template)}
-              >
-                {template.text}
-              </Button>
-            ))}
-          </div>
-        </div>
+        {/* Predictive Tags */}
+        <PredictiveTags
+          content={content}
+          selectedTags={selectedTags}
+          onTagsChange={setSelectedTags}
+        />
 
         <Button
           onClick={handleSave}
           disabled={isSaving || !content.trim()}
           className="w-full"
         >
-          {isSaving ? 'Saving...' : 'Save Log Entry'}
+          {isSaving ? 'Saving...' : `Save Log Entry${selectedTags.length > 0 ? ` (${selectedTags.length} tag${selectedTags.length > 1 ? 's' : ''})` : ''}`}
         </Button>
       </div>
     </Card>
