@@ -27,9 +27,9 @@ serve(async (req) => {
       throw new Error('OPENAI_API_KEY not configured');
     }
 
-    // Build tag context for AI
+    // Build tag context for AI (limit keywords to first 5 to reduce prompt size)
     const tagContext = tags.map((t: any) => 
-      `- ${t.tag_name} (${t.display_name}): ${t.keywords.join(', ')}`
+      `- ${t.tag_name} (${t.display_name}): ${(t.keywords || []).slice(0, 5).join(', ')}`
     ).join('\n');
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -40,11 +40,13 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'gpt-5-2025-08-07',
-        max_completion_tokens: 1000,
+        max_completion_tokens: 2000,
         messages: [
           {
             role: 'system',
-            content: `You are analyzing restaurant manager shift log entries. Your job is to suggest the most relevant tags based on the content. Return ONLY the top 3-5 most relevant tags, focusing on the PRIMARY intent of the log entry.
+            content: `You are analyzing restaurant manager shift log entries. You must call the function suggest_tags immediately. Do not write any assistant text — only call the tool.
+
+Return ONLY the top 3-5 most relevant tags, focusing on the PRIMARY intent of the log entry. Each reason must be ≤ 12 words.
 
 IMPORTANT: Common words have different meanings in context:
 - "shift" as a time period (e.g., "during the shift", "challenging shift") should NOT trigger "Schedule Change"
@@ -104,10 +106,89 @@ ${tagContext}`
     }
 
     const data = await response.json();
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+    let toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+    const finishReason = data.choices?.[0]?.finish_reason;
+    
+    // If no tool call or ran out of tokens, try fallback with gpt-5-mini
+    if (!toolCall?.function?.arguments || finishReason === 'length') {
+      console.log('Primary model failed (no tool call or length limit), trying fallback with gpt-5-mini...');
+      
+      const fallbackResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-5-mini-2025-08-07',
+          max_completion_tokens: 800,
+          messages: [
+            {
+              role: 'system',
+              content: `You are analyzing restaurant manager shift log entries. You must call the function suggest_tags immediately. Do not write any assistant text — only call the tool.
+
+Return ONLY the top 3-5 most relevant tags, focusing on the PRIMARY intent of the log entry. Each reason must be ≤ 12 words.
+
+IMPORTANT: Common words have different meanings in context:
+- "shift" as a time period (e.g., "during the shift", "challenging shift") should NOT trigger "Schedule Change"
+- "Schedule Change" should ONLY be suggested for: shift swaps, coverage requests, schedule adjustments, time-off requests
+- Prioritize operational issues: training needs, performance concerns, equipment problems, customer service, follow-ups
+
+Available tags:
+${tagContext}`
+            },
+            {
+              role: 'user',
+              content: `Analyze this shift log entry and suggest the most relevant tags:\n\n"${content}"\n\nReturn the tag suggestions with confidence scores and brief reasoning.`
+            }
+          ],
+          tools: [{
+            type: "function",
+            function: {
+              name: "suggest_tags",
+              description: "Return suggested tags for the manager log entry",
+              parameters: {
+                type: "object",
+                properties: {
+                  suggestions: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        tag_name: {
+                          type: "string",
+                          description: "The tag_name value from the available tags"
+                        },
+                        confidence: {
+                          type: "number",
+                          description: "Confidence score between 0 and 1"
+                        },
+                        reason: {
+                          type: "string",
+                          description: "Brief explanation of why this tag applies"
+                        }
+                      },
+                      required: ["tag_name", "confidence", "reason"]
+                    }
+                  }
+                },
+                required: ["suggestions"]
+              }
+            }
+          }],
+          tool_choice: { type: "function", function: { name: "suggest_tags" } }
+        }),
+      });
+
+      if (fallbackResponse.ok) {
+        const fallbackData = await fallbackResponse.json();
+        toolCall = fallbackData.choices?.[0]?.message?.tool_calls?.[0];
+        console.log('Fallback model response received');
+      }
+    }
     
     if (!toolCall?.function?.arguments) {
-      console.error('No tool call in response:', data);
+      console.error('Both primary and fallback failed to produce tool call');
       return new Response(
         JSON.stringify({ suggestions: [] }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -122,7 +203,7 @@ ${tagContext}`
       .filter((s: any) => validTagNames.has(s.tag_name))
       .slice(0, 5); // Max 5 suggestions
 
-    console.log(`AI suggested ${validatedSuggestions.length} tags for log entry`);
+    console.log(`AI suggested ${validatedSuggestions.length} tags for log entry (via ${finishReason === 'length' || !data.choices?.[0]?.message?.tool_calls?.[0] ? 'fallback' : 'primary'} model)`);
 
     return new Response(
       JSON.stringify({ suggestions: validatedSuggestions }),
