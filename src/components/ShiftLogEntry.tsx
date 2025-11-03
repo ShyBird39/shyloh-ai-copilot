@@ -58,14 +58,24 @@ export function ShiftLogEntry({ restaurantId, shiftDate, shiftType, onEntrySaved
     try {
       const { data, error } = await supabase
         .from('shift_logs')
-        .select('*')
+        .select(`
+          *,
+          profiles!shift_logs_user_id_fkey(display_name)
+        `)
         .eq('restaurant_id', restaurantId)
         .eq('shift_date', shiftDate)
         .eq('shift_type', shiftType)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setTodaysLogs(data || []);
+      
+      // Transform data to include user_display_name
+      const logsWithUser = (data || []).map((log: any) => ({
+        ...log,
+        user_display_name: log.profiles?.display_name || 'Unknown'
+      }));
+      
+      setTodaysLogs(logsWithUser);
     } catch (error) {
       console.error('Error fetching logs:', error);
     }

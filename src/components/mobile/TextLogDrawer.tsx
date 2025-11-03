@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { ChevronUp, ChevronDown, AlertCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, getInitials } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { format } from "date-fns";
 
 interface TextLog {
@@ -12,6 +13,7 @@ interface TextLog {
   urgency_level: string;
   content: string;
   tags: string[];
+  user_display_name?: string;
 }
 
 interface TextLogDrawerProps {
@@ -78,7 +80,7 @@ export const TextLogDrawer = ({ logs, onUpdate }: TextLogDrawerProps) => {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <Badge variant="outline">
+                      <Badge className="bg-primary/10 text-primary border-primary/20">
                         {CATEGORY_LABELS[log.log_category] || log.log_category}
                       </Badge>
                       {log.urgency_level === 'urgent' && (
@@ -86,6 +88,13 @@ export const TextLogDrawer = ({ logs, onUpdate }: TextLogDrawerProps) => {
                           <AlertCircle className="h-3 w-3" />
                           Urgent
                         </Badge>
+                      )}
+                      {log.user_display_name && (
+                        <Avatar className="h-5 w-5">
+                          <AvatarFallback className="text-[10px] bg-muted text-muted-foreground">
+                            {getInitials(log.user_display_name)}
+                          </AvatarFallback>
+                        </Avatar>
                       )}
                     </div>
                     <span className="text-xs text-muted-foreground">
@@ -99,7 +108,7 @@ export const TextLogDrawer = ({ logs, onUpdate }: TextLogDrawerProps) => {
 
                   {log.tags && log.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
-                      {log.tags.map((tag, idx) => (
+                      {log.tags.slice(0, 3).map((tag, idx) => (
                         <Badge key={idx} variant="secondary" className="text-xs">
                           {tag}
                         </Badge>
