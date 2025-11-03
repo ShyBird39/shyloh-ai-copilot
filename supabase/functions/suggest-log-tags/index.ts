@@ -39,11 +39,17 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-5-2025-08-07',
+        max_completion_tokens: 500,
         messages: [
           {
             role: 'system',
             content: `You are analyzing restaurant manager shift log entries. Your job is to suggest the most relevant tags based on the content. Return ONLY the top 3-5 most relevant tags, focusing on the PRIMARY intent of the log entry.
+
+IMPORTANT: Common words have different meanings in context:
+- "shift" as a time period (e.g., "during the shift", "challenging shift") should NOT trigger "Schedule Change"
+- "Schedule Change" should ONLY be suggested for: shift swaps, coverage requests, schedule adjustments, time-off requests
+- Prioritize operational issues: training needs, performance concerns, equipment problems, customer service, follow-ups
 
 Available tags:
 ${tagContext}`
