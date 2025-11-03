@@ -175,15 +175,15 @@ export const VoiceMemoItem = ({ memo, onUpdate }: VoiceMemoItemProps) => {
 
           {memo.transcription && (
             <div className="mt-3">
-              <p className="text-sm text-foreground/80 italic">
+              <p className="text-sm text-foreground italic font-medium">
                 "{memo.transcription}"
               </p>
               {memo.transcription_status === 'completed' && (
                 <Button
-                  variant="ghost"
+                  variant="default"
                   size="sm"
                   onClick={() => setIsEditorOpen(true)}
-                  className="mt-2 h-8 text-xs"
+                  className="mt-2 h-9 text-xs bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   <Edit2 className="h-3 w-3 mr-1" />
                   Edit Transcription
