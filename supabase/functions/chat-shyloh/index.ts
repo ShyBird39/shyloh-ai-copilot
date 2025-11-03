@@ -1542,7 +1542,6 @@ Remember: You're earning their trust through depth, not volume. Be thoughtful, a
       console.error('Anthropic API error - Full details:', {
         status: response.status,
         statusText: response.statusText,
-        headers: Object.fromEntries(response.headers.entries()),
         body: errorText,
         model: modelToUse,
         hardMode: hardMode,

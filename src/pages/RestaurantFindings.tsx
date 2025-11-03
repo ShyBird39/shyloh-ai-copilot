@@ -3051,7 +3051,7 @@ What would you like to work on today?`
         message: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
         timestamp: new Date().toISOString(),
-        conversationId: convId,
+        conversationId: currentConversationId,
         hardMode: useHardMode,
         useNotion: useNotion,
         restaurantId: id,
