@@ -244,14 +244,14 @@ export const VoiceCapture = ({ restaurantId, shiftDate, shiftType, isMobile: isM
           </h3>
           <div className="space-y-3">
             {memos.map((memo) => (
-              <VoiceMemoItem key={memo.id} memo={memo} />
+              <VoiceMemoItem key={memo.id} memo={memo} onUpdate={fetchMemos} />
             ))}
           </div>
         </div>
       )}
 
       {/* Memos Drawer - Mobile */}
-      {isMobile && <VoiceMemoDrawer memos={memos} />}
+      {isMobile && <VoiceMemoDrawer memos={memos} onUpdate={fetchMemos} />}
     </div>
   );
 };

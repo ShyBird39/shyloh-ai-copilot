@@ -1,19 +1,22 @@
 import { useState, useEffect } from 'react';
-import { Play, Pause, Loader2 } from 'lucide-react';
+import { Play, Pause, Loader2, Edit2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { VoiceMemo } from '@/types/log';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { TranscriptionEditor } from './TranscriptionEditor';
 
 interface VoiceMemoItemProps {
   memo: VoiceMemo;
+  onUpdate?: () => void;
 }
 
-export const VoiceMemoItem = ({ memo }: VoiceMemoItemProps) => {
+export const VoiceMemoItem = ({ memo, onUpdate }: VoiceMemoItemProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [audio] = useState(() => {
     const audioElement = new Audio();
     // Configure for mobile compatibility
@@ -171,9 +174,22 @@ export const VoiceMemoItem = ({ memo }: VoiceMemoItemProps) => {
           </div>
 
           {memo.transcription && (
-            <p className="text-sm text-foreground/80 italic mt-3">
-              "{memo.transcription}"
-            </p>
+            <div className="mt-3">
+              <p className="text-sm text-foreground/80 italic">
+                "{memo.transcription}"
+              </p>
+              {memo.transcription_status === 'completed' && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsEditorOpen(true)}
+                  className="mt-2 h-8 text-xs"
+                >
+                  <Edit2 className="h-3 w-3 mr-1" />
+                  Edit Transcription
+                </Button>
+              )}
+            </div>
           )}
         </div>
 
@@ -193,6 +209,13 @@ export const VoiceMemoItem = ({ memo }: VoiceMemoItemProps) => {
           )}
         </Button>
       </div>
+
+      <TranscriptionEditor
+        memo={memo}
+        open={isEditorOpen}
+        onOpenChange={setIsEditorOpen}
+        onSave={() => onUpdate?.()}
+      />
     </div>
   );
 };

@@ -7,9 +7,10 @@ import { Badge } from "@/components/ui/badge";
 
 interface VoiceMemoDrawerProps {
   memos: VoiceMemo[];
+  onUpdate?: () => void;
 }
 
-export const VoiceMemoDrawer = ({ memos }: VoiceMemoDrawerProps) => {
+export const VoiceMemoDrawer = ({ memos, onUpdate }: VoiceMemoDrawerProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleDrawer = () => {
@@ -56,7 +57,7 @@ export const VoiceMemoDrawer = ({ memos }: VoiceMemoDrawerProps) => {
             </p>
           ) : (
             memos.map((memo) => (
-              <VoiceMemoItem key={memo.id} memo={memo} />
+              <VoiceMemoItem key={memo.id} memo={memo} onUpdate={onUpdate} />
             ))
           )}
         </div>
