@@ -2757,13 +2757,26 @@ What would you like to work on today?`
           }
         }
 
-        // Debug: Check auth state
+        // Debug: Check auth state and token
         const { data: { session: currentSession } } = await supabase.auth.getSession();
-        console.log('Current session before insert:', {
+        console.log('🔍 Auth Debug Before Message Insert:', {
           hasSession: !!currentSession,
           userId: currentSession?.user?.id,
+          userEmail: currentSession?.user?.email,
           reactUserId: user?.id,
-          match: currentSession?.user?.id === user?.id
+          reactUserEmail: user?.email,
+          match: currentSession?.user?.id === user?.id,
+          accessToken: currentSession?.access_token?.substring(0, 20) + '...',
+          expiresAt: currentSession?.expires_at,
+          tokenExpired: currentSession?.expires_at ? currentSession.expires_at < Date.now() / 1000 : 'unknown'
+        });
+
+        // Test database auth context by calling a simple function
+        const { data: authTest, error: authTestError } = await supabase.rpc('is_super_admin', { _user_id: user?.id });
+        console.log('🔍 Database Auth Context Test:', {
+          isSuperAdmin: authTest,
+          error: authTestError,
+          note: 'This calls a function that uses auth.uid() to check if you are eli@shybird.com'
         });
 
         // Save user message
