@@ -2740,15 +2740,6 @@ What would you like to work on today?`
     setIsTyping(true);
 
     try {
-      // Ensure session is active before proceeding
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session || !session.user) {
-        setIsTyping(false);
-        toast.error("Your session expired. Please sign in again.");
-        navigate("/auth");
-        return;
-      }
-
       // Create or update conversation
       let convId = currentConversationId;
       
@@ -2850,74 +2841,69 @@ What would you like to work on today?`
         }
       }
 
-      // Call AI via backend invoke (handles auth/CORS)
-      const { data: aiData, error: aiError } = await supabase.functions.invoke('chat-shyloh', {
-        body: {
-          messages: [...messages, userMessage],
-          restaurantData: data,
-          kpiData: kpiData,
-          restaurantId: id,
-          useNotion: useNotion,
-          hardMode: useHardMode,
-          conversationId: convId,
-          tuningProfile: data?.tuning_profile,
-        },
-      });
+      // Get user's JWT for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-      if (aiError) {
-        console.error('AI invoke error:', aiError);
-        const status = (aiError as any)?.context?.status;
-        const body = (aiError as any)?.context?.body;
-        const statusText = (aiError as any)?.context?.statusText;
-
-        let msg = '';
-        if (status === 429) {
-          msg = 'Rate limit exceeded. Please try again in a moment.';
-        } else if (status === 402) {
-          msg = 'Payment required. Please add credits to your workspace.';
-        } else if (status === 404) {
-          msg = 'Service unavailable. The AI function is not reachable (404).';
-        } else if (status === 401) {
-          msg = 'You are not signed in or your session expired. Please sign in again.';
-        } else {
-          msg = aiError.message || 'AI request failed';
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-shyloh`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({
+            messages: [...messages, userMessage],
+            restaurantData: data,
+            kpiData: kpiData,
+            restaurantId: id,
+            useNotion: useNotion,
+            hardMode: useHardMode,
+            conversationId: convId,
+            tuningProfile: data?.tuning_profile,
+          }),
         }
+      );
 
-        // Include server error details if present
-        if (body) {
-          try {
-            const parsed = typeof body === 'string' ? JSON.parse(body) : body;
-            const detail = parsed?.error || parsed?.message || parsed?.detail || parsed?.hint;
-            if (detail && typeof detail === 'string') {
-              msg = `${msg} – ${detail}`;
-            }
-          } catch {
-            if (typeof body === 'string' && body.length < 300) {
-              msg = `${msg} – ${body}`;
-            }
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMsg = errorData.error || `AI request failed with status ${response.status}`;
+        console.error('AI Error:', errorMsg, errorData);
+        
+        if (response.status === 429) {
+          throw new Error('Rate limit exceeded. Please try again in a moment.');
+        } else if (response.status === 402) {
+          throw new Error('Payment required. Please add credits to your workspace.');
+        }
+        
+        throw new Error(errorMsg);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response stream');
+      }
+
+      const decoder = new TextDecoder();
+      let assistantMessage = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        assistantMessage += chunk;
+
+        // Update the last message or add new assistant message
+        setMessages((prev) => {
+          const lastMsg = prev[prev.length - 1];
+          if (lastMsg?.role === 'assistant') {
+            return [...prev.slice(0, -1), { ...lastMsg, content: assistantMessage }];
           }
-        } else if (statusText) {
-          msg = `${msg} (${statusText})`;
-        }
-
-        toast.error(msg);
-        return;
+          return [...prev, { role: 'assistant', content: assistantMessage }];
+        });
       }
-
-      let assistantMessage = '';
-      if (typeof aiData === 'string') {
-        assistantMessage = aiData;
-      } else if (aiData && typeof aiData === 'object') {
-        // Accept common shapes: { content: string } or { message: string }
-        assistantMessage = (aiData as any).content || (aiData as any).message || JSON.stringify(aiData);
-      }
-
-      if (!assistantMessage) {
-        throw new Error('Empty AI response');
-      }
-
-      // Update UI with the final assistant message
-      setMessages((prev) => [...prev, { role: 'assistant', content: assistantMessage }]);
 
       // Save assistant message
       if (assistantMessage && convId) {
@@ -3060,21 +3046,8 @@ What would you like to work on today?`
         }
       }
     } catch (error) {
-      console.error('Chat error - Full details:', {
-        error,
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        timestamp: new Date().toISOString(),
-        conversationId: currentConversationId,
-        hardMode: useHardMode,
-        useNotion: useNotion,
-        restaurantId: id,
-        messageCount: messages.length,
-      });
-      
-      const errObj = error as any;
-      const errorMessage = errObj?.message || errObj?.error_description || errObj?.hint || (typeof errObj === 'string' ? errObj : 'Failed to get response from AI');
-      toast.error(errorMessage);
+      console.error('Chat error:', error);
+      toast.error('Failed to get response from AI');
     } finally {
       setIsTyping(false);
     }

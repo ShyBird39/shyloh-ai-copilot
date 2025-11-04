@@ -1539,18 +1539,8 @@ Remember: You're earning their trust through depth, not volume. Be thoughtful, a
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Anthropic API error - Full details:', {
-        status: response.status,
-        statusText: response.statusText,
-        body: errorText,
-        model: modelToUse,
-        hardMode: hardMode,
-        maxTokens: requestBody.max_tokens,
-        systemPromptLength: systemPrompt.length,
-        messagesCount: messages.length,
-        timestamp: new Date().toISOString(),
-      });
-      throw new Error(`Anthropic API error: ${response.status} - ${errorText}`);
+      console.error('Anthropic API error:', response.status, errorText);
+      throw new Error(`Anthropic API error: ${response.status}`);
     }
 
     // Handle tool use (non-streaming) vs regular streaming
