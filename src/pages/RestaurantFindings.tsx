@@ -2295,6 +2295,15 @@ What would you like to work on today?`
         
         // Create onboarding conversation record
         try {
+          // Get session for proper user ID
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session?.user?.id) {
+            console.error('No session when saving onboarding conversation');
+            setIsOnboarding(false);
+            setOnboardingPhase('hook');
+            return;
+          }
+
           const { data: newConv, error } = await supabase
             .from("chat_conversations")
             .insert({
@@ -2302,7 +2311,7 @@ What would you like to work on today?`
               title: "Getting Started with Shyloh",
               message_count: messages.length + 2,
               conversation_type: 'onboarding',
-              created_by: user?.id,
+              created_by: session.user.id,
               visibility: 'private',
             })
             .select()
@@ -2311,15 +2320,13 @@ What would you like to work on today?`
           if (error) throw error;
 
           // Add creator as participant (owner)
-          if (user?.id) {
-            await supabase
-              .from("chat_conversation_participants")
-              .insert({
-                conversation_id: newConv.id,
-                user_id: user.id,
-                role: 'owner',
-              });
-          }
+          await supabase
+            .from("chat_conversation_participants")
+            .insert({
+              conversation_id: newConv.id,
+              user_id: session.user.id,
+              role: 'owner',
+            });
 
           // Save all messages to this conversation including the final message
           const messagesToSave = [...messages, userMessage, finalMessage].map((msg, idx) => ({
@@ -2684,7 +2691,7 @@ What would you like to work on today?`
         if (!convId) {
           // Verify session before creating conversation
           const { data: { session } } = await supabase.auth.getSession();
-          if (!session) {
+          if (!session?.user?.id) {
             toast.error("Your session expired. Please refresh the page.");
             return;
           }
@@ -2696,7 +2703,7 @@ What would you like to work on today?`
               restaurant_id: id,
               title: messageText.substring(0, 50) + (messageText.length > 50 ? "..." : ""),
               message_count: 1,
-              created_by: user?.id,
+              created_by: session.user.id,
               visibility: currentConversationVisibility || 'private',
             })
             .select()
@@ -2711,27 +2718,17 @@ What would you like to work on today?`
           setCurrentConversationId(convId);
 
           // Add creator as participant (owner)
-          if (user?.id) {
-            const { data: { session: participantSession } } = await supabase.auth.getSession();
-            console.log('Adding participant - auth state:', {
-              hasSession: !!participantSession,
-              sessionUserId: participantSession?.user?.id,
-              reactUserId: user.id,
-              match: participantSession?.user?.id === user?.id
+          const { error: participantError } = await supabase
+            .from("chat_conversation_participants")
+            .insert({
+              conversation_id: newConv.id,
+              user_id: session.user.id,
+              role: 'owner',
             });
 
-            const { error: participantError } = await supabase
-              .from("chat_conversation_participants")
-              .insert({
-                conversation_id: newConv.id,
-                user_id: user.id,
-                role: 'owner',
-              });
-
-            if (participantError) {
-              console.error('Participant insertion error:', participantError);
-              toast.error(`Failed to add participant: ${participantError.message}`);
-            }
+          if (participantError) {
+            console.error('Participant insertion error:', participantError);
+            toast.error(`Failed to add participant: ${participantError.message}`);
           }
         } else {
           // Verify user can access this conversation (participant OR team member for team conversations)
