@@ -2712,13 +2712,26 @@ What would you like to work on today?`
 
           // Add creator as participant (owner)
           if (user?.id) {
-            await supabase
+            const { data: { session: participantSession } } = await supabase.auth.getSession();
+            console.log('Adding participant - auth state:', {
+              hasSession: !!participantSession,
+              sessionUserId: participantSession?.user?.id,
+              reactUserId: user.id,
+              match: participantSession?.user?.id === user?.id
+            });
+
+            const { error: participantError } = await supabase
               .from("chat_conversation_participants")
               .insert({
                 conversation_id: newConv.id,
                 user_id: user.id,
                 role: 'owner',
               });
+
+            if (participantError) {
+              console.error('Participant insertion error:', participantError);
+              toast.error(`Failed to add participant: ${participantError.message}`);
+            }
           }
         } else {
           // Verify user can access this conversation (participant OR team member for team conversations)
@@ -2743,6 +2756,15 @@ What would you like to work on today?`
             }
           }
         }
+
+        // Debug: Check auth state
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        console.log('Current session before insert:', {
+          hasSession: !!currentSession,
+          userId: currentSession?.user?.id,
+          reactUserId: user?.id,
+          match: currentSession?.user?.id === user?.id
+        });
 
         // Save user message
         const { data: insertedMessage } = await supabase
