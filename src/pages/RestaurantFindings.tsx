@@ -2841,85 +2841,46 @@ What would you like to work on today?`
         }
       }
 
-      // Get user's JWT for authentication
-      const { data: { session } } = await supabase.auth.getSession();
-      const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      // Call AI via backend invoke (handles auth/CORS)
+      const { data: aiData, error: aiError } = await supabase.functions.invoke('chat-shyloh', {
+        body: {
+          messages: [...messages, userMessage],
+          restaurantData: data,
+          kpiData: kpiData,
+          restaurantId: id,
+          useNotion: useNotion,
+          hardMode: useHardMode,
+          conversationId: convId,
+          tuningProfile: data?.tuning_profile,
+        },
+      });
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-shyloh`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`,
-          },
-          body: JSON.stringify({
-            messages: [...messages, userMessage],
-            restaurantData: data,
-            kpiData: kpiData,
-            restaurantId: id,
-            useNotion: useNotion,
-            hardMode: useHardMode,
-            conversationId: convId,
-            tuningProfile: data?.tuning_profile,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const errorMsg = errorData.error || `AI request failed with status ${response.status}`;
-        console.error('AI Error:', errorMsg, errorData);
-        
-        if (response.status === 429) {
+      if (aiError) {
+        console.error('AI invoke error:', aiError);
+        // Surface meaningful errors
+        if ((aiError as any)?.context?.status === 429) {
           throw new Error('Rate limit exceeded. Please try again in a moment.');
-        } else if (response.status === 402) {
+        }
+        if ((aiError as any)?.context?.status === 402) {
           throw new Error('Payment required. Please add credits to your workspace.');
         }
-        
-        throw new Error(errorMsg);
+        throw new Error(aiError.message || 'AI request failed');
       }
 
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error('No response stream');
+      let assistantMessage = '';
+      if (typeof aiData === 'string') {
+        assistantMessage = aiData;
+      } else if (aiData && typeof aiData === 'object') {
+        // Accept common shapes: { content: string } or { message: string }
+        assistantMessage = (aiData as any).content || (aiData as any).message || JSON.stringify(aiData);
       }
 
-      console.log('Starting to read AI response stream...');
-      const decoder = new TextDecoder();
-      let assistantMessage = "";
-      let chunkCount = 0;
-
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) {
-            console.log(`Stream completed after ${chunkCount} chunks, total length: ${assistantMessage.length}`);
-            break;
-          }
-
-          chunkCount++;
-          const chunk = decoder.decode(value);
-          assistantMessage += chunk;
-
-          // Update the last message or add new assistant message
-          setMessages((prev) => {
-            const lastMsg = prev[prev.length - 1];
-            if (lastMsg?.role === 'assistant') {
-              return [...prev.slice(0, -1), { ...lastMsg, content: assistantMessage }];
-            }
-            return [...prev, { role: 'assistant', content: assistantMessage }];
-          });
-        }
-      } catch (streamError) {
-        console.error('Stream reading error:', {
-          error: streamError,
-          message: streamError instanceof Error ? streamError.message : String(streamError),
-          chunksRead: chunkCount,
-          partialMessage: assistantMessage.substring(0, 200),
-        });
-        throw new Error(`Stream reading failed after ${chunkCount} chunks: ${streamError instanceof Error ? streamError.message : 'Unknown error'}`);
+      if (!assistantMessage) {
+        throw new Error('Empty AI response');
       }
+
+      // Update UI with the final assistant message
+      setMessages((prev) => [...prev, { role: 'assistant', content: assistantMessage }]);
 
       // Save assistant message
       if (assistantMessage && convId) {
