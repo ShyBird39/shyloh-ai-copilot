@@ -157,6 +157,16 @@ const RestaurantFindings = () => {
   const [editingTool, setEditingTool] = useState<string | null>(null);
   const [toolEditValue, setToolEditValue] = useState("");
   
+  // Toast POS state
+  const [toastData, setToastData] = useState<{
+    dailySales: number;
+    guestCount: number;
+    avgCheck: number;
+    orderCount: number;
+    hourlyData: any[];
+  } | null>(null);
+  const [loadingToastData, setLoadingToastData] = useState(false);
+  
   // Custom knowledge state
   const [customKnowledge, setCustomKnowledge] = useState<any[]>([]);
   const [showAddKnowledge, setShowAddKnowledge] = useState(false);
@@ -1694,6 +1704,13 @@ What would you like to work on today?`
     }
   }, [data, hasCompletedKPIs]);
 
+  // Fetch Toast data when tools are loaded
+  useEffect(() => {
+    if (data && toolsData?.pos_system === 'Toast' && data.restaurant_guid) {
+      fetchToastData();
+    }
+  }, [data, toolsData]);
+
   const handleClaimRestaurant = async () => {
     if (!id || !user || !claimPin.trim()) {
       toast.error("Please enter a PIN");
@@ -1722,6 +1739,53 @@ What would you like to work on today?`
       toast.error(error.message || 'Invalid PIN or failed to claim restaurant');
     } finally {
       setClaiming(false);
+    }
+  };
+
+  // Fetch Toast POS data
+  const fetchToastData = async () => {
+    if (!data?.restaurant_guid || toolsData?.pos_system !== 'Toast') {
+      return;
+    }
+
+    setLoadingToastData(true);
+    try {
+      const { data: toastResponse, error } = await supabase.functions.invoke('toast-reporting', {
+        body: {
+          action: 'request-and-poll',
+          reportType: 'metrics',
+          timeRange: 'day',
+          startDate: parseInt(format(new Date(), 'yyyyMMdd')),
+          endDate: parseInt(format(new Date(), 'yyyyMMdd')),
+          restaurantIds: [data.restaurant_guid],
+          aggregateBy: 'HOUR'
+        }
+      });
+
+      if (error) throw error;
+
+      if (toastResponse?.success && toastResponse?.data) {
+        const hourlyData = toastResponse.data;
+        
+        // Aggregate daily totals
+        const totals = hourlyData.reduce((acc: any, hour: any) => ({
+          netSales: (acc.netSales || 0) + (hour.netSales || 0),
+          guestCount: (acc.guestCount || 0) + (hour.guestCount || 0),
+          ordersCount: (acc.ordersCount || 0) + (hour.ordersCount || 0),
+        }), {});
+
+        setToastData({
+          dailySales: totals.netSales || 0,
+          guestCount: totals.guestCount || 0,
+          avgCheck: totals.guestCount > 0 ? totals.netSales / totals.guestCount : 0,
+          orderCount: totals.ordersCount || 0,
+          hourlyData: hourlyData
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching Toast data:', error);
+    } finally {
+      setLoadingToastData(false);
     }
   };
 
@@ -4982,6 +5046,80 @@ What would you like to work on today?`
                 </CollapsibleContent>
               </div>
             </Collapsible>
+
+            {/* Toast POS Metrics Section */}
+            {toolsData?.pos_system === 'Toast' && data?.restaurant_guid && (
+              <Collapsible defaultOpen={true}>
+                <div className="space-y-3">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full group">
+                    <h3 className="text-sm font-semibold text-primary-foreground uppercase tracking-wide">Today's Metrics</h3>
+                    <ChevronUp className="w-4 h-4 text-primary-foreground/60 group-hover:text-primary-foreground transition-colors ui-state-closed:rotate-180 transition-transform" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="space-y-3">
+                      {loadingToastData ? (
+                        <Card className="bg-background/50 border-accent/20 p-4">
+                          <div className="flex items-center justify-center py-4">
+                            <Loader2 className="w-6 h-6 animate-spin text-primary-foreground/60" />
+                          </div>
+                        </Card>
+                      ) : toastData ? (
+                        <Card className="bg-background/50 border-accent/20 p-4 space-y-3">
+                          <div className="flex items-center justify-between text-xs text-primary-foreground/60">
+                            <span>Live from Toast POS</span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={fetchToastData}
+                              className="h-6 px-2 text-xs"
+                            >
+                              <RotateCcw className="w-3 h-3 mr-1" />
+                              Refresh
+                            </Button>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-primary-foreground/70">Daily Sales:</span>
+                              <span className="text-sm font-semibold text-primary-foreground">
+                                ${toastData.dailySales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                            
+                            <div className="flex justify-between items-center pt-2 border-t border-accent/10">
+                              <span className="text-xs text-primary-foreground/70">Guest Count:</span>
+                              <span className="text-sm font-semibold text-primary-foreground">
+                                {toastData.guestCount}
+                              </span>
+                            </div>
+                            
+                            <div className="flex justify-between items-center pt-2 border-t border-accent/10">
+                              <span className="text-xs text-primary-foreground/70">Avg Check:</span>
+                              <span className="text-sm font-semibold text-primary-foreground">
+                                ${toastData.avgCheck.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                            
+                            <div className="flex justify-between items-center pt-2 border-t border-accent/10">
+                              <span className="text-xs text-primary-foreground/70">Orders:</span>
+                              <span className="text-sm font-semibold text-primary-foreground">
+                                {toastData.orderCount}
+                              </span>
+                            </div>
+                          </div>
+                        </Card>
+                      ) : (
+                        <Card className="bg-background/50 border-accent/20 p-4">
+                          <p className="text-xs text-primary-foreground/60 text-center py-2">
+                            No data available
+                          </p>
+                        </Card>
+                      )}
+                    </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
+            )}
 
             {/* Dimensions Section */}
             <Collapsible open={dimensionsOpen} onOpenChange={setDimensionsOpen}>
