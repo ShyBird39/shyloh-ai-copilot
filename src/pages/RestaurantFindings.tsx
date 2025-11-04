@@ -2866,14 +2866,42 @@ What would you like to work on today?`
 
       if (aiError) {
         console.error('AI invoke error:', aiError);
-        // Surface meaningful errors
-        if ((aiError as any)?.context?.status === 429) {
-          throw new Error('Rate limit exceeded. Please try again in a moment.');
+        const status = (aiError as any)?.context?.status;
+        const body = (aiError as any)?.context?.body;
+        const statusText = (aiError as any)?.context?.statusText;
+
+        let msg = '';
+        if (status === 429) {
+          msg = 'Rate limit exceeded. Please try again in a moment.';
+        } else if (status === 402) {
+          msg = 'Payment required. Please add credits to your workspace.';
+        } else if (status === 404) {
+          msg = 'Service unavailable. The AI function is not reachable (404).';
+        } else if (status === 401) {
+          msg = 'You are not signed in or your session expired. Please sign in again.';
+        } else {
+          msg = aiError.message || 'AI request failed';
         }
-        if ((aiError as any)?.context?.status === 402) {
-          throw new Error('Payment required. Please add credits to your workspace.');
+
+        // Include server error details if present
+        if (body) {
+          try {
+            const parsed = typeof body === 'string' ? JSON.parse(body) : body;
+            const detail = parsed?.error || parsed?.message || parsed?.detail || parsed?.hint;
+            if (detail && typeof detail === 'string') {
+              msg = `${msg} – ${detail}`;
+            }
+          } catch {
+            if (typeof body === 'string' && body.length < 300) {
+              msg = `${msg} – ${body}`;
+            }
+          }
+        } else if (statusText) {
+          msg = `${msg} (${statusText})`;
         }
-        throw new Error(aiError.message || 'AI request failed');
+
+        toast.error(msg);
+        return;
       }
 
       let assistantMessage = '';
