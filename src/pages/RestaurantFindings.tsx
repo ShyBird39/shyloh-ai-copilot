@@ -2682,6 +2682,13 @@ What would you like to work on today?`
         let convId = currentConversationId;
         
         if (!convId) {
+          // Verify session before creating conversation
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) {
+            toast.error("Your session expired. Please refresh the page.");
+            return;
+          }
+          
           // Create new conversation
           const { data: newConv, error: convError } = await supabase
             .from("chat_conversations")
@@ -2695,7 +2702,11 @@ What would you like to work on today?`
             .select()
             .single();
 
-          if (convError) throw convError;
+          if (convError) {
+            console.error('Conversation creation error:', convError);
+            toast.error(`Failed to create conversation: ${convError.message}`);
+            throw convError;
+          }
           convId = newConv.id;
           setCurrentConversationId(convId);
 
@@ -2808,6 +2819,13 @@ What would you like to work on today?`
       let convId = currentConversationId;
       
       if (!convId) {
+        // Verify session before creating conversation
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          toast.error("Your session expired. Please refresh the page.");
+          return;
+        }
+        
         // Create new conversation with a temporary title
         const { data: newConv, error: convError } = await supabase
           .from("chat_conversations")
@@ -2821,7 +2839,11 @@ What would you like to work on today?`
           .select()
           .single();
 
-        if (convError) throw convError;
+        if (convError) {
+          console.error('Conversation creation error:', convError);
+          toast.error(`Failed to create conversation: ${convError.message}`);
+          throw convError;
+        }
         convId = newConv.id;
         setCurrentConversationId(convId);
         setCurrentConversationVisibility('private');
