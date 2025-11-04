@@ -2740,6 +2740,15 @@ What would you like to work on today?`
     setIsTyping(true);
 
     try {
+      // Ensure session is active before proceeding
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || !session.user) {
+        setIsTyping(false);
+        toast.error("Your session expired. Please sign in again.");
+        navigate("/auth");
+        return;
+      }
+
       // Create or update conversation
       let convId = currentConversationId;
       
@@ -3035,7 +3044,8 @@ What would you like to work on today?`
         messageCount: messages.length,
       });
       
-      const errorMessage = error instanceof Error ? error.message : 'Failed to get response from AI';
+      const errObj = error as any;
+      const errorMessage = errObj?.message || errObj?.error_description || errObj?.hint || (typeof errObj === 'string' ? errObj : 'Failed to get response from AI');
       toast.error(errorMessage);
     } finally {
       setIsTyping(false);
