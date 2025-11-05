@@ -4548,6 +4548,8 @@ What would you like to work on today?`
                       <ChatToolsPopover
                         hardModeEnabled={hardModeEnabled}
                         notionEnabled={notionEnabled}
+                        debugMode={showDebugInfo}
+                        onDebugModeToggle={() => setShowDebugInfo(!showDebugInfo)}
                         onHardModeToggle={handleHardModeToggle}
                         onNotionToggle={async (enabled) => {
                           setNotionEnabled(enabled);
@@ -4610,6 +4612,63 @@ What would you like to work on today?`
                   <div className="text-xs text-muted-foreground px-1 mt-1">
                     💡 Type <span className="font-medium">@Shyloh</span> or <span className="font-medium">/ask</span> to get AI help
                   </div>
+                  
+                  {/* Debug Info Display */}
+                  {showDebugInfo && debugInfo && (
+                    <div className="mt-4 p-4 bg-muted/50 border border-border rounded-lg max-h-[400px] overflow-y-auto">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-sm font-semibold text-foreground">Debug: Full Context Sent to Claude</h4>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            navigator.clipboard.writeText(JSON.stringify(debugInfo, null, 2));
+                            toast.success("Debug info copied to clipboard");
+                          }}
+                          className="text-xs"
+                        >
+                          Copy JSON
+                        </Button>
+                      </div>
+                      <div className="space-y-3 text-xs">
+                        <div>
+                          <div className="font-medium text-foreground mb-1">Model:</div>
+                          <div className="text-muted-foreground">{debugInfo.model}</div>
+                        </div>
+                        <div>
+                          <div className="font-medium text-foreground mb-1">Estimated Tokens:</div>
+                          <div className="text-muted-foreground">{debugInfo.estimatedTokens?.toLocaleString()}</div>
+                        </div>
+                        <div>
+                          <div className="font-medium text-foreground mb-1">Total Context Characters:</div>
+                          <div className="text-muted-foreground">{debugInfo.totalContextChars?.toLocaleString()}</div>
+                        </div>
+                        <div>
+                          <div className="font-medium text-foreground mb-1">System Prompt:</div>
+                          <pre className="text-muted-foreground whitespace-pre-wrap bg-background/50 p-2 rounded max-h-[200px] overflow-y-auto">
+                            {debugInfo.systemPrompt}
+                          </pre>
+                        </div>
+                        <div>
+                          <div className="font-medium text-foreground mb-1">Messages ({debugInfo.messages?.length}):</div>
+                          <pre className="text-muted-foreground whitespace-pre-wrap bg-background/50 p-2 rounded max-h-[200px] overflow-y-auto">
+                            {JSON.stringify(debugInfo.messages, null, 2)}
+                          </pre>
+                        </div>
+                        <div>
+                          <div className="font-medium text-foreground mb-1">Context Flags:</div>
+                          <div className="grid grid-cols-2 gap-2 text-muted-foreground">
+                            <div>Hard Mode: {debugInfo.context?.hardMode ? '✅' : '❌'}</div>
+                            <div>Notion: {debugInfo.context?.notionEnabled ? '✅' : '❌'}</div>
+                            <div>Onboarding: {debugInfo.context?.onboardingMode ? '✅' : '❌'}</div>
+                            <div>Custom Knowledge: {debugInfo.context?.hasCustomKnowledge ? '✅' : '❌'}</div>
+                            <div>Toast Metrics: {debugInfo.context?.hasToastMetrics ? '✅' : '❌'}</div>
+                            <div>Files: {debugInfo.context?.filesCount || 0}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
