@@ -77,3 +77,9 @@ verify_jwt = true
 
 [functions.suggest-log-tags]
 verify_jwt = true
+
+[functions.send-team-invitation]
+verify_jwt = true
+
+[functions.create-conversation]
+verify_jwt = true
