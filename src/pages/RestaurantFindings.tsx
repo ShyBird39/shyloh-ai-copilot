@@ -2060,8 +2060,6 @@ What would you like to work on today?`
   useEffect(() => {
     if (!currentConversationId || !user?.id) return;
 
-    console.log('Setting up realtime subscription for conversation:', currentConversationId);
-
     const channel = supabase
       .channel(`messages-${currentConversationId}`)
       .on(
@@ -2312,9 +2310,6 @@ What would you like to work on today?`
             created_by: session.user.id,
             visibility: 'private',
           };
-          console.log('Creating onboarding conversation with params:', conversationParams);
-          console.log('Session user:', session.user);
-          console.log('Auth UID:', (await supabase.auth.getUser()).data.user?.id);
 
           const { data: newConv, error } = await supabase
             .from("chat_conversations")
@@ -2708,9 +2703,6 @@ What would you like to work on today?`
             created_by: session.user.id,
             visibility: currentConversationVisibility || 'private',
           };
-          console.log('Creating new conversation with params:', conversationParams);
-          console.log('Session user:', session.user);
-          console.log('Auth UID:', (await supabase.auth.getUser()).data.user?.id);
           
           // Create new conversation
           const { data: newConv, error: convError } = await supabase
@@ -2879,20 +2871,7 @@ What would you like to work on today?`
           visibility: 'private',
         };
         
-        console.log('=== CONVERSATION INSERT DEBUG ===');
-        console.log('Insert params:', insertParams);
-        console.log('Session user ID:', session.user.id);
-        console.log('Auth user ID:', authUser?.id);
-        console.log('React context user ID:', user?.id);
-        console.log('IDs match:', session.user.id === authUser?.id);
-        
-        // Test what auth.uid() returns in the database context
-        const { data: authTest, error: authTestError } = await supabase.rpc('test_auth_uid');
-        console.log('=== AUTH.UID() TEST ===');
-        console.log('Database auth context:', authTest);
-        console.log('Auth test error:', authTestError);
-        
-        // Create new conversation via edge function (bypasses RLS)
+        // Create new conversation via edge function
         const { data, error: convError } = await supabase.functions.invoke('create-conversation', {
           body: {
             restaurant_id: id,
