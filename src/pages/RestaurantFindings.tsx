@@ -2892,30 +2892,24 @@ What would you like to work on today?`
         console.log('Database auth context:', authTest);
         console.log('Auth test error:', authTestError);
         
-        // Create new conversation with a temporary title
-        const { data: newConv, error: convError } = await supabase
-          .from("chat_conversations")
-          .insert(insertParams)
-          .select()
-          .single();
+        // Create new conversation via edge function (bypasses RLS)
+        const { data, error: convError } = await supabase.functions.invoke('create-conversation', {
+          body: {
+            restaurant_id: id,
+            title: messageText.substring(0, 50) + (messageText.length > 50 ? "..." : ""),
+            visibility: 'private',
+          }
+        });
 
-        if (convError) {
+        if (convError || !data?.conversation) {
           console.error('Conversation creation error:', convError);
-          toast.error(`Failed to create conversation: ${convError.message}`);
-          throw convError;
+          toast.error(`Failed to create conversation: ${convError?.message || 'Unknown error'}`);
+          throw convError || new Error('Failed to create conversation');
         }
-        convId = newConv.id;
+        
+        convId = data.conversation.id;
         setCurrentConversationId(convId);
         setCurrentConversationVisibility('private');
-
-        // Add creator as participant (owner)
-        await supabase
-          .from("chat_conversation_participants")
-          .insert({
-            conversation_id: newConv.id,
-            user_id: session.user.id,
-            role: 'owner',
-          });
       } else {
         // Verify user can access this conversation (participant OR team member for team conversations)
         if (user?.id) {
