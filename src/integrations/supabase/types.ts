@@ -956,6 +956,36 @@ export type Database = {
         }
         Relationships: []
       }
+      rls_debug_log: {
+        Row: {
+          auth_uid: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_super_admin: boolean | null
+          message: string | null
+          values_match: boolean | null
+        }
+        Insert: {
+          auth_uid?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_super_admin?: boolean | null
+          message?: string | null
+          values_match?: boolean | null
+        }
+        Update: {
+          auth_uid?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_super_admin?: boolean | null
+          message?: string | null
+          values_match?: boolean | null
+        }
+        Relationships: []
+      }
       shift_log_embeddings: {
         Row: {
           chunk_text: string
@@ -1216,6 +1246,15 @@ export type Database = {
         Returns: boolean
       }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      log_rls_check: {
+        Args: {
+          _auth_uid: string
+          _created_by: string
+          _is_super_admin: boolean
+          _message: string
+        }
+        Returns: boolean
+      }
       test_auth_uid: { Args: never; Returns: Json }
     }
     Enums: {

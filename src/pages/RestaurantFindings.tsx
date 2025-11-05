@@ -2901,6 +2901,17 @@ What would you like to work on today?`
 
         if (convError) {
           console.error('Conversation creation error:', convError);
+          
+          // Fetch RLS debug logs
+          const { data: debugLogs } = await supabase
+            .from('rls_debug_log')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(5);
+          
+          console.error('=== RLS DEBUG LOGS ===');
+          console.error('Last 5 RLS policy evaluations:', debugLogs);
+          
           toast.error(`Failed to create conversation: ${convError.message}`);
           throw convError;
         }
