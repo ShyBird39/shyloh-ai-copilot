@@ -250,6 +250,7 @@ const RestaurantFindings = () => {
   const [hardModeEnabled, setHardModeEnabled] = useState(false);
   const [showDebugInfo, setShowDebugInfo] = useState(false);
   const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [showPromptDialog, setShowPromptDialog] = useState(false);
   const [messageFeedback, setMessageFeedback] = useState<Record<number, number>>({});
   const [currentParticipants, setCurrentParticipants] = useState<Array<{
     id: string;
@@ -3898,12 +3899,18 @@ What would you like to work on today?`
                                 </div>
                               </div>
                               <div>
-                                <p className="font-semibold text-blue-300 mb-1">System Prompt</p>
-                                <div className="bg-black/30 p-3 rounded overflow-x-auto">
-                                  <pre className="text-white/70 text-[10px] whitespace-pre-wrap max-h-96 overflow-y-auto">
-                                    {debugInfo.systemPrompt}
-                                  </pre>
+                                <div className="flex items-center justify-between mb-1">
+                                  <p className="font-semibold text-blue-300">System Prompt</p>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setShowPromptDialog(true)}
+                                    className="text-xs border-blue-500/30 hover:bg-blue-500/20"
+                                  >
+                                    Show Full Prompt
+                                  </Button>
                                 </div>
+                                <p className="text-white/60 text-[10px]">{debugInfo.systemPrompt?.length?.toLocaleString()} characters</p>
                               </div>
                               <Button
                                 size="sm"
@@ -4064,6 +4071,23 @@ What would you like to work on today?`
           onSave={refreshRestaurantData}
         />
         <InstallPrompt />
+
+        {/* Debug Prompt Dialog */}
+        <Dialog open={showPromptDialog} onOpenChange={setShowPromptDialog}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+            <DialogHeader>
+              <DialogTitle>System Prompt</DialogTitle>
+              <DialogDescription>
+                {debugInfo?.systemPrompt?.length?.toLocaleString()} characters
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex-1 overflow-y-auto mt-4">
+              <pre className="text-xs p-4 bg-muted rounded-lg whitespace-pre-wrap break-words">
+                {debugInfo?.systemPrompt || 'No prompt available'}
+              </pre>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
@@ -6223,6 +6247,23 @@ What would you like to work on today?`
       
       {/* PWA Install Prompt */}
       <InstallPrompt />
+
+      {/* Debug Prompt Dialog */}
+      <Dialog open={showPromptDialog} onOpenChange={setShowPromptDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>System Prompt</DialogTitle>
+            <DialogDescription>
+              {debugInfo?.systemPrompt?.length?.toLocaleString()} characters
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto mt-4">
+            <pre className="text-xs p-4 bg-muted rounded-lg whitespace-pre-wrap break-words">
+              {debugInfo?.systemPrompt || 'No prompt available'}
+            </pre>
+          </div>
+        </DialogContent>
+      </Dialog>
     </SidebarProvider>
   );
 };
