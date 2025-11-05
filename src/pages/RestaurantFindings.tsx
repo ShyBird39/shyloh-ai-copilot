@@ -2863,21 +2863,33 @@ What would you like to work on today?`
       if (!convId) {
         // Verify session before creating conversation
         const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
+        if (!session?.user?.id) {
           toast.error("Your session expired. Please refresh the page.");
           return;
         }
         
+        // Get current auth user for comparison
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        
+        const insertParams = {
+          restaurant_id: id,
+          title: messageText.substring(0, 50) + (messageText.length > 50 ? "..." : ""),
+          message_count: 1,
+          created_by: session.user.id,
+          visibility: 'private',
+        };
+        
+        console.log('=== CONVERSATION INSERT DEBUG ===');
+        console.log('Insert params:', insertParams);
+        console.log('Session user ID:', session.user.id);
+        console.log('Auth user ID:', authUser?.id);
+        console.log('React context user ID:', user?.id);
+        console.log('IDs match:', session.user.id === authUser?.id);
+        
         // Create new conversation with a temporary title
         const { data: newConv, error: convError } = await supabase
           .from("chat_conversations")
-          .insert({
-            restaurant_id: id,
-            title: messageText.substring(0, 50) + (messageText.length > 50 ? "..." : ""),
-            message_count: 1,
-            created_by: user?.id,
-            visibility: 'private',
-          })
+          .insert(insertParams)
           .select()
           .single();
 
@@ -2891,15 +2903,13 @@ What would you like to work on today?`
         setCurrentConversationVisibility('private');
 
         // Add creator as participant (owner)
-        if (user?.id) {
-          await supabase
-            .from("chat_conversation_participants")
-            .insert({
-              conversation_id: newConv.id,
-              user_id: user.id,
-              role: 'owner',
-            });
-        }
+        await supabase
+          .from("chat_conversation_participants")
+          .insert({
+            conversation_id: newConv.id,
+            user_id: session.user.id,
+            role: 'owner',
+          });
       } else {
         // Verify user can access this conversation (participant OR team member for team conversations)
         if (user?.id) {
