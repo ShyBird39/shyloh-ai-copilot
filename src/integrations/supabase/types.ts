@@ -1216,6 +1216,7 @@ export type Database = {
         Returns: boolean
       }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      test_auth_uid: { Args: never; Returns: Json }
     }
     Enums: {
       app_role: "owner" | "admin" | "member" | "viewer"

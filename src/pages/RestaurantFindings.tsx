@@ -2886,6 +2886,12 @@ What would you like to work on today?`
         console.log('React context user ID:', user?.id);
         console.log('IDs match:', session.user.id === authUser?.id);
         
+        // Test what auth.uid() returns in the database context
+        const { data: authTest, error: authTestError } = await supabase.rpc('test_auth_uid');
+        console.log('=== AUTH.UID() TEST ===');
+        console.log('Database auth context:', authTest);
+        console.log('Auth test error:', authTestError);
+        
         // Create new conversation with a temporary title
         const { data: newConv, error: convError } = await supabase
           .from("chat_conversations")
