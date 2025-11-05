@@ -12,8 +12,10 @@ import { toast } from "sonner";
 interface ChatToolsPopoverProps {
   hardModeEnabled: boolean;
   notionEnabled: boolean;
+  debugMode?: boolean;
   onHardModeToggle: (enabled: boolean) => void;
   onNotionToggle: (enabled: boolean) => void;
+  onDebugModeToggle?: (enabled: boolean) => void;
   disabled?: boolean;
   restaurantId: string;
   conversationId?: string;
@@ -23,8 +25,10 @@ interface ChatToolsPopoverProps {
 export function ChatToolsPopover({
   hardModeEnabled,
   notionEnabled,
+  debugMode = false,
   onHardModeToggle,
   onNotionToggle,
+  onDebugModeToggle,
   disabled = false,
   restaurantId,
   conversationId,
@@ -163,6 +167,30 @@ export function ChatToolsPopover({
               className="data-[state=checked]:bg-accent"
             />
           </div>
+
+          {/* Debug Mode Toggle */}
+          {onDebugModeToggle && (
+            <div className="flex items-start justify-between space-x-2 border-t pt-4">
+              <div className="space-y-1 flex-1">
+                <div className="flex items-center gap-2">
+                  <ClipboardList className="w-4 h-4 text-blue-500" />
+                  <Label htmlFor="debug-mode" className="text-sm font-medium">
+                    Debug Mode
+                  </Label>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Show the complete prompt context sent to Claude instead of generating a response.
+                </p>
+              </div>
+              <Switch
+                id="debug-mode"
+                checked={debugMode}
+                onCheckedChange={(v) => !disabled && onDebugModeToggle(v)}
+                disabled={disabled}
+                className="data-[state=checked]:bg-blue-500"
+              />
+            </div>
+          )}
         </div>
       </PopoverContent>
     </Popover>

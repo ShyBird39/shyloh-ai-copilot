@@ -248,6 +248,8 @@ const RestaurantFindings = () => {
   const [currentConversationVisibility, setCurrentConversationVisibility] = useState("private");
   const [notionEnabled, setNotionEnabled] = useState(false);
   const [hardModeEnabled, setHardModeEnabled] = useState(false);
+  const [showDebugInfo, setShowDebugInfo] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
   const [messageFeedback, setMessageFeedback] = useState<Record<number, number>>({});
   const [currentParticipants, setCurrentParticipants] = useState<Array<{
     id: string;
@@ -2979,6 +2981,7 @@ What would you like to work on today?`
             hardMode: useHardMode,
             conversationId: convId,
             tuningProfile: data?.tuning_profile,
+            debugMode: showDebugInfo,
           }),
         }
       );
@@ -2995,6 +2998,14 @@ What would you like to work on today?`
         }
         
         throw new Error(errorMsg);
+      }
+
+      // Check if this is a debug response
+      if (showDebugInfo) {
+        const debugData = await response.json();
+        setDebugInfo(debugData);
+        setIsTyping(false);
+        return;
       }
 
       const reader = response.body?.getReader();
@@ -3843,7 +3854,57 @@ What would you like to work on today?`
                             </div>
                           </div>
                         );
-                      })}
+                       })}
+                      {debugInfo && (
+                        <div className="flex justify-start animate-fade-in">
+                          <div className="max-w-full rounded-2xl bg-blue-900/20 border border-blue-500/30 p-6">
+                            <div className="flex items-center gap-2 mb-4">
+                              <ClipboardList className="w-5 h-5 text-blue-400" />
+                              <span className="text-sm font-semibold text-blue-400">Debug Information</span>
+                            </div>
+                            <div className="space-y-4 text-xs">
+                              <div>
+                                <p className="font-semibold text-blue-300 mb-1">Model</p>
+                                <p className="text-white/80 font-mono">{debugInfo.model}</p>
+                              </div>
+                              <div>
+                                <p className="font-semibold text-blue-300 mb-1">Estimated Tokens</p>
+                                <p className="text-white/80">{debugInfo.estimatedTokens?.toLocaleString()} tokens ({debugInfo.totalContextChars?.toLocaleString()} chars)</p>
+                              </div>
+                              <div>
+                                <p className="font-semibold text-blue-300 mb-1">Context Flags</p>
+                                <div className="grid grid-cols-2 gap-2 text-white/70">
+                                  <p>• Toast Data: {debugInfo.context?.hasToastData ? '✓' : '✗'}</p>
+                                  <p>• Documents: {debugInfo.context?.hasDocuments ? '✓' : '✗'}</p>
+                                  <p>• Custom Knowledge: {debugInfo.context?.hasCustomKnowledge ? '✓' : '✗'}</p>
+                                  <p>• Feedback Insights: {debugInfo.context?.hasFeedbackInsights ? '✓' : '✗'}</p>
+                                  <p>• Notion: {debugInfo.context?.notionEnabled ? '✓' : '✗'}</p>
+                                  <p>• Hard Mode: {debugInfo.context?.hardModeEnabled ? '✓' : '✗'}</p>
+                                </div>
+                              </div>
+                              <div>
+                                <p className="font-semibold text-blue-300 mb-1">System Prompt</p>
+                                <div className="bg-black/30 p-3 rounded overflow-x-auto">
+                                  <pre className="text-white/70 text-[10px] whitespace-pre-wrap max-h-96 overflow-y-auto">
+                                    {debugInfo.systemPrompt}
+                                  </pre>
+                                </div>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(JSON.stringify(debugInfo, null, 2));
+                                  toast.success('Debug info copied to clipboard');
+                                }}
+                                className="mt-2 border-blue-500/30 hover:bg-blue-500/20"
+                              >
+                                Copy Full Debug Info
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                       {isTyping && (
                         <div className="flex justify-start animate-fade-in">
                           <div className="bg-background/50 backdrop-blur-sm border border-accent/20 rounded-2xl p-4">
@@ -3889,6 +3950,8 @@ What would you like to work on today?`
                         onHardModeToggle={() => setHardModeEnabled(!hardModeEnabled)}
                         notionEnabled={notionEnabled}
                         onNotionToggle={() => setNotionEnabled(!notionEnabled)}
+                        debugMode={showDebugInfo}
+                        onDebugModeToggle={() => setShowDebugInfo(!showDebugInfo)}
                       />
                       <div className="flex-1" />
                     </div>

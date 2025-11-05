@@ -260,7 +260,8 @@ serve(async (req) => {
       onboarding_mode = null,
       pain_point = '',
       reggi_summary = '',
-      tuningProfile = null
+      tuningProfile = null,
+      debugMode = false
     } = await req.json();
     
     console.log(`Hard Mode: ${hardMode ? 'ENABLED 🔥' : 'disabled'}`);
@@ -1507,6 +1508,45 @@ Remember: You're earning their trust through depth, not volume. Be thoughtful, a
     const estimatedTokens = Math.ceil(totalContextChars / 4); // Rough estimate: 1 token ≈ 4 chars
     console.log(`Using model: ${modelToUse}${hardMode ? ' (HARD MODE ACTIVATED 🔥)' : ` for query complexity: ${isComplex ? 'high' : 'normal'}`}`);
     console.log(`Total context size: ~${estimatedTokens} tokens (${totalContextChars} chars)`);
+
+    // If debug mode is enabled, return the complete context instead of calling Claude
+    if (debugMode) {
+      const debugInfo = {
+        debug: true,
+        systemPrompt,
+        messages: messages.map((msg: any) => ({
+          role: msg.role,
+          content: msg.content.substring(0, 500) + (msg.content.length > 500 ? '...' : '')
+        })),
+        context: {
+          restaurantName: restaurantData?.name || 'Unknown',
+          reggiProfile: {
+            culinary_beverage: restaurantData?.culinary_beverage_description || 'Not set',
+            vibe_energy: restaurantData?.vibe_energy_description || 'Not set',
+            guest_experience: restaurantData?.guest_experience_description || 'Not set',
+            guests: restaurantData?.guests_description || 'Not set',
+            investment: restaurantData?.investment_description || 'Not set'
+          },
+          kpis: kpiData,
+          tuningProfile,
+          hasToastData: toastContext.length > 0,
+          hasDocuments: docsContext.length > 0,
+          hasCustomKnowledge: customKnowledgeContext.length > 0,
+          hasFeedbackInsights: feedbackInsights.length > 0,
+          notionEnabled: useNotion,
+          hardModeEnabled: hardMode,
+          onboardingMode: onboarding_mode,
+          conversationState
+        },
+        model: modelToUse,
+        estimatedTokens,
+        totalContextChars
+      };
+      
+      return new Response(JSON.stringify(debugInfo), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
 
     // Build request body with conditional tools
     const requestBody: any = {
