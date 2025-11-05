@@ -2304,16 +2304,21 @@ What would you like to work on today?`
             return;
           }
 
+          const conversationParams = {
+            restaurant_id: id,
+            title: "Getting Started with Shyloh",
+            message_count: messages.length + 2,
+            conversation_type: 'onboarding',
+            created_by: session.user.id,
+            visibility: 'private',
+          };
+          console.log('Creating onboarding conversation with params:', conversationParams);
+          console.log('Session user:', session.user);
+          console.log('Auth UID:', (await supabase.auth.getUser()).data.user?.id);
+
           const { data: newConv, error } = await supabase
             .from("chat_conversations")
-            .insert({
-              restaurant_id: id,
-              title: "Getting Started with Shyloh",
-              message_count: messages.length + 2,
-              conversation_type: 'onboarding',
-              created_by: session.user.id,
-              visibility: 'private',
-            })
+            .insert(conversationParams)
             .select()
             .single();
 
@@ -2696,16 +2701,21 @@ What would you like to work on today?`
             return;
           }
           
+          const conversationParams = {
+            restaurant_id: id,
+            title: messageText.substring(0, 50) + (messageText.length > 50 ? "..." : ""),
+            message_count: 1,
+            created_by: session.user.id,
+            visibility: currentConversationVisibility || 'private',
+          };
+          console.log('Creating new conversation with params:', conversationParams);
+          console.log('Session user:', session.user);
+          console.log('Auth UID:', (await supabase.auth.getUser()).data.user?.id);
+          
           // Create new conversation
           const { data: newConv, error: convError } = await supabase
             .from("chat_conversations")
-            .insert({
-              restaurant_id: id,
-              title: messageText.substring(0, 50) + (messageText.length > 50 ? "..." : ""),
-              message_count: 1,
-              created_by: session.user.id,
-              visibility: currentConversationVisibility || 'private',
-            })
+            .insert(conversationParams)
             .select()
             .single();
 
