@@ -3005,6 +3005,13 @@ What would you like to work on today?`
         const debugData = await response.json();
         setDebugInfo(debugData);
         setIsTyping(false);
+        
+        // Add a debug info message to the chat
+        const debugMsg = {
+          role: 'assistant' as const,
+          content: '**DEBUG MODE ENABLED**\n\nDebug information captured. Check the debug panel above for full details.'
+        };
+        setMessages((prev) => [...prev, debugMsg]);
         return;
       }
 
