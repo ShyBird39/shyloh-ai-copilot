@@ -1509,7 +1509,7 @@ Remember: You're earning their trust through depth, not volume. Be thoughtful, a
     console.log(`Using model: ${modelToUse}${hardMode ? ' (HARD MODE ACTIVATED 🔥)' : ` for query complexity: ${isComplex ? 'high' : 'normal'}`}`);
     console.log(`Total context size: ~${estimatedTokens} tokens (${totalContextChars} chars)`);
 
-    // If debug mode is enabled, return the complete context instead of calling Claude
+    // If debug mode is enabled, return the debug info as a special formatted stream
     if (debugMode) {
       const debugInfo = {
         debug: true,
@@ -1543,8 +1543,10 @@ Remember: You're earning their trust through depth, not volume. Be thoughtful, a
         totalContextChars
       };
       
-      return new Response(JSON.stringify(debugInfo), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      // Return as a stream with a special debug marker
+      const debugMessage = `__DEBUG_START__${JSON.stringify(debugInfo)}__DEBUG_END__`;
+      return new Response(debugMessage, {
+        headers: { ...corsHeaders, 'Content-Type': 'text/plain' }
       });
     }
 

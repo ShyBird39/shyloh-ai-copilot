@@ -3000,21 +3000,6 @@ What would you like to work on today?`
         throw new Error(errorMsg);
       }
 
-      // Check if this is a debug response
-      if (showDebugInfo) {
-        const debugData = await response.json();
-        setDebugInfo(debugData);
-        setIsTyping(false);
-        
-        // Add a debug info message to the chat
-        const debugMsg = {
-          role: 'assistant' as const,
-          content: '**DEBUG MODE ENABLED**\n\nDebug information captured. Check the debug panel above for full details.'
-        };
-        setMessages((prev) => [...prev, debugMsg]);
-        return;
-      }
-
       const reader = response.body?.getReader();
       if (!reader) {
         throw new Error('No response stream');
@@ -3030,14 +3015,37 @@ What would you like to work on today?`
         const chunk = decoder.decode(value);
         assistantMessage += chunk;
 
-        // Update the last message or add new assistant message
-        setMessages((prev) => {
-          const lastMsg = prev[prev.length - 1];
-          if (lastMsg?.role === 'assistant') {
-            return [...prev.slice(0, -1), { ...lastMsg, content: assistantMessage }];
+        // Check if this is a debug response
+        if (showDebugInfo && assistantMessage.includes('__DEBUG_START__')) {
+          const debugStart = assistantMessage.indexOf('__DEBUG_START__') + 15;
+          const debugEnd = assistantMessage.indexOf('__DEBUG_END__');
+          
+          if (debugEnd !== -1) {
+            const debugJson = assistantMessage.substring(debugStart, debugEnd);
+            const debugData = JSON.parse(debugJson);
+            setDebugInfo(debugData);
+            setIsTyping(false);
+            
+            // Add a debug info message to the chat
+            const debugMsg = {
+              role: 'assistant' as const,
+              content: '**DEBUG MODE ENABLED**\n\nDebug information captured. Check the debug panel above for full details.'
+            };
+            setMessages((prev) => [...prev, debugMsg]);
+            return;
           }
-          return [...prev, { role: 'assistant', content: assistantMessage }];
-        });
+        }
+
+        // Update the last message or add new assistant message (only if not in debug mode)
+        if (!showDebugInfo) {
+          setMessages((prev) => {
+            const lastMsg = prev[prev.length - 1];
+            if (lastMsg?.role === 'assistant') {
+              return [...prev.slice(0, -1), { ...lastMsg, content: assistantMessage }];
+            }
+            return [...prev, { role: 'assistant', content: assistantMessage }];
+          });
+        }
       }
 
       // Save assistant message
