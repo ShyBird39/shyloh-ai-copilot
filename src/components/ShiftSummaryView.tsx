@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
-import { Download, Share2, Sparkles, DollarSign, Users, TrendingUp } from "lucide-react";
+import { Download, Share2, Sparkles, DollarSign, Users, TrendingUp, RefreshCw } from "lucide-react";
 
 interface ShiftSummaryViewProps {
   restaurantId: string;
@@ -269,6 +269,15 @@ export function ShiftSummaryView({ restaurantId, shiftDate, shiftType }: ShiftSu
             </p>
           </div>
           <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleGenerateSummary}
+              disabled={isGenerating}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isGenerating ? 'animate-spin' : ''}`} />
+              Regenerate
+            </Button>
             <Button variant="outline" size="sm" onClick={handleExportPDF}>
               <Download className="h-4 w-4 mr-2" />
               Export PDF
