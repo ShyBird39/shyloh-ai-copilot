@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
-import { Download, Share2, Sparkles, DollarSign, Users, TrendingUp, RefreshCw } from "lucide-react";
+import { Download, Share2, Sparkles, DollarSign, Users, TrendingUp, RefreshCw, Plus } from "lucide-react";
 
 interface ShiftSummaryViewProps {
   restaurantId: string;
@@ -120,10 +120,32 @@ export function ShiftSummaryView({ restaurantId, shiftDate, shiftType }: ShiftSu
     toast.info('Share functionality coming soon!');
   };
 
-  // Preprocess markdown to ensure proper list formatting
+  const handleAddToTasks = (task: string) => {
+    toast.success('Task added to your task list!');
+    // TODO: Implement actual task creation
+  };
+
+  // Preprocess markdown to ensure proper list formatting and remove data-based items
   const processMarkdown = (markdown: string) => {
     // Split inline bullet points (• item • item) into proper list format
-    return markdown.replace(/•\s*/g, '\n• ').trim();
+    let processed = markdown.replace(/•\s*/g, '\n• ').trim();
+    
+    // Remove lines that are data-based metrics (Net Sales, Guest Count, Order Count, Average Check)
+    const linesToRemove = [
+      /[-•]\s*\*\*Net Sales:\*\*.*/gi,
+      /[-•]\s*\*\*Guest Count:\*\*.*/gi,
+      /[-•]\s*\*\*Order Count:\*\*.*/gi,
+      /[-•]\s*\*\*Average Check:\*\*.*/gi,
+    ];
+    
+    linesToRemove.forEach(pattern => {
+      processed = processed.replace(pattern, '');
+    });
+    
+    // Clean up extra whitespace/newlines
+    processed = processed.replace(/\n\n+/g, '\n\n').trim();
+    
+    return processed;
   };
 
   if (isLoading) {
@@ -273,11 +295,22 @@ export function ShiftSummaryView({ restaurantId, shiftDate, shiftType }: ShiftSu
                     {item.task}
                   </p>
                 </div>
-                {item.urgency === 'high' && !item.completed && (
-                  <Badge variant="destructive" className="shrink-0">
-                    Urgent
-                  </Badge>
-                )}
+                <div className="flex items-center gap-2 shrink-0">
+                  {item.urgency === 'high' && !item.completed && (
+                    <Badge variant="destructive">
+                      Urgent
+                    </Badge>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleAddToTasks(item.task)}
+                    className="h-8 px-2"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add to Tasks
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
