@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Play, Pause, Loader2, Edit2 } from 'lucide-react';
+import { Play, Pause, Loader2, Edit2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { VoiceMemo } from '@/types/log';
@@ -7,6 +7,17 @@ import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { TranscriptionEditor } from './TranscriptionEditor';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface VoiceMemoItemProps {
   memo: VoiceMemo;
@@ -17,6 +28,7 @@ export const VoiceMemoItem = ({ memo, onUpdate }: VoiceMemoItemProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [audio] = useState(() => {
     const audioElement = new Audio();
     // Configure for mobile compatibility
@@ -137,6 +149,26 @@ export const VoiceMemoItem = ({ memo, onUpdate }: VoiceMemoItemProps) => {
     }
   };
 
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('voice_memos')
+        .delete()
+        .eq('id', memo.id);
+
+      if (error) throw error;
+
+      toast.success('Voice memo deleted');
+      onUpdate?.();
+    } catch (error) {
+      console.error('Error deleting memo:', error);
+      toast.error('Failed to delete voice memo');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
@@ -193,21 +225,50 @@ export const VoiceMemoItem = ({ memo, onUpdate }: VoiceMemoItemProps) => {
           )}
         </div>
 
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={handlePlayPause}
-          disabled={isLoading}
-          className="shrink-0 h-12 w-12 rounded-full bg-shyloh-primary/10 hover:bg-shyloh-primary/20 text-shyloh-primary"
-        >
-          {isLoading ? (
-            <Loader2 className="h-6 w-6 animate-spin" />
-          ) : isPlaying ? (
-            <Pause className="h-6 w-6" />
-          ) : (
-            <Play className="h-6 w-6 ml-0.5" />
-          )}
-        </Button>
+        <div className="flex gap-2 shrink-0">
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={handlePlayPause}
+            disabled={isLoading || isDeleting}
+            className="h-12 w-12 rounded-full bg-shyloh-primary/10 hover:bg-shyloh-primary/20 text-shyloh-primary"
+          >
+            {isLoading ? (
+              <Loader2 className="h-6 w-6 animate-spin" />
+            ) : isPlaying ? (
+              <Pause className="h-6 w-6" />
+            ) : (
+              <Play className="h-6 w-6 ml-0.5" />
+            )}
+          </Button>
+
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                size="icon"
+                variant="ghost"
+                disabled={isDeleting || isLoading}
+                className="h-12 w-12 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+              >
+                <Trash2 className="h-5 w-5" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete voice memo?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the voice memo and its transcription.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </div>
 
       <TranscriptionEditor
