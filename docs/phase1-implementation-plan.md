@@ -39,30 +39,95 @@ Refactor `RestaurantFindings.tsx` (6,271 lines) by extracting state into 4 focus
 
 ---
 
-## Step 2: Extract Conversation State Hook
+## Step 2: Extract Conversation State Hook (BROKEN INTO SUB-STEPS)
 
-### Implementation Tasks
-- [ ] Create `src/hooks/useConversationState.ts`
-- [ ] Extract these state variables and their operations:
+⚠️ **Due to RestaurantFindings.tsx being 6k+ lines, this step is broken into smaller, safer increments**
+
+### Step 2a: Create Hook Skeleton & Extract State Declarations
+**Goal**: Create the hook file with all state variables, return them, but NO logic yet
+
+- [ ] Create `src/hooks/useConversationState.ts` with basic structure
+- [ ] Add these state declarations to the hook:
   - `currentConversationId`, `setCurrentConversationId`
   - `conversations`, `setConversations`
   - `messages`, `setMessages`
-  - `participants`, `setParticipants`
-  - `conversationTitle`, `setConversationTitle`
-  - `conversationVisibility`, `setConversationVisibility`
-  - `isLoadingMessages`, `messagesError`
-- [ ] Move `loadConversations`, `loadMessages`, `createNewConversation` functions into hook
-- [ ] Move realtime subscription setup for conversations and messages
-- [ ] Update `RestaurantFindings.tsx` to use `const { currentConversationId, conversations, messages, participants, operations } = useConversationState(id)`
+  - `currentParticipants`, `setCurrentParticipants`
+  - `conversationState`, `setConversationState`
+  - `currentConversationVisibility`, `setCurrentConversationVisibility`
+  - `notionEnabled`, `setNotionEnabled`
+  - `hardModeEnabled`, `setHardModeEnabled`
+  - `messageFeedback`, `setMessageFeedback`
+  - `lastMessagePreviews`, `setLastMessagePreviews`
+- [ ] Return all state variables from hook
+- [ ] Import hook in `RestaurantFindings.tsx` (but don't remove old state yet)
+- [ ] Verify no TypeScript errors
 
-### Validation Checklist
+**Validation**: Page still works, no build errors
+
+---
+
+### Step 2b: Move Data Loading Functions
+**Goal**: Move `loadConversations`, `loadCurrentConversationParticipants` into hook
+
+- [ ] Move `loadConversations` function into hook
+- [ ] Move `loadCurrentConversationParticipants` function into hook
+- [ ] Add `restaurantId` and `userId` as hook parameters
+- [ ] Return these functions from hook
+- [ ] Update calls in `RestaurantFindings.tsx` to use hook functions
+- [ ] Remove old function definitions from `RestaurantFindings.tsx`
+
+**Validation**: Conversation list still loads, participants display
+
+---
+
+### Step 2c: Move Conversation CRUD Operations
+**Goal**: Move create, delete, visibility toggle functions
+
+- [ ] Move `handleNewConversation` into hook
+- [ ] Move `handleDeleteConversation` into hook
+- [ ] Move `handleToggleVisibility` into hook
+- [ ] Move `handleLoadConversation` into hook
+- [ ] Return these functions from hook
+- [ ] Update calls in `RestaurantFindings.tsx` to use hook functions
+- [ ] Remove old function definitions from `RestaurantFindings.tsx`
+
+**Validation**: Creating, deleting, loading conversations still works
+
+---
+
+### Step 2d: Move Realtime Subscriptions
+**Goal**: Move useEffect hooks for realtime subscriptions
+
+- [ ] Move conversation realtime subscription useEffect into hook
+- [ ] Move message realtime subscription useEffect into hook
+- [ ] Move participants loading useEffect into hook
+- [ ] Ensure subscriptions clean up properly
+- [ ] Remove old useEffect blocks from `RestaurantFindings.tsx`
+
+**Validation**: Realtime updates still work (test sending message in another tab)
+
+---
+
+### Step 2e: Final Cleanup & State Removal
+**Goal**: Remove duplicate state declarations from RestaurantFindings.tsx
+
+- [ ] Remove all conversation state `useState` declarations from `RestaurantFindings.tsx`
+- [ ] Verify all references now use hook state
+- [ ] Run full TypeScript check
+- [ ] Test entire conversation flow end-to-end
+
+**Validation**: No duplicate declarations, all features work
+
+---
+
+### Overall Validation Checklist (After All Sub-Steps)
 - [ ] Conversation list loads on sidebar
 - [ ] Clicking a conversation loads its messages
 - [ ] Creating new conversation works
 - [ ] Messages appear in chat interface
 - [ ] Participants display correctly
 - [ ] Realtime updates still work (test with another user if possible)
-- [ ] Conversation title displays correctly
+- [ ] Conversation visibility toggle works
 - [ ] No console errors
 - [ ] No TypeScript errors
 
@@ -74,7 +139,7 @@ Refactor `RestaurantFindings.tsx` (6,271 lines) by extracting state into 4 focus
 ✅ Sending new message works  
 ✅ Participants list is accurate  
 ✅ Realtime message updates work  
-✅ Conversation settings (visibility, title) work  
+✅ Conversation settings (visibility, title) work
 
 ---
 
@@ -226,12 +291,12 @@ Refactor `RestaurantFindings.tsx` (6,271 lines) by extracting state into 4 focus
 
 ## Progress Tracking
 
-### Current Status: Not Started
+### Current Status: Step 1 Complete ✅
 
 | Step | Status | Date Completed | Notes |
 |------|--------|----------------|-------|
-| Step 1: Restaurant Data Hook | ⏳ Not Started | - | - |
-| Step 2: Conversation State Hook | ⏳ Not Started | - | - |
+| Step 1: Restaurant Data Hook | ✅ Complete | 2025-11-06 | Successfully extracted restaurant data management |
+| Step 2: Conversation State Hook | 🔄 In Progress | - | Breaking into sub-steps |
 | Step 3: File Management Hook | ⏳ Not Started | - | - |
 | Step 4: Onboarding Hook | ⏳ Not Started | - | - |
 | Step 5: Final Integration | ⏳ Not Started | - | - |
@@ -240,6 +305,6 @@ Refactor `RestaurantFindings.tsx` (6,271 lines) by extracting state into 4 focus
 
 ## Next Steps
 
-**Ready to proceed with Step 1: Extract Restaurant Data Hook**
+**Proceeding with Step 2: Extract Conversation State Hook (Broken into Sub-Steps)**
 
-This is the safest first step - restaurant profile data is the most stable and has the fewest dependencies on other parts of the system.
+Due to the large size of RestaurantFindings.tsx (6k+ lines), Step 2 will be implemented in smaller, safer increments.
