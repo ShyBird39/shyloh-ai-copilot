@@ -44,7 +44,7 @@ export const TextLogDrawer = ({ logs, onUpdate }: TextLogDrawerProps) => {
     <div
       className={cn(
         "fixed left-0 right-0 bg-background border-t border-border transition-all duration-300 ease-out z-40",
-        isOpen ? "bottom-16 h-[60vh]" : "bottom-16 h-14"
+        isOpen ? "bottom-0 h-[60vh]" : "bottom-0 h-14"
       )}
     >
       {/* Drawer Handle */}

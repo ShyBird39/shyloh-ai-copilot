@@ -58,10 +58,7 @@ export function ShiftLogEntry({ restaurantId, shiftDate, shiftType, onEntrySaved
     try {
       const { data, error } = await supabase
         .from('shift_logs')
-        .select(`
-          *,
-          profiles!shift_logs_user_id_fkey(display_name)
-        `)
+        .select('*')
         .eq('restaurant_id', restaurantId)
         .eq('shift_date', shiftDate)
         .eq('shift_type', shiftType)
@@ -69,13 +66,7 @@ export function ShiftLogEntry({ restaurantId, shiftDate, shiftType, onEntrySaved
 
       if (error) throw error;
       
-      // Transform data to include user_display_name
-      const logsWithUser = (data || []).map((log: any) => ({
-        ...log,
-        user_display_name: log.profiles?.display_name || 'Unknown'
-      }));
-      
-      setTodaysLogs(logsWithUser);
+      setTodaysLogs(data || []);
     } catch (error) {
       console.error('Error fetching logs:', error);
     }
@@ -136,7 +127,7 @@ export function ShiftLogEntry({ restaurantId, shiftDate, shiftType, onEntrySaved
 
   return (
     <>
-      <Card className="p-6 space-y-4 mb-20">
+      <Card className="p-6 space-y-4 mb-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">New Manager Log Entry</h3>
         {isUrgent && (
