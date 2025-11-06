@@ -66,15 +66,15 @@ Refactor `RestaurantFindings.tsx` (6,271 lines) by extracting state into 4 focus
 
 ---
 
-### Step 2b: Move Data Loading Functions
+### Step 2b: Move Data Loading Functions ✅
 **Goal**: Move `loadConversations`, `loadCurrentConversationParticipants` into hook
 
-- [ ] Move `loadConversations` function into hook
-- [ ] Move `loadCurrentConversationParticipants` function into hook
-- [ ] Add `restaurantId` and `userId` as hook parameters
-- [ ] Return these functions from hook
-- [ ] Update calls in `RestaurantFindings.tsx` to use hook functions
-- [ ] Remove old function definitions from `RestaurantFindings.tsx`
+- [x] Move `loadConversations` function into hook
+- [x] Move `loadCurrentConversationParticipants` function into hook
+- [x] Add `restaurantId` and `userId` as hook parameters
+- [x] Return these functions from hook
+- [x] Update calls in `RestaurantFindings.tsx` to use hook functions
+- [x] Remove old function definitions from `RestaurantFindings.tsx`
 
 **Validation**: Conversation list still loads, participants display
 

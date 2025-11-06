@@ -93,8 +93,11 @@ const RestaurantFindings = () => {
     refreshRestaurantData,
   } = useRestaurantData(id);
   
-  // Use conversation state hook (Step 2a - skeleton only, keeping old state for now)
-  const conversationStateHook = useConversationState(id, user?.id);
+  // Use conversation state hook
+  const {
+    loadConversations,
+    loadCurrentConversationParticipants,
+  } = useConversationState(id, user?.id);
   
   const [isMember, setIsMember] = useState<boolean | null>(null);
   const [showClaimDialog, setShowClaimDialog] = useState(false);
@@ -360,55 +363,6 @@ const RestaurantFindings = () => {
 
   const handleRefreshChat = () => {
     handleNewConversation();
-  };
-
-  const loadCurrentConversationParticipants = async (conversationId: string) => {
-    if (!conversationId) {
-      setCurrentParticipants([]);
-      return;
-    }
-
-    try {
-      // Get participants
-      const { data: participantData, error: participantError } = await supabase
-        .from("chat_conversation_participants")
-        .select("id, user_id, role")
-        .eq("conversation_id", conversationId)
-        .order("role", { ascending: true });
-
-      if (participantError) throw participantError;
-
-      if (!participantData || participantData.length === 0) {
-        setCurrentParticipants([]);
-        return;
-      }
-
-      // Get profiles for all participants
-      const userIds = participantData.map(p => p.user_id);
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("id, email, display_name")
-        .in("id", userIds);
-
-      if (profileError) throw profileError;
-
-      // Combine data
-      const participantsWithProfiles = participantData.map(p => {
-        const profile = profileData?.find(prof => prof.id === p.user_id);
-        return {
-          ...p,
-          profiles: {
-            email: profile?.email || '',
-            display_name: profile?.display_name || null,
-          }
-        };
-      });
-
-      setCurrentParticipants(participantsWithProfiles);
-    } catch (error) {
-      console.error("Error loading participants:", error);
-      setCurrentParticipants([]);
-    }
   };
 
   const updateMessageFeedbackStats = async (messageId: string) => {
@@ -1054,42 +1008,6 @@ const RestaurantFindings = () => {
       }
     } catch (e) {
       console.error("Cleanup error:", e);
-    }
-  };
-
-  const loadConversations = async () => {
-    if (!id) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from("chat_conversations")
-        .select(`
-          *,
-          participants:chat_conversation_participants(count)
-        `)
-        .eq("restaurant_id", id)
-        .order("updated_at", { ascending: false });
-
-      if (error) throw error;
-      
-      // Transform data to include participant_count
-      const conversationsWithCount = (data || []).map(conv => ({
-        ...conv,
-        participant_count: conv.participants?.[0]?.count || 0
-      }));
-      
-      setConversations(conversationsWithCount);
-      
-      // Check for onboarding completion - only on first load
-      if (!isOnboarding && messages.length === 0) {
-        const hasOnboarding = data?.some(conv => conv.conversation_type === 'onboarding');
-        if (!hasOnboarding && data?.length === 0) {
-          // First time user - Quick Win onboarding will be triggered by useEffect
-          // Do nothing here - let the Quick Win hook handle it
-        }
-      }
-    } catch (error) {
-      console.error("Error loading conversations:", error);
     }
   };
 
