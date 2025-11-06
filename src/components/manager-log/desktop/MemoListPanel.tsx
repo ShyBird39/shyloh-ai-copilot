@@ -4,17 +4,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { MemoListItem } from './MemoListItem';
 import { BatchActions } from './BatchActions';
 import { VoiceMemo, MemoFilter, MemoSort } from '@/types/voice-memo';
-import { Filter, ArrowUpDown } from 'lucide-react';
+import { Filter, ArrowUpDown, Mic, ChevronDown, ChevronUp } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Button } from '@/components/ui/button';
+import { VoiceCapture } from '../VoiceCapture';
 
 interface MemoListPanelProps {
   memos: VoiceMemo[];
   selection: ReturnType<typeof import('@/hooks/useMemoSelection').useMemoSelection>;
   onUpdate: () => void;
+  restaurantId: string;
+  shiftDate: string;
+  shiftType: string;
 }
 
-export const MemoListPanel = ({ memos, selection, onUpdate }: MemoListPanelProps) => {
+export const MemoListPanel = ({ memos, selection, onUpdate, restaurantId, shiftDate, shiftType }: MemoListPanelProps) => {
   const [filter, setFilter] = useState<MemoFilter>('all');
   const [sort, setSort] = useState<MemoSort>('newest');
+  const [isRecordingOpen, setIsRecordingOpen] = useState(false);
 
   const filteredMemos = memos.filter(memo => {
     switch (filter) {
@@ -49,7 +56,29 @@ export const MemoListPanel = ({ memos, selection, onUpdate }: MemoListPanelProps
       <div className="border-b border-border p-4 space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Voice Memos ({sortedMemos.length})</h2>
+          <Collapsible open={isRecordingOpen} onOpenChange={setIsRecordingOpen}>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="sm" className="gap-2">
+                <Mic className="h-4 w-4" />
+                Record
+                {isRecordingOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </Button>
+            </CollapsibleTrigger>
+          </Collapsible>
         </div>
+        
+        <Collapsible open={isRecordingOpen} onOpenChange={setIsRecordingOpen}>
+          <CollapsibleContent>
+            <div className="border border-border rounded-lg overflow-hidden max-h-64">
+              <VoiceCapture
+                restaurantId={restaurantId}
+                shiftDate={shiftDate}
+                shiftType={shiftType}
+                isMobile={false}
+              />
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
         
         {/* Filters */}
         <div className="flex gap-2">

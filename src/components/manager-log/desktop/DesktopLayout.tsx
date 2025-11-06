@@ -29,6 +29,9 @@ export const DesktopLayout = ({
             memos={memos}
             selection={memoSelection}
             onUpdate={onMemosUpdate}
+            restaurantId={restaurantId}
+            shiftDate={shiftDate}
+            shiftType={shiftType}
           />
         </ResizablePanel>
         
