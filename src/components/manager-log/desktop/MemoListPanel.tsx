@@ -136,6 +136,7 @@ export const MemoListPanel = ({ memos, selection, onUpdate, restaurantId, shiftD
               memo={memo}
               isSelected={selection.isSelected(memo.id)}
               onToggleSelect={() => selection.toggleMemo(memo.id)}
+              onDelete={onUpdate}
             />
           ))}
           {sortedMemos.length === 0 && (

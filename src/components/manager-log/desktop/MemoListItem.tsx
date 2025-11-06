@@ -1,21 +1,59 @@
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { VoiceMemo } from '@/types/voice-memo';
-import { Clock, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { Clock, CheckCircle2, AlertCircle, Loader2, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { useState } from 'react';
 
 interface MemoListItemProps {
   memo: VoiceMemo;
   isSelected: boolean;
   onToggleSelect: () => void;
+  onDelete?: () => void;
 }
 
-export const MemoListItem = ({ memo, isSelected, onToggleSelect }: MemoListItemProps) => {
+export const MemoListItem = ({ memo, isSelected, onToggleSelect, onDelete }: MemoListItemProps) => {
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('voice_memos')
+        .delete()
+        .eq('id', memo.id);
+
+      if (error) throw error;
+
+      toast.success('Voice memo deleted');
+      onDelete?.();
+    } catch (error) {
+      console.error('Error deleting memo:', error);
+      toast.error('Failed to delete voice memo');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const getStatusBadge = () => {
@@ -70,6 +108,33 @@ export const MemoListItem = ({ memo, isSelected, onToggleSelect }: MemoListItemP
             </p>
           )}
         </div>
+
+        <AlertDialog>
+          <AlertDialogTrigger asChild onClick={(e) => e.stopPropagation()}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+              disabled={isDeleting}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete voice memo?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the voice memo and its transcription.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </Card>
   );
