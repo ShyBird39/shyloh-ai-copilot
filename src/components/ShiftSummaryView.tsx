@@ -120,6 +120,12 @@ export function ShiftSummaryView({ restaurantId, shiftDate, shiftType }: ShiftSu
     toast.info('Share functionality coming soon!');
   };
 
+  // Preprocess markdown to ensure proper list formatting
+  const processMarkdown = (markdown: string) => {
+    // Split inline bullet points (• item • item) into proper list format
+    return markdown.replace(/•\s*/g, '\n• ').trim();
+  };
+
   if (isLoading) {
     return (
       <Card className="p-6">
@@ -242,8 +248,8 @@ export function ShiftSummaryView({ restaurantId, shiftDate, shiftType }: ShiftSu
           </div>
         </div>
 
-        <div className="prose prose-sm max-w-none dark:prose-invert prose-ul:space-y-2 prose-li:my-1">
-          <ReactMarkdown rehypePlugins={[rehypeRaw]}>{summary.summary_markdown}</ReactMarkdown>
+        <div className="prose prose-sm max-w-none dark:prose-invert [&_li]:block [&_li]:mb-2 [&_ul]:space-y-1">
+          <ReactMarkdown rehypePlugins={[rehypeRaw]}>{processMarkdown(summary.summary_markdown)}</ReactMarkdown>
         </div>
       </Card>
 
