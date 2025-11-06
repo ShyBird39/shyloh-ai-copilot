@@ -95,6 +95,26 @@ const RestaurantFindings = () => {
   
   // Use conversation state hook
   const {
+    currentConversationId,
+    setCurrentConversationId,
+    conversations,
+    setConversations,
+    messages,
+    setMessages,
+    currentParticipants,
+    setCurrentParticipants,
+    conversationState,
+    setConversationState,
+    currentConversationVisibility,
+    setCurrentConversationVisibility,
+    notionEnabled,
+    setNotionEnabled,
+    hardModeEnabled,
+    setHardModeEnabled,
+    messageFeedback,
+    setMessageFeedback,
+    lastMessagePreviews,
+    setLastMessagePreviews,
     loadConversations,
     loadCurrentConversationParticipants,
   } = useConversationState(id, user?.id);
@@ -208,7 +228,6 @@ const RestaurantFindings = () => {
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [promptsVisible, setPromptsVisible] = useState(true);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentInput, setCurrentInput] = useState("");
   const [notionMentioned, setNotionMentioned] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<string[]>([]);
@@ -235,49 +254,12 @@ const RestaurantFindings = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // New state for chat history and files
-  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
-  const [conversations, setConversations] = useState<any[]>([]);
   const [files, setFiles] = useState<any[]>([]);
   const [cleanupAttempted, setCleanupAttempted] = useState(false);
   const [showConversationSettings, setShowConversationSettings] = useState(false);
-  const [currentConversationVisibility, setCurrentConversationVisibility] = useState("private");
-  const [notionEnabled, setNotionEnabled] = useState(false);
-  const [hardModeEnabled, setHardModeEnabled] = useState(false);
   const [showDebugInfo, setShowDebugInfo] = useState(false);
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [showPromptDialog, setShowPromptDialog] = useState(false);
-  const [messageFeedback, setMessageFeedback] = useState<Record<number, number>>({});
-  const [currentParticipants, setCurrentParticipants] = useState<Array<{
-    id: string;
-    user_id: string;
-    role: string;
-    profiles: {
-      email: string;
-      display_name: string | null;
-    };
-  }>>([]);
-
-  // Conversation state tracking
-  const [conversationState, setConversationState] = useState<{
-    current_topic: string | null;
-    intent_classification: string | null;
-    wwahd_mode: boolean;
-    topics_discussed: string[];
-    last_question_asked: string | null;
-    conversation_state?: {
-      data_requested?: boolean;
-      data_request_count?: number;
-      awaiting_upload?: boolean;
-      has_uploaded_data?: boolean;
-    };
-  }>({
-    current_topic: null,
-    intent_classification: null,
-    wwahd_mode: false,
-    topics_discussed: [],
-    last_question_asked: null,
-    conversation_state: {},
-  });
 
   // Coaching session state
   const [showCoachingOptions, setShowCoachingOptions] = useState(false);
@@ -330,7 +312,6 @@ const RestaurantFindings = () => {
   const [conversationDrawerOpen, setConversationDrawerOpen] = useState(false);
   const [navigationMenuOpen, setNavigationMenuOpen] = useState(false);
   const [currentNavSection, setCurrentNavSection] = useState<'chats' | 'agents' | 'tasks' | 'manager-log'>('chats');
-  const [lastMessagePreviews, setLastMessagePreviews] = useState<Record<string, string>>({});
   const [showConversationThread, setShowConversationThread] = useState(false);
 
   // Ensure Chat tab is active on mobile by default and validate tab value
