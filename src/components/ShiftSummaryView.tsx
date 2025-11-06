@@ -21,8 +21,12 @@ interface ShiftSummary {
   toast_metrics: {
     netSales?: number;
     guestCount?: number;
+    ordersCount?: number;
     laborPercent?: number;
+    fohLaborPercent?: number;
+    bohLaborPercent?: number;
     avgCheckSize?: number;
+    splh?: number;
   };
   created_at: string;
 }
@@ -186,14 +190,14 @@ export function ShiftSummaryView({ restaurantId, shiftDate, shiftType }: ShiftSu
               </div>
             </Card>
           )}
-          {summary.toast_metrics.laborPercent !== undefined && (
+          {summary.toast_metrics.ordersCount !== undefined && (
             <Card className="p-4">
               <div className="flex items-center gap-2 text-muted-foreground mb-1">
                 <TrendingUp className="h-4 w-4" />
-                <span className="text-sm">Labor %</span>
+                <span className="text-sm">Orders</span>
               </div>
               <div className="text-2xl font-bold">
-                {summary.toast_metrics.laborPercent.toFixed(1)}%
+                {summary.toast_metrics.ordersCount}
               </div>
             </Card>
           )}
@@ -205,6 +209,50 @@ export function ShiftSummaryView({ restaurantId, shiftDate, shiftType }: ShiftSu
               </div>
               <div className="text-2xl font-bold">
                 ${summary.toast_metrics.avgCheckSize.toFixed(2)}
+              </div>
+            </Card>
+          )}
+          {summary.toast_metrics.laborPercent !== undefined && (
+            <Card className="p-4">
+              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <TrendingUp className="h-4 w-4" />
+                <span className="text-sm">Total Labor %</span>
+              </div>
+              <div className="text-2xl font-bold">
+                {summary.toast_metrics.laborPercent.toFixed(1)}%
+              </div>
+            </Card>
+          )}
+          {summary.toast_metrics.fohLaborPercent !== undefined && (
+            <Card className="p-4">
+              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <TrendingUp className="h-4 w-4" />
+                <span className="text-sm">FOH Labor %</span>
+              </div>
+              <div className="text-2xl font-bold">
+                {summary.toast_metrics.fohLaborPercent.toFixed(1)}%
+              </div>
+            </Card>
+          )}
+          {summary.toast_metrics.bohLaborPercent !== undefined && (
+            <Card className="p-4">
+              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <TrendingUp className="h-4 w-4" />
+                <span className="text-sm">BOH Labor %</span>
+              </div>
+              <div className="text-2xl font-bold">
+                {summary.toast_metrics.bohLaborPercent.toFixed(1)}%
+              </div>
+            </Card>
+          )}
+          {summary.toast_metrics.splh !== undefined && (
+            <Card className="p-4">
+              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <DollarSign className="h-4 w-4" />
+                <span className="text-sm">SPLH</span>
+              </div>
+              <div className="text-2xl font-bold">
+                ${summary.toast_metrics.splh.toFixed(2)}
               </div>
             </Card>
           )}

@@ -7,6 +7,134 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper: Fetch Toast Metrics Report
+async function fetchToastMetrics(supabaseUrl: string, shiftDate: string) {
+  const metrics = {
+    netSales: undefined as number | undefined,
+    guestCount: undefined as number | undefined,
+    ordersCount: undefined as number | undefined,
+    avgCheckSize: undefined as number | undefined,
+    laborPercent: undefined as number | undefined,
+    fohLaborPercent: undefined as number | undefined,
+    bohLaborPercent: undefined as number | undefined,
+    splh: undefined as number | undefined,
+  };
+
+  try {
+    const dateInt = parseInt(shiftDate.replace(/-/g, ''));
+    
+    // Fetch sales metrics
+    const metricsResponse = await fetch(`${supabaseUrl}/functions/v1/toast-reporting`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'request-and-poll',
+        reportType: 'metrics',
+        timeRange: 'day',
+        startDate: dateInt,
+        endDate: dateInt,
+      }),
+    });
+
+    if (metricsResponse.ok) {
+      const metricsData = await metricsResponse.json();
+      const data = metricsData.data;
+      
+      if (data) {
+        metrics.netSales = data.netSalesAmount || 0;
+        metrics.guestCount = data.guestCount || 0;
+        metrics.ordersCount = data.ordersCount || 0;
+        metrics.avgCheckSize = metrics.guestCount && metrics.netSales
+          ? (metrics.netSales / metrics.guestCount) 
+          : 0;
+      }
+      console.log('Toast sales metrics fetched:', metrics);
+    }
+
+    // Fetch labor report
+    const laborResponse = await fetch(`${supabaseUrl}/functions/v1/toast-reporting`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'request-and-poll',
+        reportType: 'labor',
+        timeRange: 'day',
+        startDate: dateInt,
+        endDate: dateInt,
+        groupBy: ['JOB_TYPE'],
+      }),
+    });
+
+    if (laborResponse.ok) {
+      const laborData = await laborResponse.json();
+      const data = laborData.data;
+      
+      if (data) {
+        // Overall labor metrics
+        metrics.splh = data.netSalesPerEmployeeHour || 0;
+        metrics.laborPercent = data.totalCostPerNetSales 
+          ? data.totalCostPerNetSales * 100 
+          : 0;
+
+        // Extract FOH and BOH labor percentages from grouped data
+        if (Array.isArray(data) && data.length > 0) {
+          const fohData = data.find((item: any) => item.jobType === 'FRONT_OF_HOUSE');
+          const bohData = data.find((item: any) => item.jobType === 'BACK_OF_HOUSE');
+          
+          metrics.fohLaborPercent = fohData?.totalCostPerNetSales 
+            ? fohData.totalCostPerNetSales * 100 
+            : 0;
+          metrics.bohLaborPercent = bohData?.totalCostPerNetSales 
+            ? bohData.totalCostPerNetSales * 100 
+            : 0;
+        }
+      }
+      console.log('Toast labor metrics fetched:', { 
+        laborPercent: metrics.laborPercent,
+        fohLaborPercent: metrics.fohLaborPercent,
+        bohLaborPercent: metrics.bohLaborPercent,
+        splh: metrics.splh 
+      });
+    }
+  } catch (error) {
+    console.error('Error fetching Toast data:', error);
+  }
+
+  return metrics;
+}
+
+// Helper: Format metrics for AI prompt
+function formatMetricsForPrompt(metrics: Awaited<ReturnType<typeof fetchToastMetrics>>): string {
+  const parts: string[] = [];
+  
+  if (metrics.netSales !== undefined) {
+    parts.push(`- Net Sales: $${metrics.netSales.toFixed(2)}`);
+  }
+  if (metrics.guestCount !== undefined) {
+    parts.push(`- Guest Count: ${metrics.guestCount} covers`);
+  }
+  if (metrics.ordersCount !== undefined) {
+    parts.push(`- Order Count: ${metrics.ordersCount} orders`);
+  }
+  if (metrics.avgCheckSize !== undefined) {
+    parts.push(`- Avg Check: $${metrics.avgCheckSize.toFixed(2)}`);
+  }
+  if (metrics.laborPercent !== undefined) {
+    parts.push(`- Total Labor %: ${metrics.laborPercent.toFixed(1)}%`);
+  }
+  if (metrics.fohLaborPercent !== undefined) {
+    parts.push(`- FOH Labor %: ${metrics.fohLaborPercent.toFixed(1)}%`);
+  }
+  if (metrics.bohLaborPercent !== undefined) {
+    parts.push(`- BOH Labor %: ${metrics.bohLaborPercent.toFixed(1)}%`);
+  }
+  if (metrics.splh !== undefined) {
+    parts.push(`- Sales Per Labor Hour (SPLH): $${metrics.splh.toFixed(2)}`);
+  }
+
+  return parts.length > 0 ? parts.join('\n') : '- No metrics available';
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -96,39 +224,7 @@ serve(async (req) => {
     console.log(`Found ${shiftLogs?.length || 0} shift log entries and ${voiceMemos?.length || 0} voice memos`);
 
     // 3. Fetch Toast POS data for this date
-    let toastMetrics: {
-      netSales?: number;
-      guestCount?: number;
-      laborPercent?: number;
-      avgCheckSize?: number;
-    } = {};
-    try {
-      const dateInt = parseInt(shiftDate.replace(/-/g, ''));
-      const toastResponse = await fetch(`${supabaseUrl}/functions/v1/toast-reporting`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'request-and-poll',
-          reportType: 'metrics',
-          timeRange: 'day',
-          startDate: dateInt,
-          endDate: dateInt,
-        }),
-      });
-
-      if (toastResponse.ok) {
-        const toastData = await toastResponse.json();
-        toastMetrics = {
-          netSales: toastData.data?.netSales || 0,
-          guestCount: toastData.data?.guestCount || 0,
-          laborPercent: toastData.data?.laborPercent || 0,
-          avgCheckSize: toastData.data?.avgCheckSize || 0,
-        };
-        console.log('Toast metrics fetched:', toastMetrics);
-      }
-    } catch (error) {
-      console.error('Error fetching Toast data:', error);
-    }
+    const toastMetrics = await fetchToastMetrics(supabaseUrl, shiftDate);
 
     // 4. Build context for Claude from both text logs and voice memos
     const textLogsFormatted = (shiftLogs || []).map(log => 
@@ -150,10 +246,7 @@ SHIFT LOG ENTRIES:
 ${logsText}
 
 TOAST POS METRICS:
-- Net Sales: $${toastMetrics.netSales?.toFixed(2) || 'N/A'}
-- Guest Count: ${toastMetrics.guestCount || 'N/A'} covers
-- Labor %: ${toastMetrics.laborPercent?.toFixed(1) || 'N/A'}%
-- Avg Check: $${toastMetrics.avgCheckSize?.toFixed(2) || 'N/A'}
+${formatMetricsForPrompt(toastMetrics)}
 
 Generate a comprehensive shift summary in markdown format. Include:
 
