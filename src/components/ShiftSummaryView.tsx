@@ -365,7 +365,7 @@ export function ShiftSummaryView({ restaurantId, shiftDate, shiftType }: ShiftSu
           <Textarea
             value={editedMarkdown}
             onChange={(e) => setEditedMarkdown(e.target.value)}
-            className="min-h-[400px] font-mono text-sm"
+            className="min-h-[400px] font-mono text-sm text-foreground bg-background"
             placeholder="Edit your shift summary markdown..."
           />
         ) : (
