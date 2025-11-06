@@ -1,10 +1,24 @@
 import { useState } from "react";
-import { ChevronUp, ChevronDown, AlertCircle } from "lucide-react";
+import { ChevronUp, ChevronDown, AlertCircle, Trash2 } from "lucide-react";
 import { cn, getInitials } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface TextLog {
   id: string;
@@ -32,11 +46,32 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 export const TextLogDrawer = ({ logs, onUpdate }: TextLogDrawerProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const toggleDrawer = () => {
     setIsOpen(!isOpen);
     if ('vibrate' in navigator) {
       navigator.vibrate(50);
+    }
+  };
+
+  const handleDelete = async (logId: string) => {
+    setDeletingId(logId);
+    try {
+      const { error } = await supabase
+        .from('shift_logs')
+        .delete()
+        .eq('id', logId);
+
+      if (error) throw error;
+
+      toast.success('Log entry deleted');
+      onUpdate?.();
+    } catch (error) {
+      console.error('Error deleting log:', error);
+      toast.error('Failed to delete log entry');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -97,9 +132,40 @@ export const TextLogDrawer = ({ logs, onUpdate }: TextLogDrawerProps) => {
                         </Avatar>
                       )}
                     </div>
-                    <span className="text-xs text-muted-foreground">
-                      {format(new Date(log.created_at), 'h:mm a')}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(log.created_at), 'h:mm a')}
+                      </span>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            disabled={deletingId === log.id}
+                            className="h-8 w-8 hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete log entry?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will permanently delete the log entry.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => handleDelete(log.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
 
                   <p className="text-sm text-card-foreground">
