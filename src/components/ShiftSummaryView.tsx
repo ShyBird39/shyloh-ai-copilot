@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
+import rehypeRaw from "rehype-raw";
 import { Download, Share2, Sparkles, DollarSign, Users, TrendingUp, RefreshCw } from "lucide-react";
 
 interface ShiftSummaryViewProps {
@@ -241,8 +242,8 @@ export function ShiftSummaryView({ restaurantId, shiftDate, shiftType }: ShiftSu
           </div>
         </div>
 
-        <div className="prose prose-sm max-w-none dark:prose-invert">
-          <ReactMarkdown>{summary.summary_markdown}</ReactMarkdown>
+        <div className="prose prose-sm max-w-none dark:prose-invert prose-ul:space-y-2 prose-li:my-1">
+          <ReactMarkdown rehypePlugins={[rehypeRaw]}>{summary.summary_markdown}</ReactMarkdown>
         </div>
       </Card>
 
