@@ -117,34 +117,63 @@ export function ShiftSummaryView({ restaurantId, shiftDate, shiftType }: ShiftSu
   };
 
   const handleShare = () => {
-    toast.info('Share functionality coming soon!');
+    toast.info("Share functionality coming soon!");
   };
 
-  const handleAddToTasks = (task: string) => {
-    toast.success('Task added to your task list!');
-    // TODO: Implement actual task creation
+  const handleAddToTasks = async (task: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("You must be logged in");
+        return;
+      }
+
+      // Get current max sort order
+      const { data: existing } = await supabase
+        .from("restaurant_tasks")
+        .select("sort_order")
+        .eq("user_id", user.id)
+        .eq("restaurant_id", restaurantId)
+        .order("sort_order", { ascending: false })
+        .limit(1);
+
+      const maxSortOrder = existing && existing.length > 0 ? existing[0].sort_order : -1;
+
+      const { error } = await supabase.from("restaurant_tasks").insert({
+        user_id: user.id,
+        restaurant_id: restaurantId,
+        title: task,
+        sort_order: maxSortOrder + 1,
+      });
+
+      if (error) throw error;
+      toast.success("Task added to your task list!");
+    } catch (e) {
+      console.error("Failed to add task:", e);
+      toast.error("Failed to add task");
+    }
   };
 
   // Preprocess markdown to ensure proper list formatting and remove data-based items
   const processMarkdown = (markdown: string) => {
     // Split inline bullet points (• item • item) into proper list format
-    let processed = markdown.replace(/•\s*/g, '\n• ').trim();
-    
+    let processed = markdown.replace(/•\s*/g, "\n• ").trim();
+
     // Remove lines that are data-based metrics (Net Sales, Guest Count, Order Count, Average Check)
-    const linesToRemove = [
-      /[-•]\s*\*\*Net Sales:\*\*.*/gi,
-      /[-•]\s*\*\*Guest Count:\*\*.*/gi,
-      /[-•]\s*\*\*Order Count:\*\*.*/gi,
-      /[-•]\s*\*\*Average Check:\*\*.*/gi,
+    const patterns = [
+      /^[\t ]*[\-–—•]?\s*\*\*?Net Sales:?\*\*?.*$/gim,
+      /^[\t ]*[\-–—•]?\s*\*\*?Guest Count:?\*\*?.*$/gim,
+      /^[\t ]*[\-–—•]?\s*\*\*?Order Count:?\*\*?.*$/gim,
+      /^[\t ]*[\-–—•]?\s*\*\*?Average Check:?\*\*?.*$/gim,
     ];
-    
-    linesToRemove.forEach(pattern => {
-      processed = processed.replace(pattern, '');
+
+    patterns.forEach((pattern) => {
+      processed = processed.replace(pattern, "");
     });
-    
+
     // Clean up extra whitespace/newlines
-    processed = processed.replace(/\n\n+/g, '\n\n').trim();
-    
+    processed = processed.replace(/\n{3,}/g, "\n\n").trim();
+
     return processed;
   };
 
@@ -276,46 +305,54 @@ export function ShiftSummaryView({ restaurantId, shiftDate, shiftType }: ShiftSu
       </Card>
 
       {/* Action Items */}
-      {summary.action_items && summary.action_items.length > 0 && (
-        <Card className="p-6">
-          <h4 className="text-lg font-semibold mb-4">Action Items</h4>
-          <div className="space-y-3">
-            {summary.action_items.map((item, index) => (
-              <div
-                key={index}
-                className="flex items-start gap-3 p-3 rounded-lg bg-muted/50"
-              >
-                <Checkbox
-                  checked={item.completed}
-                  onCheckedChange={() => handleToggleActionItem(index)}
-                  className="mt-1"
-                />
-                <div className="flex-1">
-                  <p className={item.completed ? 'line-through text-muted-foreground' : ''}>
-                    {item.task}
-                  </p>
+      {summary.action_items && summary.action_items.length > 0 && (() => {
+        const filtered = summary.action_items
+          .map((it, originalIndex) => ({ it, originalIndex }))
+          .filter(({ it }) =>
+            !/^\s*(?:[\-•\u2013\u2014])?\s*\**(?:Net Sales|Guest Count|Order Count|Average Check)\**/i.test(it.task)
+          );
+        if (filtered.length === 0) return null;
+        return (
+          <Card className="p-6">
+            <h4 className="text-lg font-semibold mb-4">Action Items</h4>
+            <div className="space-y-3">
+              {filtered.map(({ it: item, originalIndex }) => (
+                <div
+                  key={originalIndex}
+                  className="flex items-start gap-3 p-3 rounded-lg bg-muted/50"
+                >
+                  <Checkbox
+                    checked={item.completed}
+                    onCheckedChange={() => handleToggleActionItem(originalIndex)}
+                    className="mt-1"
+                  />
+                  <div className="flex-1">
+                    <p className={item.completed ? 'line-through text-muted-foreground' : ''}>
+                      {item.task}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {item.urgency === 'high' && !item.completed && (
+                      <Badge variant="destructive">
+                        Urgent
+                      </Badge>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleAddToTasks(item.task)}
+                      className="h-8 px-2"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add to Tasks
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  {item.urgency === 'high' && !item.completed && (
-                    <Badge variant="destructive">
-                      Urgent
-                    </Badge>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleAddToTasks(item.task)}
-                    className="h-8 px-2"
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add to Tasks
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
+              ))}
+            </div>
+          </Card>
+        );
+      })()}
     </div>
   );
 }
