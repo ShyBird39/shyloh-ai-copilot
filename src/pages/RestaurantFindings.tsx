@@ -31,7 +31,6 @@ import { ChatToolsPopover } from "@/components/ChatToolsPopover";
 import KPIInput from "@/components/KPIInput";
 import { useAuth } from "@/hooks/useAuth";
 import { useRestaurantData } from "@/hooks/useRestaurantData";
-import { useConversationState } from "@/hooks/useConversationState";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import { ConversationFileHeader } from "@/components/ConversationFileHeader";
@@ -98,42 +97,7 @@ const RestaurantFindings = () => {
   const [claimPin, setClaimPin] = useState("");
   const [claiming, setClaiming] = useState(false);
   
-  // Onboarding state (needed early for useConversationState hook)
-  const [isOnboarding, setIsOnboarding] = useState(false);
-  const [onboardingPhase, setOnboardingPhase] = useState<'hook' | 'pain_point' | 'quick_win' | 'tuning' | 'data_collection'>('hook');
-  
-  // Temporary messages state for hook initialization
-  const [tempMessages] = useState<ChatMessage[]>([]);
-
-  // Use conversation state hook
-  const {
-    currentConversationId,
-    setCurrentConversationId,
-    conversations,
-    messages,
-    setMessages,
-    currentParticipants,
-    conversationState,
-    setConversationState,
-    currentConversationVisibility,
-    setCurrentConversationVisibility,
-    notionEnabled,
-    setNotionEnabled,
-    hardModeEnabled,
-    setHardModeEnabled,
-    messageFeedback,
-    setMessageFeedback,
-    lastMessagePreviews,
-    setLastMessagePreviews,
-    loadConversations,
-    handleNewConversation,
-    handleLoadConversation,
-    handleDeleteConversation,
-    handleToggleVisibility,
-    loadCurrentConversationParticipants,
-    updateMessageFeedbackStats,
-    handleMessageFeedback,
-  } = useConversationState(id, user?.id, data, isOnboarding, tempMessages, onboardingPhase);
+  // REGGI dimensions configuration
   const reggiDimensions = [
     { 
       key: 'culinary_beverage', 
@@ -233,44 +197,11 @@ const RestaurantFindings = () => {
   const [pinMode, setPinMode] = useState<"set" | "verify">("verify");
   const [pinLoading, setPinLoading] = useState(false);
   
-  // Onboarding state (needed for useConversationState hook)
-  const [isOnboarding, setIsOnboarding] = useState(false);
-  const [onboardingPhase, setOnboardingPhase] = useState<'hook' | 'pain_point' | 'quick_win' | 'tuning' | 'data_collection'>('hook');
-
-  // Use conversation state hook
-  const {
-    currentConversationId,
-    setCurrentConversationId,
-    conversations,
-    messages,
-    setMessages,
-    currentParticipants,
-    conversationState,
-    setConversationState,
-    currentConversationVisibility,
-    setCurrentConversationVisibility,
-    notionEnabled,
-    setNotionEnabled,
-    hardModeEnabled,
-    setHardModeEnabled,
-    messageFeedback,
-    setMessageFeedback,
-    lastMessagePreviews,
-    setLastMessagePreviews,
-    loadConversations,
-    handleNewConversation,
-    handleLoadConversation,
-    handleDeleteConversation,
-    handleToggleVisibility,
-    loadCurrentConversationParticipants,
-    updateMessageFeedbackStats,
-    handleMessageFeedback,
-  } = useConversationState(id, user?.id, data, isOnboarding, messages, onboardingPhase);
-  
   // Chat state
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [promptsVisible, setPromptsVisible] = useState(true);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentInput, setCurrentInput] = useState("");
   const [notionMentioned, setNotionMentioned] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<string[]>([]);
@@ -296,20 +227,58 @@ const RestaurantFindings = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // File and settings state
+  // New state for chat history and files
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [conversations, setConversations] = useState<any[]>([]);
   const [files, setFiles] = useState<any[]>([]);
   const [cleanupAttempted, setCleanupAttempted] = useState(false);
   const [showConversationSettings, setShowConversationSettings] = useState(false);
+  const [currentConversationVisibility, setCurrentConversationVisibility] = useState("private");
+  const [notionEnabled, setNotionEnabled] = useState(false);
+  const [hardModeEnabled, setHardModeEnabled] = useState(false);
   const [showDebugInfo, setShowDebugInfo] = useState(false);
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [showPromptDialog, setShowPromptDialog] = useState(false);
+  const [messageFeedback, setMessageFeedback] = useState<Record<number, number>>({});
+  const [currentParticipants, setCurrentParticipants] = useState<Array<{
+    id: string;
+    user_id: string;
+    role: string;
+    profiles: {
+      email: string;
+      display_name: string | null;
+    };
+  }>>([]);
+
+  // Conversation state tracking
+  const [conversationState, setConversationState] = useState<{
+    current_topic: string | null;
+    intent_classification: string | null;
+    wwahd_mode: boolean;
+    topics_discussed: string[];
+    last_question_asked: string | null;
+    conversation_state?: {
+      data_requested?: boolean;
+      data_request_count?: number;
+      awaiting_upload?: boolean;
+      has_uploaded_data?: boolean;
+    };
+  }>({
+    current_topic: null,
+    intent_classification: null,
+    wwahd_mode: false,
+    topics_discussed: [],
+    last_question_asked: null,
+    conversation_state: {},
+  });
 
   // Coaching session state
   const [showCoachingOptions, setShowCoachingOptions] = useState(false);
   const [selectedCoachingAreas, setSelectedCoachingAreas] = useState<string[]>([]);
 
 
-  // More onboarding state
+  // Onboarding state
+  const [isOnboarding, setIsOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState<number>(1);
   const [currentReggiDimension, setCurrentReggiDimension] = useState<number>(0); // Track which REGGI dimension (0-5)
   const [onboardingSteps, setOnboardingSteps] = useState([
@@ -323,7 +292,8 @@ const RestaurantFindings = () => {
   // File panel state
   const [filePanelOpen, setFilePanelOpen] = useState(false);
 
-  // More Quick Win state
+  // Quick Win onboarding state
+  const [onboardingPhase, setOnboardingPhase] = useState<'hook' | 'pain_point' | 'quick_win' | 'tuning' | 'data_collection'>('hook');
   const [userPainPoint, setUserPainPoint] = useState<string>('');
   const [quickWinExchangeCount, setQuickWinExchangeCount] = useState<number>(0);
   const [quickWinStartTime, setQuickWinStartTime] = useState<number | null>(null);
@@ -353,6 +323,7 @@ const RestaurantFindings = () => {
   const [conversationDrawerOpen, setConversationDrawerOpen] = useState(false);
   const [navigationMenuOpen, setNavigationMenuOpen] = useState(false);
   const [currentNavSection, setCurrentNavSection] = useState<'chats' | 'agents' | 'tasks' | 'manager-log'>('chats');
+  const [lastMessagePreviews, setLastMessagePreviews] = useState<Record<string, string>>({});
   const [showConversationThread, setShowConversationThread] = useState(false);
 
   // Ensure Chat tab is active on mobile by default and validate tab value
@@ -385,6 +356,145 @@ const RestaurantFindings = () => {
 
   const handleRefreshChat = () => {
     handleNewConversation();
+  };
+
+  const loadCurrentConversationParticipants = async (conversationId: string) => {
+    if (!conversationId) {
+      setCurrentParticipants([]);
+      return;
+    }
+
+    try {
+      // Get participants
+      const { data: participantData, error: participantError } = await supabase
+        .from("chat_conversation_participants")
+        .select("id, user_id, role")
+        .eq("conversation_id", conversationId)
+        .order("role", { ascending: true });
+
+      if (participantError) throw participantError;
+
+      if (!participantData || participantData.length === 0) {
+        setCurrentParticipants([]);
+        return;
+      }
+
+      // Get profiles for all participants
+      const userIds = participantData.map(p => p.user_id);
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("id, email, display_name")
+        .in("id", userIds);
+
+      if (profileError) throw profileError;
+
+      // Combine data
+      const participantsWithProfiles = participantData.map(p => {
+        const profile = profileData?.find(prof => prof.id === p.user_id);
+        return {
+          ...p,
+          profiles: {
+            email: profile?.email || '',
+            display_name: profile?.display_name || null,
+          }
+        };
+      });
+
+      setCurrentParticipants(participantsWithProfiles);
+    } catch (error) {
+      console.error("Error loading participants:", error);
+      setCurrentParticipants([]);
+    }
+  };
+
+  const updateMessageFeedbackStats = async (messageId: string) => {
+    try {
+      const { data: allFeedback, error } = await supabase
+        .from("chat_message_feedback")
+        .select("rating")
+        .eq("message_id", messageId);
+
+      if (error || !allFeedback) return;
+
+      const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+      let total = 0;
+      let sum = 0;
+
+      allFeedback.forEach(fb => {
+        distribution[fb.rating as keyof typeof distribution]++;
+        total++;
+        sum += fb.rating;
+      });
+
+      const average = total > 0 ? sum / total : 0;
+
+      await supabase
+        .from("chat_messages")
+        .update({
+          feedback_stats: { total, average, distribution }
+        })
+        .eq("id", messageId);
+    } catch (error) {
+      console.error("Error updating feedback stats:", error);
+    }
+  };
+
+  const handleMessageFeedback = async (messageIndex: number, rating: number) => {
+    if (!currentConversationId || !id || !user?.id) return;
+
+    setMessageFeedback(prev => ({ ...prev, [messageIndex]: rating }));
+
+    try {
+      const { data: msgs, error: fetchError } = await supabase
+        .from("chat_messages")
+        .select("id")
+        .eq("conversation_id", currentConversationId)
+        .order("created_at", { ascending: true });
+
+      if (fetchError) throw fetchError;
+      
+      const messageId = msgs?.[messageIndex]?.id;
+      if (!messageId) throw new Error("Message not found");
+
+      const { data: existingFeedback } = await supabase
+        .from("chat_message_feedback")
+        .select("id")
+        .eq("message_id", messageId)
+        .eq("user_id", user.id)
+        .single();
+
+      if (existingFeedback) {
+        const { error } = await supabase
+          .from("chat_message_feedback")
+          .update({ rating, created_at: new Date().toISOString() })
+          .eq("id", existingFeedback.id);
+        
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("chat_message_feedback")
+          .insert({
+            message_id: messageId,
+            conversation_id: currentConversationId,
+            restaurant_id: id,
+            user_id: user.id,
+            rating
+          });
+        
+        if (error) throw error;
+      }
+
+      await updateMessageFeedbackStats(messageId);
+      toast.success("Thanks for your feedback!");
+    } catch (error) {
+      console.error("Error saving feedback:", error);
+      toast.error("Failed to save feedback");
+      setMessageFeedback(prev => {
+        const newState = { ...prev };
+        delete newState[messageIndex];
+        return newState;
+      });
+    }
   };
 
   const handleDeleteMessage = async (messageId: string, messageIndex: number) => {
@@ -522,6 +632,211 @@ const RestaurantFindings = () => {
       completed: idx < step - 1,
       active: makeActive ? idx === step - 1 : s.active,
     })));
+  };
+
+  const handleNewConversation = () => {
+    setCurrentConversationId(null);
+    setCurrentParticipants([]);
+    setNotionEnabled(false);
+    setHardModeEnabled(false);
+    
+    // Check if tuning is complete
+    const tuningComplete = data?.tuning_completed;
+    
+    if (tuningComplete) {
+      // Tuning complete → free chat mode with rotating welcome messages
+      // Alert banner will handle KPI reminders if needed
+      const welcomeMessages = [
+        {
+          content: "Welcome back, I'm here to be helpful. I can't always be, but I'll try and I won't waste your time.",
+          type: "question" as const,
+        },
+        {
+          content: "Hi- what's on your mind?",
+          type: "question" as const,
+        },
+        {
+          content: "Shyloh Quick Tip: Did you know you could connect Toast, Square and other POS Systems to Shyloh? This lets me analyze your actual sales data and provide more relevant insights.",
+          type: "question" as const,
+        },
+        {
+          content: "Shyloh Quick Tip: Did you know Shyloh can help analyze and summarize data you give it and then discuss how to act on the insight? Feel free to share sales reports, inventory lists, or menu ideas.",
+          type: "question" as const,
+        },
+        {
+          content: "Shyloh Quick Tip: You can create custom rules like 'always keep BOH hourly labor under 8%' or 'when thinking about a new dish, keep in mind we don't have any entrees over $25'. This helps me give advice that fits your restaurant's specific constraints.",
+          type: "question" as const,
+        },
+        {
+          content: "Try asking me 'How's today going?'",
+          type: "question" as const,
+        },
+      ];
+      
+      // Select random welcome message
+      const randomWelcome = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
+      
+      setMessages([{
+        role: "assistant",
+        content: randomWelcome.content,
+        type: randomWelcome.type,
+      }]);
+      setOnboardingPhase('hook'); // Ensure we're in normal chat mode
+    } else {
+      // Tuning not complete → trigger onboarding flow
+      setMessages([
+        {
+          role: "assistant",
+          content: "First things first, I am a restaurant intelligence tool. I don't have all the answers by any means, but through conversation, hopefully the two of us have more of them. I know a lot about restaurants but just a little bit about yours. This initial conversation is meant to help me learn more. That way I can be more helpful to you going forward.",
+          type: "question",
+        }
+      ]);
+      setOnboardingPhase('hook'); // Will trigger hook useEffect
+    }
+    
+    setCurrentInput("");
+    setShowObjectives(false);
+  };
+
+  const handleLoadConversation = async (conversationId: string) => {
+    try {
+      const { data: msgs, error } = await supabase
+        .from("chat_messages")
+        .select("*")
+        .eq("conversation_id", conversationId)
+        .is('deleted_at', null)
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+
+      // Fetch conversation state and visibility
+      const { data: convMeta, error: metaError } = await supabase
+        .from('chat_conversations')
+        .select('conversation_state, current_topic, intent_classification, wwahd_mode, topics_discussed, last_question_asked, visibility, notion_enabled, hard_mode_enabled')
+        .eq('id', conversationId)
+        .maybeSingle();
+
+      if (!metaError && convMeta) {
+        setConversationState({
+          current_topic: convMeta.current_topic,
+          intent_classification: convMeta.intent_classification,
+          wwahd_mode: convMeta.wwahd_mode || false,
+          topics_discussed: convMeta.topics_discussed || [],
+          last_question_asked: convMeta.last_question_asked,
+          conversation_state: convMeta.conversation_state || {},
+        });
+        setCurrentConversationVisibility(convMeta.visibility || 'private');
+        setNotionEnabled(convMeta.notion_enabled || false);
+        setHardModeEnabled(convMeta.hard_mode_enabled || false);
+      }
+
+      // Verify user can access this conversation (participant OR team member for team conversations)
+      if (user?.id) {
+        const { data: conversation } = await supabase
+          .from('chat_conversations')
+          .select('visibility')
+          .eq('id', conversationId)
+          .single();
+
+        const { data: existingParticipant } = await supabase
+          .from('chat_conversation_participants')
+          .select('id')
+          .eq('conversation_id', conversationId)
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        const canAccess = existingParticipant || (conversation?.visibility === 'team');
+
+        if (!canAccess) {
+          toast.error("You don't have access to this conversation");
+          handleNewConversation();
+          return;
+        }
+      }
+
+      setCurrentConversationId(conversationId);
+      setMessages(msgs.map(msg => ({
+        id: msg.id,
+        role: msg.role as "user" | "assistant",
+        content: msg.content,
+        user_id: msg.user_id,
+        display_name: msg.profiles?.display_name || msg.profiles?.email || null,
+        hard_mode_used: msg.hard_mode_used || false,
+      })));
+
+      // Load participants for this conversation
+      loadCurrentConversationParticipants(conversationId);
+
+      // Load feedback for this conversation
+      if (user?.id) {
+        const { data: feedbackData } = await supabase
+          .from("chat_message_feedback")
+          .select("message_id, rating")
+          .eq("conversation_id", conversationId)
+          .eq("user_id", user.id);
+        
+        if (feedbackData) {
+          const feedbackMap: Record<number, number> = {};
+          const messageIds = msgs.map(m => m.id);
+          
+          feedbackData.forEach(fb => {
+            const msgIndex = messageIds.indexOf(fb.message_id);
+            if (msgIndex !== -1) {
+              feedbackMap[msgIndex] = fb.rating;
+            }
+          });
+          
+          setMessageFeedback(feedbackMap);
+        }
+      }
+    } catch (error) {
+      console.error("Error loading conversation:", error);
+      toast.error("Failed to load conversation");
+    }
+  };
+
+  const handleDeleteConversation = async (conversationId: string) => {
+    try {
+      const { error } = await supabase
+        .from("chat_conversations")
+        .delete()
+        .eq("id", conversationId);
+
+      if (error) throw error;
+
+      if (currentConversationId === conversationId) {
+        handleNewConversation();
+      }
+      loadConversations();
+      toast.success("Conversation deleted");
+    } catch (error) {
+      console.error("Error deleting conversation:", error);
+      toast.error("Failed to delete conversation");
+    }
+  };
+
+  const handleToggleVisibility = async (conversationId: string, currentVisibility: string) => {
+    try {
+      const newVisibility = currentVisibility === 'private' ? 'team' : 'private';
+      
+      const { error } = await supabase
+        .from("chat_conversations")
+        .update({ visibility: newVisibility })
+        .eq("id", conversationId);
+
+      if (error) throw error;
+
+      // Update local state
+      if (conversationId === currentConversationId) {
+        setCurrentConversationVisibility(newVisibility);
+      }
+      
+      loadConversations();
+      toast.success(newVisibility === 'team' ? "Shared with team" : "Made private");
+    } catch (error) {
+      console.error("Error toggling visibility:", error);
+      toast.error("Failed to update visibility");
+    }
   };
 
   // Helper function to detect file type with fallback to extension
@@ -738,6 +1053,41 @@ const RestaurantFindings = () => {
     }
   };
 
+  const loadConversations = async () => {
+    if (!id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from("chat_conversations")
+        .select(`
+          *,
+          participants:chat_conversation_participants(count)
+        `)
+        .eq("restaurant_id", id)
+        .order("updated_at", { ascending: false });
+
+      if (error) throw error;
+      
+      // Transform data to include participant_count
+      const conversationsWithCount = (data || []).map(conv => ({
+        ...conv,
+        participant_count: conv.participants?.[0]?.count || 0
+      }));
+      
+      setConversations(conversationsWithCount);
+      
+      // Check for onboarding completion - only on first load
+      if (!isOnboarding && messages.length === 0) {
+        const hasOnboarding = data?.some(conv => conv.conversation_type === 'onboarding');
+        if (!hasOnboarding && data?.length === 0) {
+          // First time user - Quick Win onboarding will be triggered by useEffect
+          // Do nothing here - let the Quick Win hook handle it
+        }
+      }
+    } catch (error) {
+      console.error("Error loading conversations:", error);
+    }
+  };
 
   const loadFiles = async () => {
     if (!id) return;
@@ -1074,8 +1424,9 @@ What would you like to work on today?`
   };
 
 
-  // Load files and saved prompts on mount
+  // Load conversations, files, and saved prompts on mount
   useEffect(() => {
+    loadConversations();
     loadFiles();
     loadSavedPrompts();
   }, [id]);
