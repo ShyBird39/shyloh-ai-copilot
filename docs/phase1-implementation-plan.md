@@ -8,26 +8,26 @@ Refactor `RestaurantFindings.tsx` (6,271 lines) by extracting state into 4 focus
 ## Step 1: Extract Restaurant Data Hook
 
 ### Implementation Tasks
-- [ ] Create `src/hooks/useRestaurantData.ts`
-- [ ] Extract these state variables and their operations:
+- [x] Create `src/hooks/useRestaurantData.ts`
+- [x] Extract these state variables and their operations:
   - `restaurantData`, `setRestaurantData`
   - `kpiData`, `setKPIData`
   - `reggiDimensions`, `setReggiDimensions`
   - `toolsData`, `setToolsData`
   - `customKnowledge`, `setCustomKnowledge`
   - `loadingKPIs`, `loadingREGGI`, `loadingTools`, `loadingKnowledge`
-- [ ] Move related `useEffect` hooks for data loading
-- [ ] Move `loadRestaurantData`, `loadKPIs`, `loadREGGI`, `loadTools`, `loadCustomKnowledge` functions into hook
-- [ ] Update `RestaurantFindings.tsx` to use `const { restaurantData, kpiData, reggiDimensions, toolsData, customKnowledge, operations } = useRestaurantData(id)`
+- [x] Move related `useEffect` hooks for data loading
+- [x] Move `loadRestaurantData`, `loadKPIs`, `loadREGGI`, `loadTools`, `loadCustomKnowledge` functions into hook
+- [x] Update `RestaurantFindings.tsx` to use `const { restaurantData, kpiData, reggiDimensions, toolsData, customKnowledge, operations } = useRestaurantData(id)`
 
 ### Validation Checklist
-- [ ] Restaurant profile displays correctly on page load
-- [ ] KPI section displays existing data
-- [ ] REGGI dimensions display correctly
-- [ ] Tools section shows configured tools
-- [ ] Custom knowledge items appear in the list
-- [ ] No console errors on page load
-- [ ] No TypeScript errors
+- [x] Restaurant profile displays correctly on page load
+- [x] KPI section displays existing data
+- [x] REGGI dimensions display correctly
+- [x] Tools section shows configured tools
+- [x] Custom knowledge items appear in the list
+- [x] No console errors on page load
+- [x] No TypeScript errors
 
 ### Acceptance Criteria
 ✅ All restaurant profile data loads and displays identically  
