@@ -80,16 +80,16 @@ Refactor `RestaurantFindings.tsx` (6,271 lines) by extracting state into 4 focus
 
 ---
 
-### Step 2c: Move Conversation CRUD Operations
+### Step 2c: Move Conversation CRUD Operations ✅
 **Goal**: Move create, delete, visibility toggle functions
 
-- [ ] Move `handleNewConversation` into hook
-- [ ] Move `handleDeleteConversation` into hook
-- [ ] Move `handleToggleVisibility` into hook
-- [ ] Move `handleLoadConversation` into hook
-- [ ] Return these functions from hook
-- [ ] Update calls in `RestaurantFindings.tsx` to use hook functions
-- [ ] Remove old function definitions from `RestaurantFindings.tsx`
+- [x] Move `handleNewConversation` into hook
+- [x] Move `handleDeleteConversation` into hook
+- [x] Move `handleToggleVisibility` into hook
+- [x] Move `handleLoadConversation` into hook
+- [x] Return these functions from hook
+- [x] Update calls in `RestaurantFindings.tsx` to use hook functions
+- [x] Remove old function definitions from `RestaurantFindings.tsx`
 
 **Validation**: Creating, deleting, loading conversations still works
 
@@ -296,7 +296,7 @@ Refactor `RestaurantFindings.tsx` (6,271 lines) by extracting state into 4 focus
 | Step | Status | Date Completed | Notes |
 |------|--------|----------------|-------|
 | Step 1: Restaurant Data Hook | ✅ Complete | 2025-11-06 | Successfully extracted restaurant data management |
-| Step 2: Conversation State Hook | 🔄 In Progress | - | Breaking into sub-steps |
+| Step 2c: Move Conversation CRUD Operations | ✅ Complete | 2025-11-06 | Successfully moved conversation management functions |
 | Step 3: File Management Hook | ⏳ Not Started | - | - |
 | Step 4: Onboarding Hook | ⏳ Not Started | - | - |
 | Step 5: Final Integration | ⏳ Not Started | - | - |

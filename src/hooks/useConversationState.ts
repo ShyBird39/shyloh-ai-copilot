@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface ChatMessage {
   id?: string;
@@ -35,7 +36,23 @@ interface ConversationStateType {
   };
 }
 
-export const useConversationState = (restaurantId: string | undefined, userId: string | undefined) => {
+interface UseConversationStateParams {
+  restaurantId: string | undefined;
+  userId: string | undefined;
+  restaurantData: any;
+  setOnboardingPhase: (phase: 'hook' | 'pain_point' | 'quick_win' | 'tuning' | 'data_collection') => void;
+  setCurrentInput: (input: string) => void;
+  setShowObjectives: (show: boolean) => void;
+}
+
+export const useConversationState = ({
+  restaurantId,
+  userId,
+  restaurantData,
+  setOnboardingPhase,
+  setCurrentInput,
+  setShowObjectives,
+}: UseConversationStateParams) => {
   // Conversation state
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<any[]>([]);
@@ -136,6 +153,210 @@ export const useConversationState = (restaurantId: string | undefined, userId: s
     }
   };
 
+  const handleNewConversation = () => {
+    setCurrentConversationId(null);
+    setCurrentParticipants([]);
+    setNotionEnabled(false);
+    setHardModeEnabled(false);
+    
+    // Check if tuning is complete
+    const tuningComplete = restaurantData?.tuning_completed;
+    
+    if (tuningComplete) {
+      // Tuning complete → free chat mode with rotating welcome messages
+      const welcomeMessages = [
+        {
+          content: "Welcome back, I'm here to be helpful. I can't always be, but I'll try and I won't waste your time.",
+          type: "question" as const,
+        },
+        {
+          content: "Hi- what's on your mind?",
+          type: "question" as const,
+        },
+        {
+          content: "Shyloh Quick Tip: Did you know you could connect Toast, Square and other POS Systems to Shyloh? This lets me analyze your actual sales data and provide more relevant insights.",
+          type: "question" as const,
+        },
+        {
+          content: "Shyloh Quick Tip: Did you know Shyloh can help analyze and summarize data you give it and then discuss how to act on the insight? Feel free to share sales reports, inventory lists, or menu ideas.",
+          type: "question" as const,
+        },
+        {
+          content: "Shyloh Quick Tip: You can create custom rules like 'always keep BOH hourly labor under 8%' or 'when thinking about a new dish, keep in mind we don't have any entrees over $25'. This helps me give advice that fits your restaurant's specific constraints.",
+          type: "question" as const,
+        },
+        {
+          content: "Try asking me 'How's today going?'",
+          type: "question" as const,
+        },
+      ];
+      
+      // Select random welcome message
+      const randomWelcome = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
+      
+      setMessages([{
+        role: "assistant",
+        content: randomWelcome.content,
+        type: randomWelcome.type,
+      }]);
+      setOnboardingPhase('hook');
+    } else {
+      // Tuning not complete → trigger onboarding flow
+      setMessages([
+        {
+          role: "assistant",
+          content: "First things first, I am a restaurant intelligence tool. I don't have all the answers by any means, but through conversation, hopefully the two of us have more of them. I know a lot about restaurants but just a little bit about yours. This initial conversation is meant to help me learn more. That way I can be more helpful to you going forward.",
+          type: "question",
+        }
+      ]);
+      setOnboardingPhase('hook');
+    }
+    
+    setCurrentInput("");
+    setShowObjectives(false);
+  };
+
+  const handleLoadConversation = async (conversationId: string) => {
+    try {
+      const { data: msgs, error } = await supabase
+        .from("chat_messages")
+        .select("*")
+        .eq("conversation_id", conversationId)
+        .is('deleted_at', null)
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+
+      // Fetch conversation state and visibility
+      const { data: convMeta, error: metaError } = await supabase
+        .from('chat_conversations')
+        .select('conversation_state, current_topic, intent_classification, wwahd_mode, topics_discussed, last_question_asked, visibility, notion_enabled, hard_mode_enabled')
+        .eq('id', conversationId)
+        .maybeSingle();
+
+      if (!metaError && convMeta) {
+        setConversationState({
+          current_topic: convMeta.current_topic,
+          intent_classification: convMeta.intent_classification,
+          wwahd_mode: convMeta.wwahd_mode || false,
+          topics_discussed: convMeta.topics_discussed || [],
+          last_question_asked: convMeta.last_question_asked,
+          conversation_state: convMeta.conversation_state || {},
+        });
+        setCurrentConversationVisibility(convMeta.visibility || 'private');
+        setNotionEnabled(convMeta.notion_enabled || false);
+        setHardModeEnabled(convMeta.hard_mode_enabled || false);
+      }
+
+      // Verify user can access this conversation
+      if (userId) {
+        const { data: conversation } = await supabase
+          .from('chat_conversations')
+          .select('visibility')
+          .eq('id', conversationId)
+          .single();
+
+        const { data: existingParticipant } = await supabase
+          .from('chat_conversation_participants')
+          .select('id')
+          .eq('conversation_id', conversationId)
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        const canAccess = existingParticipant || (conversation?.visibility === 'team');
+
+        if (!canAccess) {
+          toast.error("You don't have access to this conversation");
+          handleNewConversation();
+          return;
+        }
+      }
+
+      setCurrentConversationId(conversationId);
+      setMessages(msgs.map(msg => ({
+        id: msg.id,
+        role: msg.role as "user" | "assistant",
+        content: msg.content,
+        user_id: msg.user_id,
+        display_name: msg.profiles?.display_name || msg.profiles?.email || null,
+        hard_mode_used: msg.hard_mode_used || false,
+      })));
+
+      // Load participants for this conversation
+      loadCurrentConversationParticipants(conversationId);
+
+      // Load feedback for this conversation
+      if (userId) {
+        const { data: feedbackData } = await supabase
+          .from("chat_message_feedback")
+          .select("message_id, rating")
+          .eq("conversation_id", conversationId)
+          .eq("user_id", userId);
+        
+        if (feedbackData) {
+          const feedbackMap: Record<number, number> = {};
+          const messageIds = msgs.map(m => m.id);
+          
+          feedbackData.forEach(fb => {
+            const msgIndex = messageIds.indexOf(fb.message_id);
+            if (msgIndex !== -1) {
+              feedbackMap[msgIndex] = fb.rating;
+            }
+          });
+          
+          setMessageFeedback(feedbackMap);
+        }
+      }
+    } catch (error) {
+      console.error("Error loading conversation:", error);
+      toast.error("Failed to load conversation");
+    }
+  };
+
+  const handleDeleteConversation = async (conversationId: string) => {
+    try {
+      const { error } = await supabase
+        .from("chat_conversations")
+        .delete()
+        .eq("id", conversationId);
+
+      if (error) throw error;
+
+      if (currentConversationId === conversationId) {
+        handleNewConversation();
+      }
+      loadConversations();
+      toast.success("Conversation deleted");
+    } catch (error) {
+      console.error("Error deleting conversation:", error);
+      toast.error("Failed to delete conversation");
+    }
+  };
+
+  const handleToggleVisibility = async (conversationId: string, currentVisibility: string) => {
+    try {
+      const newVisibility = currentVisibility === 'private' ? 'team' : 'private';
+      
+      const { error } = await supabase
+        .from("chat_conversations")
+        .update({ visibility: newVisibility })
+        .eq("id", conversationId);
+
+      if (error) throw error;
+
+      // Update local state
+      if (conversationId === currentConversationId) {
+        setCurrentConversationVisibility(newVisibility);
+      }
+
+      loadConversations();
+      toast.success(`Conversation is now ${newVisibility}`);
+    } catch (error) {
+      console.error("Error toggling visibility:", error);
+      toast.error("Failed to update visibility");
+    }
+  };
+
   return {
     // State
     currentConversationId,
@@ -162,5 +383,9 @@ export const useConversationState = (restaurantId: string | undefined, userId: s
     // Functions
     loadConversations,
     loadCurrentConversationParticipants,
+    handleNewConversation,
+    handleLoadConversation,
+    handleDeleteConversation,
+    handleToggleVisibility,
   };
 };
