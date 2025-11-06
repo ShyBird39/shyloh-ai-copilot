@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -356,6 +356,74 @@ export const useConversationState = ({
       toast.error("Failed to update visibility");
     }
   };
+
+  // Realtime subscription for new messages
+  useEffect(() => {
+    if (!currentConversationId || !userId) return;
+
+    const channel = supabase
+      .channel(`messages-${currentConversationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `conversation_id=eq.${currentConversationId}`
+        },
+        async (payload) => {
+          const newMessage = payload.new as any;
+          
+          // Don't add our own messages (already in state from optimistic update)
+          if (newMessage.user_id === userId) {
+            console.log('Skipping own message from realtime');
+            return;
+          }
+
+          console.log('Received realtime message:', newMessage);
+
+          // Fetch user profile for display name if it's a human message
+          let displayName = null;
+          if (newMessage.user_id && newMessage.role === 'user') {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('display_name, email')
+              .eq('id', newMessage.user_id)
+              .single();
+            
+            displayName = profile?.display_name || profile?.email || 'Team Member';
+          }
+
+          // Add message to state
+          setMessages(prev => {
+            // Check if message already exists
+            const exists = prev.some(m => 
+              m.content === newMessage.content && 
+              m.role === newMessage.role &&
+              Math.abs(Date.now() - new Date(newMessage.created_at).getTime()) < 5000
+            );
+            
+            if (exists) {
+              console.log('Message already in state, skipping');
+              return prev;
+            }
+
+            return [...prev, {
+              role: newMessage.role,
+              content: newMessage.content,
+              user_id: newMessage.user_id,
+              display_name: displayName,
+            }];
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('Cleaning up realtime subscription');
+      supabase.removeChannel(channel);
+    };
+  }, [currentConversationId, userId]);
 
   return {
     // State

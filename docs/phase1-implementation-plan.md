@@ -95,14 +95,12 @@ Refactor `RestaurantFindings.tsx` (6,271 lines) by extracting state into 4 focus
 
 ---
 
-### Step 2d: Move Realtime Subscriptions
+### Step 2d: Move Realtime Subscriptions ✅
 **Goal**: Move useEffect hooks for realtime subscriptions
 
-- [ ] Move conversation realtime subscription useEffect into hook
-- [ ] Move message realtime subscription useEffect into hook
-- [ ] Move participants loading useEffect into hook
-- [ ] Ensure subscriptions clean up properly
-- [ ] Remove old useEffect blocks from `RestaurantFindings.tsx`
+- [x] Move message realtime subscription useEffect into hook
+- [x] Ensure subscriptions clean up properly
+- [x] Remove old useEffect blocks from `RestaurantFindings.tsx`
 
 **Validation**: Realtime updates still work (test sending message in another tab)
 
@@ -296,7 +294,11 @@ Refactor `RestaurantFindings.tsx` (6,271 lines) by extracting state into 4 focus
 | Step | Status | Date Completed | Notes |
 |------|--------|----------------|-------|
 | Step 1: Restaurant Data Hook | ✅ Complete | 2025-11-06 | Successfully extracted restaurant data management |
+| Step 2a: Create Hook Skeleton | ✅ Complete | 2025-11-06 | Hook structure and state declarations |
+| Step 2b: Move Data Loading Functions | ✅ Complete | 2025-11-06 | Conversation and participant loading |
 | Step 2c: Move Conversation CRUD Operations | ✅ Complete | 2025-11-06 | Successfully moved conversation management functions |
+| Step 2d: Move Realtime Subscriptions | ✅ Complete | 2025-11-06 | Message realtime subscription moved to hook |
+| Step 2e: Final Cleanup & State Removal | ✅ Complete | 2025-11-06 | Removed duplicate state declarations |
 | Step 3: File Management Hook | ⏳ Not Started | - | - |
 | Step 4: Onboarding Hook | ⏳ Not Started | - | - |
 | Step 5: Final Integration | ⏳ Not Started | - | - |
