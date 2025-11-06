@@ -287,6 +287,48 @@ export type Database = {
           },
         ]
       }
+      draft_narratives: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          id: string
+          metadata: Json | null
+          narrative: string
+          restaurant_id: string
+          shift_date: string
+          shift_type: string
+          source_memo_ids: string[] | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          id?: string
+          metadata?: Json | null
+          narrative: string
+          restaurant_id: string
+          shift_date: string
+          shift_type: string
+          source_memo_ids?: string[] | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          metadata?: Json | null
+          narrative?: string
+          restaurant_id?: string
+          shift_date?: string
+          shift_type?: string
+          source_memo_ids?: string[] | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           content: string
@@ -1126,48 +1168,73 @@ export type Database = {
           audio_url: string
           category: string | null
           created_at: string | null
+          draft_id: string | null
           duration_seconds: number
           id: string
           metadata: Json | null
           restaurant_id: string
+          review_status: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          reviewer_notes: string | null
           shift_date: string
           shift_type: string
           transcription: string | null
           transcription_status: string | null
           updated_at: string | null
+          used_in_draft: boolean | null
           user_id: string
         }
         Insert: {
           audio_url: string
           category?: string | null
           created_at?: string | null
+          draft_id?: string | null
           duration_seconds: number
           id?: string
           metadata?: Json | null
           restaurant_id: string
+          review_status?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
           shift_date?: string
           shift_type: string
           transcription?: string | null
           transcription_status?: string | null
           updated_at?: string | null
+          used_in_draft?: boolean | null
           user_id: string
         }
         Update: {
           audio_url?: string
           category?: string | null
           created_at?: string | null
+          draft_id?: string | null
           duration_seconds?: number
           id?: string
           metadata?: Json | null
           restaurant_id?: string
+          review_status?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
           shift_date?: string
           shift_type?: string
           transcription?: string | null
           transcription_status?: string | null
           updated_at?: string | null
+          used_in_draft?: boolean | null
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_draft_narratives"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "draft_narratives"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "voice_memos_user_id_fkey"
             columns: ["user_id"]
