@@ -58,10 +58,8 @@ export const MemoListPanel = ({ memos, selection, onUpdate, restaurantId, shiftD
           <h2 className="text-lg font-semibold">Voice Memos ({sortedMemos.length})</h2>
           <Collapsible open={isRecordingOpen} onOpenChange={setIsRecordingOpen}>
             <CollapsibleTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-2">
-                <Mic className="h-4 w-4" />
-                Record
-                {isRecordingOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              <Button variant="ghost" size="sm" className="text-xs">
+                {isRecordingOpen ? 'Collapse' : 'Open to Record'}
               </Button>
             </CollapsibleTrigger>
           </Collapsible>
