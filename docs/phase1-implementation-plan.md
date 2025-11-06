@@ -43,11 +43,11 @@ Refactor `RestaurantFindings.tsx` (6,271 lines) by extracting state into 4 focus
 
 ⚠️ **Due to RestaurantFindings.tsx being 6k+ lines, this step is broken into smaller, safer increments**
 
-### Step 2a: Create Hook Skeleton & Extract State Declarations
+### Step 2a: Create Hook Skeleton & Extract State Declarations ✅
 **Goal**: Create the hook file with all state variables, return them, but NO logic yet
 
-- [ ] Create `src/hooks/useConversationState.ts` with basic structure
-- [ ] Add these state declarations to the hook:
+- [x] Create `src/hooks/useConversationState.ts` with basic structure
+- [x] Add these state declarations to the hook:
   - `currentConversationId`, `setCurrentConversationId`
   - `conversations`, `setConversations`
   - `messages`, `setMessages`
@@ -58,9 +58,9 @@ Refactor `RestaurantFindings.tsx` (6,271 lines) by extracting state into 4 focus
   - `hardModeEnabled`, `setHardModeEnabled`
   - `messageFeedback`, `setMessageFeedback`
   - `lastMessagePreviews`, `setLastMessagePreviews`
-- [ ] Return all state variables from hook
-- [ ] Import hook in `RestaurantFindings.tsx` (but don't remove old state yet)
-- [ ] Verify no TypeScript errors
+- [x] Return all state variables from hook
+- [x] Import hook in `RestaurantFindings.tsx` (but don't remove old state yet)
+- [x] Verify no TypeScript errors
 
 **Validation**: Page still works, no build errors
 

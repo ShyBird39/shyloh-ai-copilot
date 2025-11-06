@@ -31,6 +31,7 @@ import { ChatToolsPopover } from "@/components/ChatToolsPopover";
 import KPIInput from "@/components/KPIInput";
 import { useAuth } from "@/hooks/useAuth";
 import { useRestaurantData } from "@/hooks/useRestaurantData";
+import { useConversationState } from "@/hooks/useConversationState";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import { ConversationFileHeader } from "@/components/ConversationFileHeader";
@@ -91,6 +92,9 @@ const RestaurantFindings = () => {
     fetchToastData,
     refreshRestaurantData,
   } = useRestaurantData(id);
+  
+  // Use conversation state hook (Step 2a - skeleton only, keeping old state for now)
+  const conversationStateHook = useConversationState(id, user?.id);
   
   const [isMember, setIsMember] = useState<boolean | null>(null);
   const [showClaimDialog, setShowClaimDialog] = useState(false);
