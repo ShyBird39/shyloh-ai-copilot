@@ -30,6 +30,7 @@ import { OnboardingTuningFlow } from "@/components/OnboardingTuningFlow";
 import { ChatToolsPopover } from "@/components/ChatToolsPopover";
 import KPIInput from "@/components/KPIInput";
 import { useAuth } from "@/hooks/useAuth";
+import { useRestaurantData } from "@/hooks/useRestaurantData";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import { ConversationFileHeader } from "@/components/ConversationFileHeader";
@@ -70,6 +71,27 @@ const RestaurantFindings = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const isMobile = useIsMobile();
+  
+  // Use restaurant data hook
+  const {
+    restaurantData: data,
+    setRestaurantData: setData,
+    kpiData,
+    setKPIData,
+    hasCompletedKPIs,
+    setHasCompletedKPIs,
+    toolsData,
+    setToolsData,
+    customKnowledge,
+    setCustomKnowledge,
+    toastData,
+    loadingToastData,
+    loading,
+    loadCustomKnowledge,
+    fetchToastData,
+    refreshRestaurantData,
+  } = useRestaurantData(id);
+  
   const [isMember, setIsMember] = useState<boolean | null>(null);
   const [showClaimDialog, setShowClaimDialog] = useState(false);
   const [claimPin, setClaimPin] = useState("");
@@ -121,8 +143,6 @@ const RestaurantFindings = () => {
     },
   ];
   
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [saving, setSaving] = useState(false);
@@ -144,31 +164,10 @@ const RestaurantFindings = () => {
   const [editingReggi, setEditingReggi] = useState<string | null>(null);
   const [reggiEditValue, setReggiEditValue] = useState("");
   
-  // Tools state
-  const [toolsData, setToolsData] = useState<any>({
-    pos_system: null,
-    reservation_system: null,
-    payroll_system: null,
-    accounting_system: null,
-    inventory_system: null,
-    scheduling_system: null,
-    marketing_tools: null,
-  });
   const [editingTool, setEditingTool] = useState<string | null>(null);
   const [toolEditValue, setToolEditValue] = useState("");
   
-  // Toast POS state
-  const [toastData, setToastData] = useState<{
-    dailySales: number;
-    guestCount: number;
-    avgCheck: number;
-    orderCount: number;
-    hourlyData: any[];
-  } | null>(null);
-  const [loadingToastData, setLoadingToastData] = useState(false);
-  
-  // Custom knowledge state
-  const [customKnowledge, setCustomKnowledge] = useState<any[]>([]);
+  // Custom knowledge UI state
   const [showAddKnowledge, setShowAddKnowledge] = useState(false);
   const [editingKnowledge, setEditingKnowledge] = useState<string | null>(null);
   const [knowledgeForm, setKnowledgeForm] = useState({
@@ -202,23 +201,12 @@ const RestaurantFindings = () => {
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [promptsVisible, setPromptsVisible] = useState(true);
-  const [hasCompletedKPIs, setHasCompletedKPIs] = useState<boolean | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentInput, setCurrentInput] = useState("");
   const [notionMentioned, setNotionMentioned] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<string[]>([]);
   const [showFileNotification, setShowFileNotification] = useState(false);
   const [showObjectives, setShowObjectives] = useState(false);
-  const [kpiData, setKPIData] = useState<KPIData>({
-    avg_weekly_sales: null,
-    food_cost_goal: null,
-    labor_cost_goal: null,
-    sales_mix_food: null,
-    sales_mix_liquor: null,
-    sales_mix_wine: null,
-    sales_mix_beer: null,
-    sales_mix_na_bev: null,
-  });
   
   // Manual KPI entry form state
   const [manualKPIEntry, setManualKPIEntry] = useState({
@@ -1436,28 +1424,10 @@ What would you like to work on today?`
   };
 
 
-  const loadCustomKnowledge = async () => {
-    if (!id) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from("restaurant_custom_knowledge")
-        .select("*")
-        .eq("restaurant_id", id)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setCustomKnowledge(data || []);
-    } catch (error) {
-      console.error("Error loading custom knowledge:", error);
-    }
-  };
-
-  // Load conversations, files, and custom knowledge on mount
+  // Load conversations, files, and saved prompts on mount
   useEffect(() => {
     loadConversations();
     loadFiles();
-    loadCustomKnowledge();
     loadSavedPrompts();
   }, [id]);
 
@@ -1549,28 +1519,9 @@ What would you like to work on today?`
     };
   }, [id, user, data?.name]);
 
-  // Function to refresh restaurant data
-  const refreshRestaurantData = async () => {
-    if (!id) return;
-    
-    try {
-      const { data: restaurant, error: restaurantError } = await supabase
-        .from('restaurants')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (restaurantError) throw restaurantError;
-      setData(restaurant);
-      console.log('Restaurant data refreshed:', restaurant);
-    } catch (error) {
-      console.error('Error refreshing restaurant data:', error);
-    }
-  };
-
-  // Fetch restaurant data and KPIs
+  // Check authentication and membership
   useEffect(() => {
-    const fetchRestaurant = async () => {
+    const checkMembership = async () => {
       if (!id) {
         navigate('/');
         return;
@@ -1602,79 +1553,9 @@ What would you like to work on today?`
           console.error('Error checking membership:', error);
         }
       }
-
-      try {
-        // Fetch restaurant data
-        const { data: restaurant, error: restaurantError } = await supabase
-          .from('restaurants')
-          .select('*')
-          .eq('id', id)
-          .single();
-
-        if (restaurantError) throw restaurantError;
-        setData(restaurant);
-
-        // Fetch tools data
-        const { data: tools, error: toolsError } = await supabase
-          .from('restaurant_tools')
-          .select('*')
-          .eq('restaurant_id', id)
-          .maybeSingle();
-
-        if (toolsError && toolsError.code !== 'PGRST116') {
-          throw toolsError;
-        }
-        
-        if (tools) {
-          setToolsData(tools);
-        }
-
-        // Fetch KPIs
-        const { data: kpis, error: kpisError } = await supabase
-          .from('restaurant_kpis')
-          .select('*')
-          .eq('restaurant_id', id)
-          .maybeSingle();
-
-        if (kpisError && kpisError.code !== 'PGRST116') {
-          throw kpisError;
-        }
-
-        if (kpis) {
-          setKPIData({
-            avg_weekly_sales: kpis.avg_weekly_sales,
-            food_cost_goal: kpis.food_cost_goal,
-            labor_cost_goal: kpis.labor_cost_goal,
-            sales_mix_food: kpis.sales_mix_food,
-            sales_mix_liquor: kpis.sales_mix_liquor,
-            sales_mix_wine: kpis.sales_mix_wine,
-            sales_mix_beer: kpis.sales_mix_beer,
-            sales_mix_na_bev: kpis.sales_mix_na_bev,
-          });
-
-          const allKPIsCompleted = Boolean(
-            kpis.avg_weekly_sales &&
-            kpis.food_cost_goal &&
-            kpis.labor_cost_goal &&
-            kpis.sales_mix_food !== null &&
-            kpis.sales_mix_liquor !== null &&
-            kpis.sales_mix_wine !== null &&
-            kpis.sales_mix_beer !== null &&
-            kpis.sales_mix_na_bev !== null
-          );
-          setHasCompletedKPIs(allKPIsCompleted);
-        } else {
-          setHasCompletedKPIs(false);
-        }
-      } catch (error) {
-        console.error('Error fetching restaurant:', error);
-        toast.error('Failed to load restaurant data');
-      } finally {
-        setLoading(false);
-      }
     };
 
-    fetchRestaurant();
+    checkMembership();
   }, [id, navigate, user, authLoading]);
 
   // Resume incomplete tuning on page load
@@ -1707,12 +1588,6 @@ What would you like to work on today?`
     }
   }, [data, hasCompletedKPIs]);
 
-  // Fetch Toast data when tools are loaded
-  useEffect(() => {
-    if (data && toolsData?.pos_system === 'Toast' && data.restaurant_guid) {
-      fetchToastData();
-    }
-  }, [data, toolsData]);
 
   const handleClaimRestaurant = async () => {
     if (!id || !user || !claimPin.trim()) {
@@ -1745,52 +1620,6 @@ What would you like to work on today?`
     }
   };
 
-  // Fetch Toast POS data
-  const fetchToastData = async () => {
-    if (!data?.restaurant_guid || toolsData?.pos_system !== 'Toast') {
-      return;
-    }
-
-    setLoadingToastData(true);
-    try {
-      const { data: toastResponse, error } = await supabase.functions.invoke('toast-reporting', {
-        body: {
-          action: 'request-and-poll',
-          reportType: 'metrics',
-          timeRange: 'day',
-          startDate: parseInt(format(new Date(), 'yyyyMMdd')),
-          endDate: parseInt(format(new Date(), 'yyyyMMdd')),
-          restaurantIds: [data.restaurant_guid],
-          aggregateBy: 'HOUR'
-        }
-      });
-
-      if (error) throw error;
-
-      if (toastResponse?.success && toastResponse?.data) {
-        const hourlyData = toastResponse.data;
-        
-        // Aggregate daily totals
-        const totals = hourlyData.reduce((acc: any, hour: any) => ({
-          netSales: (acc.netSales || 0) + (hour.netSales || 0),
-          guestCount: (acc.guestCount || 0) + (hour.guestCount || 0),
-          ordersCount: (acc.ordersCount || 0) + (hour.ordersCount || 0),
-        }), {});
-
-        setToastData({
-          dailySales: totals.netSales || 0,
-          guestCount: totals.guestCount || 0,
-          avgCheck: totals.guestCount > 0 ? totals.netSales / totals.guestCount : 0,
-          orderCount: totals.ordersCount || 0,
-          hourlyData: hourlyData
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching Toast data:', error);
-    } finally {
-      setLoadingToastData(false);
-    }
-  };
 
   // Validate manual KPI form
   const validateManualKPIs = () => {
