@@ -67,7 +67,16 @@ export const MemoListPanel = ({ memos, selection, onUpdate, restaurantId, shiftD
         
         <Collapsible open={isRecordingOpen} onOpenChange={setIsRecordingOpen}>
           <CollapsibleContent>
-            <div className="border border-border rounded-lg overflow-hidden max-h-64">
+            <div className="relative border border-border rounded-lg overflow-hidden max-h-64">
+              <Button
+                variant="secondary"
+                size="sm"
+                className="absolute top-2 right-2 z-10 text-xs"
+                onClick={() => setIsRecordingOpen(false)}
+                aria-label="Collapse recording panel"
+              >
+                Collapse
+              </Button>
               <VoiceCapture
                 restaurantId={restaurantId}
                 shiftDate={shiftDate}
