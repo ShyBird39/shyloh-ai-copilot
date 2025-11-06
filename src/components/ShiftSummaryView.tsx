@@ -3,11 +3,12 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
-import { Download, Share2, Sparkles, DollarSign, Users, TrendingUp, RefreshCw, Plus } from "lucide-react";
+import { Download, Share2, Sparkles, DollarSign, Users, TrendingUp, RefreshCw, Plus, Edit2, Save, X } from "lucide-react";
 
 interface ShiftSummaryViewProps {
   restaurantId: string;
@@ -32,6 +33,8 @@ export function ShiftSummaryView({ restaurantId, shiftDate, shiftType }: ShiftSu
   const [summary, setSummary] = useState<ShiftSummary | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedMarkdown, setEditedMarkdown] = useState("");
 
   useEffect(() => {
     loadSummary();
@@ -118,6 +121,39 @@ export function ShiftSummaryView({ restaurantId, shiftDate, shiftType }: ShiftSu
 
   const handleShare = () => {
     toast.info("Share functionality coming soon!");
+  };
+
+  const handleEditToggle = () => {
+    if (!summary) return;
+    if (isEditing) {
+      // Cancel edit
+      setIsEditing(false);
+      setEditedMarkdown("");
+    } else {
+      // Start editing
+      setEditedMarkdown(summary.summary_markdown);
+      setIsEditing(true);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!summary) return;
+
+    try {
+      const { error } = await supabase
+        .from("shift_summaries")
+        .update({ summary_markdown: editedMarkdown })
+        .eq("id", summary.id);
+
+      if (error) throw error;
+
+      setSummary({ ...summary, summary_markdown: editedMarkdown });
+      setIsEditing(false);
+      toast.success("Summary updated!");
+    } catch (error) {
+      console.error("Error updating summary:", error);
+      toast.error("Failed to update summary");
+    }
   };
 
   const handleAddToTasks = async (task: string) => {
@@ -279,29 +315,64 @@ export function ShiftSummaryView({ restaurantId, shiftDate, shiftType }: ShiftSu
             </p>
           </div>
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleGenerateSummary}
-              disabled={isGenerating}
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${isGenerating ? 'animate-spin' : ''}`} />
-              Regenerate
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleExportPDF}>
-              <Download className="h-4 w-4 mr-2" />
-              Export PDF
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleShare}>
-              <Share2 className="h-4 w-4 mr-2" />
-              Share
-            </Button>
+            {isEditing ? (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleEditToggle}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSave}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Save
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleEditToggle}
+                >
+                  <Edit2 className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGenerateSummary}
+                  disabled={isGenerating}
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${isGenerating ? "animate-spin" : ""}`} />
+                  Regenerate
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleShare}>
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Share
+                </Button>
+              </>
+            )}
           </div>
         </div>
 
-        <div className="prose prose-sm max-w-none dark:prose-invert [&_li]:block [&_li]:mb-2 [&_ul]:space-y-1">
-          <ReactMarkdown rehypePlugins={[rehypeRaw]}>{processMarkdown(summary.summary_markdown)}</ReactMarkdown>
-        </div>
+        {isEditing ? (
+          <Textarea
+            value={editedMarkdown}
+            onChange={(e) => setEditedMarkdown(e.target.value)}
+            className="min-h-[400px] font-mono text-sm"
+            placeholder="Edit your shift summary markdown..."
+          />
+        ) : (
+          <div className="prose prose-sm max-w-none dark:prose-invert [&_li]:block [&_li]:mb-2 [&_ul]:space-y-1">
+            <ReactMarkdown rehypePlugins={[rehypeRaw]}>{processMarkdown(summary.summary_markdown)}</ReactMarkdown>
+          </div>
+        )}
       </Card>
 
       {/* Action Items */}
