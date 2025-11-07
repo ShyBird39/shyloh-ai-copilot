@@ -72,7 +72,7 @@ interface ChatMessage {
 const RestaurantFindings = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
   const isMobile = useIsMobile();
   
   // Use restaurant data hook
@@ -3139,7 +3139,7 @@ What would you like to work on today?`
         <MobileHeader
           restaurantName={data?.name || 'Restaurant'}
           location={data?.location}
-          onLogout={() => navigate('/')}
+          onLogout={signOut}
           showMenuButton={mobileTab === 'chat' && !showConversationThread}
           onMenuClick={() => setNavigationMenuOpen(true)}
           title={
@@ -3662,7 +3662,7 @@ What would you like to work on today?`
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => navigate('/')}
+                      onClick={signOut}
                       className="text-primary-foreground hover:bg-background/20"
                     >
                       <LogOut className="w-4 h-4 mr-2" />

@@ -23,7 +23,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+            <Route path="/" element={<Index />} />
             <Route path="/restaurant/:id" element={<ProtectedRoute><RestaurantFindings /></ProtectedRoute>} />
             <Route path="/restaurant/:id/tuning" element={<ProtectedRoute><TuningSettings /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
