@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { getInitials } from "@/lib/utils";
 import { LogOut, MapPin, Tag, Pencil, Loader2, Send, PanelLeftClose, PanelLeft, ChevronDown, ChevronUp, RotateCcw, Paperclip, UtensilsCrossed, Sparkles, Users, Clock, Settings, Heart, UserCog, Trash2, Brain, AlertCircle, Edit, Crown, Bot, Zap, ClipboardList, MessageSquare, Plus, Menu, Lock, Globe, ChevronRight, CheckSquare } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState, useRef, useEffect } from "react";
@@ -1863,8 +1865,8 @@ What would you like to work on today?`
   };
 
   // Helper function to get consistent color for each user
-  const getUserColor = (userId: string | null): string => {
-    if (!userId) return '';
+  const getUserColor = (userId: string | null): { bg: string; border: string; avatar: string } | null => {
+    if (!userId) return null;
     
     // Simple hash function to get consistent color
     const hash = userId.split('').reduce((acc, char) => {
@@ -1872,12 +1874,12 @@ What would you like to work on today?`
     }, 0);
     
     const colors = [
-      'border-emerald-500',
-      'border-teal-500', 
-      'border-cyan-500',
-      'border-sky-500',
-      'border-blue-500',
-      'border-indigo-500'
+      { bg: 'bg-emerald-600', border: 'border-emerald-500', avatar: 'bg-emerald-500' },
+      { bg: 'bg-teal-600', border: 'border-teal-500', avatar: 'bg-teal-500' },
+      { bg: 'bg-cyan-600', border: 'border-cyan-500', avatar: 'bg-cyan-500' },
+      { bg: 'bg-green-700', border: 'border-green-600', avatar: 'bg-green-600' },
+      { bg: 'bg-lime-700', border: 'border-lime-600', avatar: 'bg-lime-600' },
+      { bg: 'bg-blue-600', border: 'border-blue-500', avatar: 'bg-blue-500' }
     ];
     
     return colors[Math.abs(hash) % colors.length];
@@ -3854,31 +3856,43 @@ What would you like to work on today?`
                     const isAI = message.role === 'assistant';
                     const isCurrentUser = message.user_id === user?.id;
                     const canDelete = isCurrentUser || isAI || currentConversationId; // Can delete own messages, AI messages, or any message if conversation owner
-                    const userBorderColor = !isCurrentUser && !isAI && message.user_id 
+                    const userColorScheme = !isCurrentUser && !isAI && message.user_id 
                       ? getUserColor(message.user_id)
-                      : '';
+                      : null;
 
                     return (
                       <div
                         key={idx}
                         className={`flex ${isCurrentUser ? "justify-end" : "justify-start"} animate-fade-in group`}
                       >
-                        <div className="relative">
-                          <div
-                            className={`max-w-[70%] rounded-2xl px-4 py-3 ${
-                              isAI
-                                ? "bg-[hsl(354,70%,35%)] text-white"
-                                : isCurrentUser
-                                ? "bg-green-600 text-white"
-                                : `bg-green-600/90 text-white border-l-4 ${userBorderColor}`
-                            }`}
-                          >
-                            {/* Sender Name for non-current-user messages */}
-                            {!isCurrentUser && !isAI && message.display_name && (
-                              <div className="text-xs font-medium mb-1 opacity-70">
-                                {message.display_name}
-                              </div>
-                            )}
+                        <div className="relative flex items-start gap-2">
+                          {/* User Avatar - only for other users */}
+                          {!isCurrentUser && !isAI && message.display_name && userColorScheme && (
+                            <Avatar className="w-8 h-8 flex-shrink-0">
+                              <AvatarFallback className={`${userColorScheme.avatar} text-white text-xs font-semibold`}>
+                                {getInitials(message.display_name)}
+                              </AvatarFallback>
+                            </Avatar>
+                          )}
+                          
+                          <div className={!isCurrentUser && !isAI ? 'flex-1' : ''}>
+                            <div
+                              className={`max-w-[70%] rounded-2xl px-4 py-3 ${
+                                isAI
+                                  ? "bg-[hsl(354,70%,35%)] text-white"
+                                  : isCurrentUser
+                                  ? "bg-green-600 text-white"
+                                  : userColorScheme
+                                  ? `${userColorScheme.bg} text-white border-l-4 ${userColorScheme.border}`
+                                  : "bg-green-600 text-white"
+                              }`}
+                            >
+                              {/* Sender Name for non-current-user messages */}
+                              {!isCurrentUser && !isAI && message.display_name && (
+                                <div className="text-xs font-semibold mb-1 opacity-95">
+                                  {message.display_name}
+                                </div>
+                              )}
                             {isAI && (
                               <div className="flex items-center gap-2 mb-1">
                                 <Bot className="w-4 h-4" />
@@ -3902,19 +3916,20 @@ What would you like to work on today?`
                                 currentRating={messageFeedback[idx]}
                                 onRate={(rating) => handleMessageFeedback(idx, rating)}
                               />
+                              )}
+                            </div>
+                          
+                            {/* Delete button - shows on hover */}
+                            {canDelete && message.id && (
+                              <button
+                                onClick={() => handleDeleteMessage(message.id!, idx)}
+                                className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90"
+                                title="Delete message"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
                             )}
                           </div>
-                          
-                          {/* Delete button - shows on hover */}
-                          {canDelete && message.id && (
-                            <button
-                              onClick={() => handleDeleteMessage(message.id!, idx)}
-                              className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90"
-                              title="Delete message"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          )}
                         </div>
                       </div>
                     );
