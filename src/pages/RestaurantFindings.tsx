@@ -5762,10 +5762,8 @@ What would you like to work on today?`
       {/* User Status Indicator */}
       {user && (
         <div className="fixed bottom-2 right-2 z-50 pointer-events-none">
-          <div className="bg-background/80 backdrop-blur-sm border border-border rounded px-2 py-1 shadow-sm">
-            <div className="text-[10px] text-muted-foreground whitespace-nowrap">
-              Logged in as {user.user_metadata?.display_name || user.email} • {format(currentTime, "MMM d, yyyy • h:mm a")}
-            </div>
+          <div className="text-[10px] text-muted-foreground/60 whitespace-nowrap text-right">
+            Logged in as {user.user_metadata?.display_name || user.email} • {format(currentTime, "MMM d, yyyy • h:mm a")}
           </div>
         </div>
       )}
