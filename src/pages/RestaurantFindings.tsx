@@ -99,6 +99,16 @@ const RestaurantFindings = () => {
   const [showClaimDialog, setShowClaimDialog] = useState(false);
   const [claimPin, setClaimPin] = useState("");
   const [claiming, setClaiming] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  
+  // Update time every minute
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+    
+    return () => clearInterval(timer);
+  }, []);
   
   // REGGI dimensions configuration
   const reggiDimensions = [
@@ -5748,6 +5758,22 @@ What would you like to work on today?`
       
       {/* PWA Install Prompt */}
       <InstallPrompt />
+
+      {/* User Status Indicator */}
+      {user && (
+        <div className="fixed bottom-4 right-4 z-50 pointer-events-none">
+          <div className="bg-background/95 backdrop-blur-sm border border-border rounded-lg px-4 py-2 shadow-lg">
+            <div className="text-xs text-muted-foreground space-y-1">
+              <div className="font-medium">
+                Logged in as {user.user_metadata?.display_name || user.email}
+              </div>
+              <div>
+                {format(currentTime, "MMM d, yyyy • h:mm a")}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Debug Prompt Dialog */}
       <Dialog open={showPromptDialog} onOpenChange={setShowPromptDialog}>
