@@ -141,6 +141,17 @@ const Hero = () => {
       {/* Content */}
       <div className="container relative z-10 mx-auto px-4 py-20 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center space-y-8">
+          {/* Header with Sign In Button */}
+          <div className="flex justify-end mb-8">
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/auth')}
+              className="bg-background/10 backdrop-blur-sm border-primary-foreground/30 text-primary-foreground hover:bg-background/20"
+            >
+              Sign In
+            </Button>
+          </div>
+
           {/* Main Heading */}
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-primary-foreground">
             Meet Shyloh
@@ -189,6 +200,17 @@ const Hero = () => {
                 </Button>
               </div>
             )}
+            
+            {/* Sign In Link */}
+            <p className="text-primary-foreground/80 text-sm mt-6">
+              Already a user?{" "}
+              <button
+                onClick={() => navigate('/auth')}
+                className="text-primary-foreground underline hover:text-primary-foreground/90 transition-colors"
+              >
+                Sign in here
+              </button>
+            </p>
           </div>
         </div>
       </div>
