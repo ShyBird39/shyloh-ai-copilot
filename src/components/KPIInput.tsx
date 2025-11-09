@@ -131,23 +131,10 @@ const KPIInput = ({ restaurantId, restaurantName, onBack, onComplete }: KPIInput
       confirmation: (value: number) => `${value}% retail/merch.`,
     },
     {
-      question: "Room Fees?",
+      question: "And Room Fees?",
       field: "sales_mix_room_fees",
       type: "percentage",
-      confirmation: (value: number) => `${value}% room fees.`,
-    },
-    {
-      question: "Any other revenue category? (Enter 0 if none)",
-      field: "sales_mix_other",
-      type: "percentage",
-      confirmation: (value: number) => value > 0 ? `${value}% other.` : 'No other revenue, got it.',
-    },
-    {
-      question: "What does 'Other' represent? (e.g., gift cards, merchandise)",
-      field: "sales_mix_other_label",
-      type: "text",
-      skip: (data: KPIData) => !data.sales_mix_other || data.sales_mix_other === 0,
-      confirmation: (value: string) => `📊 Perfect! Revenue mix captured—you're all set!`,
+      confirmation: (value: number) => `📊 Perfect! ${value}% room fees. Revenue mix captured—you're all set!`,
     },
   ];
 

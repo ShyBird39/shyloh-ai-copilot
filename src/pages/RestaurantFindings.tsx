@@ -4465,33 +4465,6 @@ What would you like to work on today?`
                               ))}
                             </div>
                             
-                            {/* Other category label */}
-                            {kpiData.sales_mix_other && kpiData.sales_mix_other > 0 && (
-                              <div className="pt-1">
-                                <Label className="text-xs text-primary-foreground/60">Other Category Description:</Label>
-                                <Input
-                                  type="text"
-                                  value={kpiData.sales_mix_other_label || ''}
-                                  onChange={async (e) => {
-                                    const newLabel = e.target.value;
-                                    try {
-                                      const { error } = await supabase
-                                        .from('restaurant_kpis')
-                                        .update({ sales_mix_other_label: newLabel })
-                                        .eq('restaurant_id', id);
-                                      
-                                      if (error) throw error;
-                                      setKPIData(prev => ({ ...prev, sales_mix_other_label: newLabel }));
-                                    } catch (error) {
-                                      console.error('Error updating other label:', error);
-                                      toast.error('Failed to update label');
-                                    }
-                                  }}
-                                  placeholder="e.g., Gift cards, Merchandise"
-                                  className="h-6 text-xs bg-background/20 border-accent/30 mt-1"
-                                />
-                              </div>
-                            )}
                           </div>
                         </Card>
                       </>
@@ -4572,22 +4545,6 @@ What would you like to work on today?`
                               ))}
                             </div>
                             
-                            {/* Other label field - shows when other > 0 */}
-                            {parseFloat(manualKPIEntry.sales_mix_other) > 0 && (
-                              <div className="space-y-1">
-                                <Label className="text-xs text-primary-foreground/60">Other Category Description</Label>
-                                <Input
-                                  type="text"
-                                  placeholder="e.g., Gift cards, Merchandise..."
-                                  value={manualKPIEntry.sales_mix_other_label}
-                                  onChange={(e) => setManualKPIEntry(prev => ({
-                                    ...prev, 
-                                    sales_mix_other_label: e.target.value
-                                  }))}
-                                  className="bg-background/20 border-accent/30 h-8 text-sm"
-                                />
-                              </div>
-                            )}
                             
                             {kpiFormErrors.sales_mix_total && (
                               <p className="text-xs text-red-400">{kpiFormErrors.sales_mix_total}</p>

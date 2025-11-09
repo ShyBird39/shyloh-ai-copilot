@@ -11,8 +11,7 @@ export const SALES_MIX_FIELDS: SalesMixField[] = [
   { key: 'sales_mix_beer', label: 'Beer' },
   { key: 'sales_mix_na_bev', label: 'NA Beverages' },
   { key: 'sales_mix_retail', label: 'Retail/Merch' },
-  { key: 'sales_mix_room_fees', label: 'Room Fees' },
-  { key: 'sales_mix_other', label: 'Other', hasCustomLabel: true }
+  { key: 'sales_mix_room_fees', label: 'Room Fees' }
 ];
 
 export const getSalesMixFieldKeys = () => SALES_MIX_FIELDS.map(f => f.key);
