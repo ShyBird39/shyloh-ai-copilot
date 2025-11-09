@@ -4415,54 +4415,60 @@ What would you like to work on today?`
                           {/* Sales Mix - Editable */}
                           <div className="space-y-2 pt-2 border-t border-accent/10">
                             <p className="text-xs font-medium text-primary-foreground">Sales Mix</p>
-                            <div className="grid grid-cols-2 gap-2 text-xs">
-                              {SALES_MIX_FIELDS.map(field => (
-                                <div key={field.key} className={field.key === 'sales_mix_na_bev' || field.key === 'sales_mix_other' ? 'col-span-2' : ''}>
-                                  <div className="flex justify-between items-center">
-                                    <span className="text-primary-foreground/70">{field.label}:</span>
-                                    {editingKPI === field.key ? (
-                                      <div className="flex items-center gap-1">
-                                        <Input
-                                          type="number"
-                                          value={kpiEditValue}
-                                          onChange={(e) => setKpiEditValue(e.target.value)}
-                                          className="w-16 h-6 text-xs bg-background/20 border-accent/30"
-                                          autoFocus
-                                        />
-                                        <Button
-                                          onClick={() => handleSaveKPI(field.key)}
-                                          disabled={saving}
-                                          className="text-xs h-6 px-2 bg-accent hover:bg-accent/90"
-                                        >
-                                          Save
-                                        </Button>
-                                        <Button
-                                          variant="ghost"
-                                          onClick={handleCancelKPI}
-                                          disabled={saving}
-                                          className="text-xs h-6 px-2"
-                                        >
-                                          Cancel
-                                        </Button>
-                                      </div>
-                                    ) : (
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-primary-foreground">
-                                          {kpiData[field.key as keyof typeof kpiData]}%
-                                        </span>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => handleEditKPI(field.key, kpiData[field.key as keyof typeof kpiData] as any)}
-                                          className="h-5 w-5 p-0 text-primary-foreground/60 hover:text-primary-foreground"
-                                        >
-                                          <Edit className="w-3 h-3" />
-                                        </Button>
-                                      </div>
-                                    )}
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                              {SALES_MIX_FIELDS.map(field => {
+                                const isFullWidth = field.key === 'sales_mix_na_bev' || 
+                                                   field.key === 'sales_mix_retail' || 
+                                                   field.key === 'sales_mix_room_fees';
+                                
+                                return (
+                                  <div key={field.key} className={isFullWidth ? 'col-span-2' : ''}>
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-primary-foreground/70 whitespace-nowrap">{field.label}:</span>
+                                      {editingKPI === field.key ? (
+                                        <div className="flex items-center gap-1">
+                                          <Input
+                                            type="number"
+                                            value={kpiEditValue}
+                                            onChange={(e) => setKpiEditValue(e.target.value)}
+                                            className="w-16 h-6 text-xs bg-background/20 border-accent/30"
+                                            autoFocus
+                                          />
+                                          <Button
+                                            onClick={() => handleSaveKPI(field.key)}
+                                            disabled={saving}
+                                            className="text-xs h-6 px-2 bg-accent hover:bg-accent/90"
+                                          >
+                                            Save
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            onClick={handleCancelKPI}
+                                            disabled={saving}
+                                            className="text-xs h-6 px-2"
+                                          >
+                                            Cancel
+                                          </Button>
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-primary-foreground">
+                                            {kpiData[field.key as keyof typeof kpiData]}%
+                                          </span>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleEditKPI(field.key, kpiData[field.key as keyof typeof kpiData] as any)}
+                                            className="h-5 w-5 p-0 text-primary-foreground/60 hover:text-primary-foreground"
+                                          >
+                                            <Edit className="w-3 h-3" />
+                                          </Button>
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
                             
                           </div>
@@ -4525,24 +4531,30 @@ What would you like to work on today?`
                           <div className="space-y-2 pt-2 border-t border-accent/10">
                             <Label className="text-xs text-primary-foreground/70 font-medium">Mix of Sales by % (must total 100%)</Label>
                             
-                            <div className="grid grid-cols-2 gap-2">
-                              {SALES_MIX_FIELDS.map(field => (
-                                <div key={field.key} className={field.key === 'sales_mix_na_bev' || field.key === 'sales_mix_other' ? 'col-span-2' : ''}>
-                                  <div className="space-y-1">
-                                    <Label className="text-xs text-primary-foreground/60">{field.label}</Label>
-                                    <Input
-                                      type="number"
-                                      placeholder="0"
-                                      value={manualKPIEntry[field.key as keyof typeof manualKPIEntry]}
-                                      onChange={(e) => setManualKPIEntry(prev => ({
-                                        ...prev, 
-                                        [field.key]: e.target.value
-                                      }))}
-                                      className="bg-background/20 border-accent/30 h-8 text-sm"
-                                    />
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                              {SALES_MIX_FIELDS.map(field => {
+                                const isFullWidth = field.key === 'sales_mix_na_bev' || 
+                                                   field.key === 'sales_mix_retail' || 
+                                                   field.key === 'sales_mix_room_fees';
+                                
+                                return (
+                                  <div key={field.key} className={isFullWidth ? 'col-span-2' : ''}>
+                                    <div className="space-y-1">
+                                      <Label className="text-xs text-primary-foreground/60 whitespace-nowrap">{field.label}</Label>
+                                      <Input
+                                        type="number"
+                                        placeholder="0"
+                                        value={manualKPIEntry[field.key as keyof typeof manualKPIEntry]}
+                                        onChange={(e) => setManualKPIEntry(prev => ({
+                                          ...prev, 
+                                          [field.key]: e.target.value
+                                        }))}
+                                        className="bg-background/20 border-accent/30 h-8 text-sm"
+                                      />
+                                    </div>
                                   </div>
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
                             
                             
