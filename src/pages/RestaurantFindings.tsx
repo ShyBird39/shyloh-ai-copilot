@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { SALES_MIX_FIELDS, getSalesMixFieldKeys } from "@/config/sales-mix-fields";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -57,6 +58,10 @@ interface KPIData {
   sales_mix_wine: number | null;
   sales_mix_beer: number | null;
   sales_mix_na_bev: number | null;
+  sales_mix_retail: number | null;
+  sales_mix_room_fees: number | null;
+  sales_mix_other: number | null;
+  sales_mix_other_label: string | null;
 }
 
 interface ChatMessage {
@@ -228,6 +233,10 @@ const RestaurantFindings = () => {
     sales_mix_wine: '',
     sales_mix_beer: '',
     sales_mix_na_bev: '',
+    sales_mix_retail: '',
+    sales_mix_room_fees: '',
+    sales_mix_other: '',
+    sales_mix_other_label: '',
   });
   const [kpiFormErrors, setKpiFormErrors] = useState<Record<string, string>>({});
   const [savingManualKPIs, setSavingManualKPIs] = useState(false);
@@ -1353,11 +1362,7 @@ What would you like to work on today?`
     const percentageFields = [
       'food_cost_goal', 
       'labor_cost_goal', 
-      'sales_mix_food', 
-      'sales_mix_liquor', 
-      'sales_mix_wine', 
-      'sales_mix_beer', 
-      'sales_mix_na_bev'
+      ...getSalesMixFieldKeys()
     ];
     
     percentageFields.forEach(field => {
@@ -1368,7 +1373,7 @@ What would you like to work on today?`
     });
     
     // Check sales mix totals 100%
-    const salesMixFields = ['sales_mix_food', 'sales_mix_liquor', 'sales_mix_wine', 'sales_mix_beer', 'sales_mix_na_bev'];
+    const salesMixFields = getSalesMixFieldKeys();
     const salesMixTotal = salesMixFields.reduce((sum, field) => {
       const value = parseFloat(manualKPIEntry[field as keyof typeof manualKPIEntry]) || 0;
       return sum + value;
@@ -1429,6 +1434,10 @@ What would you like to work on today?`
           sales_mix_wine: kpis.sales_mix_wine,
           sales_mix_beer: kpis.sales_mix_beer,
           sales_mix_na_bev: kpis.sales_mix_na_bev,
+          sales_mix_retail: kpis.sales_mix_retail,
+          sales_mix_room_fees: kpis.sales_mix_room_fees,
+          sales_mix_other: kpis.sales_mix_other,
+          sales_mix_other_label: kpis.sales_mix_other_label,
         });
 
         const allKPIsCompleted = Boolean(
@@ -1454,6 +1463,10 @@ What would you like to work on today?`
         sales_mix_wine: '',
         sales_mix_beer: '',
         sales_mix_na_bev: '',
+        sales_mix_retail: '',
+        sales_mix_room_fees: '',
+        sales_mix_other: '',
+        sales_mix_other_label: '',
       });
       setKpiFormErrors({});
       
@@ -4403,221 +4416,82 @@ What would you like to work on today?`
                           <div className="space-y-2 pt-2 border-t border-accent/10">
                             <p className="text-xs font-medium text-primary-foreground">Sales Mix</p>
                             <div className="grid grid-cols-2 gap-2 text-xs">
-                              {/* Food */}
-                              <div className="flex justify-between items-center">
-                                <span className="text-primary-foreground/70">Food:</span>
-                                {editingKPI === 'sales_mix_food' ? (
-                                  <div className="flex items-center gap-1">
-                                    <Input
-                                      type="number"
-                                      value={kpiEditValue}
-                                      onChange={(e) => setKpiEditValue(e.target.value)}
-                                      className="w-16 h-6 text-xs bg-background/20 border-accent/30"
-                                      autoFocus
-                                    />
-                                    <Button
-                                      onClick={() => handleSaveKPI('sales_mix_food')}
-                                      disabled={saving}
-                                      className="text-xs h-6 px-2 bg-accent hover:bg-accent/90"
-                                    >
-                                      Save
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      onClick={handleCancelKPI}
-                                      disabled={saving}
-                                      className="text-xs h-6 px-2"
-                                    >
-                                      Cancel
-                                    </Button>
+                              {SALES_MIX_FIELDS.map(field => (
+                                <div key={field.key} className={field.key === 'sales_mix_na_bev' || field.key === 'sales_mix_other' ? 'col-span-2' : ''}>
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-primary-foreground/70">{field.label}:</span>
+                                    {editingKPI === field.key ? (
+                                      <div className="flex items-center gap-1">
+                                        <Input
+                                          type="number"
+                                          value={kpiEditValue}
+                                          onChange={(e) => setKpiEditValue(e.target.value)}
+                                          className="w-16 h-6 text-xs bg-background/20 border-accent/30"
+                                          autoFocus
+                                        />
+                                        <Button
+                                          onClick={() => handleSaveKPI(field.key)}
+                                          disabled={saving}
+                                          className="text-xs h-6 px-2 bg-accent hover:bg-accent/90"
+                                        >
+                                          Save
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          onClick={handleCancelKPI}
+                                          disabled={saving}
+                                          className="text-xs h-6 px-2"
+                                        >
+                                          Cancel
+                                        </Button>
+                                      </div>
+                                    ) : (
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-primary-foreground">
+                                          {kpiData[field.key as keyof typeof kpiData]}%
+                                        </span>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => handleEditKPI(field.key, kpiData[field.key as keyof typeof kpiData] as any)}
+                                          className="h-5 w-5 p-0 text-primary-foreground/60 hover:text-primary-foreground"
+                                        >
+                                          <Edit className="w-3 h-3" />
+                                        </Button>
+                                      </div>
+                                    )}
                                   </div>
-                                ) : (
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-primary-foreground">{kpiData.sales_mix_food}%</span>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleEditKPI('sales_mix_food', kpiData.sales_mix_food)}
-                                      className="h-5 w-5 p-0 text-primary-foreground/60 hover:text-primary-foreground"
-                                    >
-                                      <Edit className="w-3 h-3" />
-                                    </Button>
-                                  </div>
-                                )}
-                              </div>
-                              
-                              {/* Liquor */}
-                              <div className="flex justify-between items-center">
-                                <span className="text-primary-foreground/70">Liquor:</span>
-                                {editingKPI === 'sales_mix_liquor' ? (
-                                  <div className="flex items-center gap-1">
-                                    <Input
-                                      type="number"
-                                      value={kpiEditValue}
-                                      onChange={(e) => setKpiEditValue(e.target.value)}
-                                      className="w-16 h-6 text-xs bg-background/20 border-accent/30"
-                                      autoFocus
-                                    />
-                                    <Button
-                                      onClick={() => handleSaveKPI('sales_mix_liquor')}
-                                      disabled={saving}
-                                      className="text-xs h-6 px-2 bg-accent hover:bg-accent/90"
-                                    >
-                                      Save
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      onClick={handleCancelKPI}
-                                      disabled={saving}
-                                      className="text-xs h-6 px-2"
-                                    >
-                                      Cancel
-                                    </Button>
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-primary-foreground">{kpiData.sales_mix_liquor}%</span>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleEditKPI('sales_mix_liquor', kpiData.sales_mix_liquor)}
-                                      className="h-5 w-5 p-0 text-primary-foreground/60 hover:text-primary-foreground"
-                                    >
-                                      <Edit className="w-3 h-3" />
-                                    </Button>
-                                  </div>
-                                )}
-                              </div>
-                              
-                              {/* Wine */}
-                              <div className="flex justify-between items-center">
-                                <span className="text-primary-foreground/70">Wine:</span>
-                                {editingKPI === 'sales_mix_wine' ? (
-                                  <div className="flex items-center gap-1">
-                                    <Input
-                                      type="number"
-                                      value={kpiEditValue}
-                                      onChange={(e) => setKpiEditValue(e.target.value)}
-                                      className="w-16 h-6 text-xs bg-background/20 border-accent/30"
-                                      autoFocus
-                                    />
-                                    <Button
-                                      onClick={() => handleSaveKPI('sales_mix_wine')}
-                                      disabled={saving}
-                                      className="text-xs h-6 px-2 bg-accent hover:bg-accent/90"
-                                    >
-                                      Save
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      onClick={handleCancelKPI}
-                                      disabled={saving}
-                                      className="text-xs h-6 px-2"
-                                    >
-                                      Cancel
-                                    </Button>
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-primary-foreground">{kpiData.sales_mix_wine}%</span>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleEditKPI('sales_mix_wine', kpiData.sales_mix_wine)}
-                                      className="h-5 w-5 p-0 text-primary-foreground/60 hover:text-primary-foreground"
-                                    >
-                                      <Edit className="w-3 h-3" />
-                                    </Button>
-                                  </div>
-                                )}
-                              </div>
-                              
-                              {/* Beer */}
-                              <div className="flex justify-between items-center">
-                                <span className="text-primary-foreground/70">Beer:</span>
-                                {editingKPI === 'sales_mix_beer' ? (
-                                  <div className="flex items-center gap-1">
-                                    <Input
-                                      type="number"
-                                      value={kpiEditValue}
-                                      onChange={(e) => setKpiEditValue(e.target.value)}
-                                      className="w-16 h-6 text-xs bg-background/20 border-accent/30"
-                                      autoFocus
-                                    />
-                                    <Button
-                                      onClick={() => handleSaveKPI('sales_mix_beer')}
-                                      disabled={saving}
-                                      className="text-xs h-6 px-2 bg-accent hover:bg-accent/90"
-                                    >
-                                      Save
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      onClick={handleCancelKPI}
-                                      disabled={saving}
-                                      className="text-xs h-6 px-2"
-                                    >
-                                      Cancel
-                                    </Button>
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-primary-foreground">{kpiData.sales_mix_beer}%</span>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleEditKPI('sales_mix_beer', kpiData.sales_mix_beer)}
-                                      className="h-5 w-5 p-0 text-primary-foreground/60 hover:text-primary-foreground"
-                                    >
-                                      <Edit className="w-3 h-3" />
-                                    </Button>
-                                  </div>
-                                )}
-                              </div>
-                              
-                              {/* NA Beverages */}
-                              <div className="flex justify-between items-center col-span-2">
-                                <span className="text-primary-foreground/70">NA Beverages:</span>
-                                {editingKPI === 'sales_mix_na_bev' ? (
-                                  <div className="flex items-center gap-1">
-                                    <Input
-                                      type="number"
-                                      value={kpiEditValue}
-                                      onChange={(e) => setKpiEditValue(e.target.value)}
-                                      className="w-16 h-6 text-xs bg-background/20 border-accent/30"
-                                      autoFocus
-                                    />
-                                    <Button
-                                      onClick={() => handleSaveKPI('sales_mix_na_bev')}
-                                      disabled={saving}
-                                      className="text-xs h-6 px-2 bg-accent hover:bg-accent/90"
-                                    >
-                                      Save
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      onClick={handleCancelKPI}
-                                      disabled={saving}
-                                      className="text-xs h-6 px-2"
-                                    >
-                                      Cancel
-                                    </Button>
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-primary-foreground">{kpiData.sales_mix_na_bev}%</span>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleEditKPI('sales_mix_na_bev', kpiData.sales_mix_na_bev)}
-                                      className="h-5 w-5 p-0 text-primary-foreground/60 hover:text-primary-foreground"
-                                    >
-                                      <Edit className="w-3 h-3" />
-                                    </Button>
-                                  </div>
-                                )}
-                              </div>
+                                </div>
+                              ))}
                             </div>
+                            
+                            {/* Other category label */}
+                            {kpiData.sales_mix_other && kpiData.sales_mix_other > 0 && (
+                              <div className="pt-1">
+                                <Label className="text-xs text-primary-foreground/60">Other Category Description:</Label>
+                                <Input
+                                  type="text"
+                                  value={kpiData.sales_mix_other_label || ''}
+                                  onChange={async (e) => {
+                                    const newLabel = e.target.value;
+                                    try {
+                                      const { error } = await supabase
+                                        .from('restaurant_kpis')
+                                        .update({ sales_mix_other_label: newLabel })
+                                        .eq('restaurant_id', id);
+                                      
+                                      if (error) throw error;
+                                      setKPIData(prev => ({ ...prev, sales_mix_other_label: newLabel }));
+                                    } catch (error) {
+                                      console.error('Error updating other label:', error);
+                                      toast.error('Failed to update label');
+                                    }
+                                  }}
+                                  placeholder="e.g., Gift cards, Merchandise"
+                                  className="h-6 text-xs bg-background/20 border-accent/30 mt-1"
+                                />
+                              </div>
+                            )}
                           </div>
                         </Card>
                       </>
@@ -4679,66 +4553,41 @@ What would you like to work on today?`
                             <Label className="text-xs text-primary-foreground/70 font-medium">Mix of Sales by % (must total 100%)</Label>
                             
                             <div className="grid grid-cols-2 gap-2">
-                              {/* Food */}
-                              <div className="space-y-1">
-                                <Label className="text-xs text-primary-foreground/60">Food</Label>
-                                <Input
-                                  type="number"
-                                  placeholder="0"
-                                  value={manualKPIEntry.sales_mix_food}
-                                  onChange={(e) => setManualKPIEntry(prev => ({...prev, sales_mix_food: e.target.value}))}
-                                  className="bg-background/20 border-accent/30 h-8 text-sm"
-                                />
-                              </div>
-                              
-                              {/* Liquor */}
-                              <div className="space-y-1">
-                                <Label className="text-xs text-primary-foreground/60">Liquor</Label>
-                                <Input
-                                  type="number"
-                                  placeholder="0"
-                                  value={manualKPIEntry.sales_mix_liquor}
-                                  onChange={(e) => setManualKPIEntry(prev => ({...prev, sales_mix_liquor: e.target.value}))}
-                                  className="bg-background/20 border-accent/30 h-8 text-sm"
-                                />
-                              </div>
-                              
-                              {/* Beer */}
-                              <div className="space-y-1">
-                                <Label className="text-xs text-primary-foreground/60">Beer</Label>
-                                <Input
-                                  type="number"
-                                  placeholder="0"
-                                  value={manualKPIEntry.sales_mix_beer}
-                                  onChange={(e) => setManualKPIEntry(prev => ({...prev, sales_mix_beer: e.target.value}))}
-                                  className="bg-background/20 border-accent/30 h-8 text-sm"
-                                />
-                              </div>
-                              
-                              {/* Wine */}
-                              <div className="space-y-1">
-                                <Label className="text-xs text-primary-foreground/60">Wine</Label>
-                                <Input
-                                  type="number"
-                                  placeholder="0"
-                                  value={manualKPIEntry.sales_mix_wine}
-                                  onChange={(e) => setManualKPIEntry(prev => ({...prev, sales_mix_wine: e.target.value}))}
-                                  className="bg-background/20 border-accent/30 h-8 text-sm"
-                                />
-                              </div>
-                              
-                              {/* Non-Alcoholic */}
-                              <div className="space-y-1 col-span-2">
-                                <Label className="text-xs text-primary-foreground/60">Non-Alcoholic Beverages</Label>
-                                <Input
-                                  type="number"
-                                  placeholder="0"
-                                  value={manualKPIEntry.sales_mix_na_bev}
-                                  onChange={(e) => setManualKPIEntry(prev => ({...prev, sales_mix_na_bev: e.target.value}))}
-                                  className="bg-background/20 border-accent/30 h-8 text-sm"
-                                />
-                              </div>
+                              {SALES_MIX_FIELDS.map(field => (
+                                <div key={field.key} className={field.key === 'sales_mix_na_bev' || field.key === 'sales_mix_other' ? 'col-span-2' : ''}>
+                                  <div className="space-y-1">
+                                    <Label className="text-xs text-primary-foreground/60">{field.label}</Label>
+                                    <Input
+                                      type="number"
+                                      placeholder="0"
+                                      value={manualKPIEntry[field.key as keyof typeof manualKPIEntry]}
+                                      onChange={(e) => setManualKPIEntry(prev => ({
+                                        ...prev, 
+                                        [field.key]: e.target.value
+                                      }))}
+                                      className="bg-background/20 border-accent/30 h-8 text-sm"
+                                    />
+                                  </div>
+                                </div>
+                              ))}
                             </div>
+                            
+                            {/* Other label field - shows when other > 0 */}
+                            {parseFloat(manualKPIEntry.sales_mix_other) > 0 && (
+                              <div className="space-y-1">
+                                <Label className="text-xs text-primary-foreground/60">Other Category Description</Label>
+                                <Input
+                                  type="text"
+                                  placeholder="e.g., Gift cards, Merchandise..."
+                                  value={manualKPIEntry.sales_mix_other_label}
+                                  onChange={(e) => setManualKPIEntry(prev => ({
+                                    ...prev, 
+                                    sales_mix_other_label: e.target.value
+                                  }))}
+                                  className="bg-background/20 border-accent/30 h-8 text-sm"
+                                />
+                              </div>
+                            )}
                             
                             {kpiFormErrors.sales_mix_total && (
                               <p className="text-xs text-red-400">{kpiFormErrors.sales_mix_total}</p>

@@ -12,6 +12,10 @@ interface KPIData {
   sales_mix_wine: number | null;
   sales_mix_beer: number | null;
   sales_mix_na_bev: number | null;
+  sales_mix_retail: number | null;
+  sales_mix_room_fees: number | null;
+  sales_mix_other: number | null;
+  sales_mix_other_label: string | null;
 }
 
 interface ToolsData {
@@ -47,6 +51,10 @@ export const useRestaurantData = (restaurantId: string | undefined) => {
     sales_mix_wine: null,
     sales_mix_beer: null,
     sales_mix_na_bev: null,
+    sales_mix_retail: null,
+    sales_mix_room_fees: null,
+    sales_mix_other: null,
+    sales_mix_other_label: null,
   });
   const [hasCompletedKPIs, setHasCompletedKPIs] = useState<boolean | null>(null);
 
@@ -207,6 +215,10 @@ export const useRestaurantData = (restaurantId: string | undefined) => {
             sales_mix_wine: kpis.sales_mix_wine,
             sales_mix_beer: kpis.sales_mix_beer,
             sales_mix_na_bev: kpis.sales_mix_na_bev,
+            sales_mix_retail: kpis.sales_mix_retail,
+            sales_mix_room_fees: kpis.sales_mix_room_fees,
+            sales_mix_other: kpis.sales_mix_other,
+            sales_mix_other_label: kpis.sales_mix_other_label,
           });
 
           const allKPIsCompleted = Boolean(

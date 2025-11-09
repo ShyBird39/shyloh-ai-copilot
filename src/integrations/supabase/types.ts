@@ -658,6 +658,10 @@ export type Database = {
           sales_mix_food: number | null
           sales_mix_liquor: number | null
           sales_mix_na_bev: number | null
+          sales_mix_other: number | null
+          sales_mix_other_label: string | null
+          sales_mix_retail: number | null
+          sales_mix_room_fees: number | null
           sales_mix_wine: number | null
           updated_at: string
         }
@@ -674,6 +678,10 @@ export type Database = {
           sales_mix_food?: number | null
           sales_mix_liquor?: number | null
           sales_mix_na_bev?: number | null
+          sales_mix_other?: number | null
+          sales_mix_other_label?: string | null
+          sales_mix_retail?: number | null
+          sales_mix_room_fees?: number | null
           sales_mix_wine?: number | null
           updated_at?: string
         }
@@ -690,6 +698,10 @@ export type Database = {
           sales_mix_food?: number | null
           sales_mix_liquor?: number | null
           sales_mix_na_bev?: number | null
+          sales_mix_other?: number | null
+          sales_mix_other_label?: string | null
+          sales_mix_retail?: number | null
+          sales_mix_room_fees?: number | null
           sales_mix_wine?: number | null
           updated_at?: string
         }

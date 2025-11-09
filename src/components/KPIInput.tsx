@@ -21,6 +21,10 @@ interface KPIData {
   sales_mix_wine: number | null;
   sales_mix_beer: number | null;
   sales_mix_na_bev: number | null;
+  sales_mix_retail: number | null;
+  sales_mix_room_fees: number | null;
+  sales_mix_other: number | null;
+  sales_mix_other_label: string | null;
 }
 
 interface ChatMessage {
@@ -53,13 +57,25 @@ const KPIInput = ({ restaurantId, restaurantName, onBack, onComplete }: KPIInput
     sales_mix_wine: null,
     sales_mix_beer: null,
     sales_mix_na_bev: null,
+    sales_mix_retail: null,
+    sales_mix_room_fees: null,
+    sales_mix_other: null,
+    sales_mix_other_label: null,
   });
   const [saving, setSaving] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const steps = [
+  type StepConfig = {
+    question: string;
+    field: keyof KPIData;
+    type: "currency" | "percentage" | "text";
+    confirmation: (value: any) => string;
+    skip?: (data: KPIData) => boolean;
+  };
+
+  const steps: StepConfig[] = [
     {
       question: "What are your average weekly sales $? (Feel free to round)",
       field: "avg_weekly_sales",
@@ -103,10 +119,35 @@ const KPIInput = ({ restaurantId, restaurantName, onBack, onComplete }: KPIInput
       confirmation: (value: number) => `${value}% beer.`,
     },
     {
-      question: "And finally, N/A Beverages?",
+      question: "N/A Beverages?",
       field: "sales_mix_na_bev",
       type: "percentage",
-      confirmation: (value: number) => `📊 Perfect! ${value}% N/A beverages. Revenue mix captured—you're all set!`,
+      confirmation: (value: number) => `${value}% N/A beverages.`,
+    },
+    {
+      question: "Retail/Merchandise?",
+      field: "sales_mix_retail",
+      type: "percentage",
+      confirmation: (value: number) => `${value}% retail/merch.`,
+    },
+    {
+      question: "Room Fees?",
+      field: "sales_mix_room_fees",
+      type: "percentage",
+      confirmation: (value: number) => `${value}% room fees.`,
+    },
+    {
+      question: "Any other revenue category? (Enter 0 if none)",
+      field: "sales_mix_other",
+      type: "percentage",
+      confirmation: (value: number) => value > 0 ? `${value}% other.` : 'No other revenue, got it.',
+    },
+    {
+      question: "What does 'Other' represent? (e.g., gift cards, merchandise)",
+      field: "sales_mix_other_label",
+      type: "text",
+      skip: (data: KPIData) => !data.sales_mix_other || data.sales_mix_other === 0,
+      confirmation: (value: string) => `📊 Perfect! Revenue mix captured—you're all set!`,
     },
   ];
 
@@ -121,9 +162,56 @@ const KPIInput = ({ restaurantId, restaurantName, onBack, onComplete }: KPIInput
   const handleSend = async () => {
     if (!currentInput.trim()) return;
 
+    const currentStepData = steps[currentStep];
+    
+    // Handle text input fields
+    if (currentStepData.type === 'text') {
+      // Add user message
+      setMessages((prev) => [
+        ...prev,
+        { role: "user", content: currentInput, type: "input" },
+      ]);
+
+      const updatedKPIData = { ...kpiData, [currentStepData.field]: currentInput };
+      setKPIData(updatedKPIData);
+
+      // Add confirmation message
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: currentStepData.confirmation(currentInput), type: "confirmation" },
+      ]);
+
+      setCurrentInput("");
+
+      // Move to next step or save
+      if (currentStep < steps.length - 1) {
+        // Check if we should skip the next step
+        let nextStep = currentStep + 1;
+        while (nextStep < steps.length && steps[nextStep].skip?.(updatedKPIData)) {
+          nextStep++;
+        }
+        
+        if (nextStep < steps.length) {
+          setTimeout(() => {
+            setMessages((prev) => [
+              ...prev,
+              { role: "assistant", content: steps[nextStep].question, type: "question" },
+            ]);
+            setCurrentStep(nextStep);
+          }, 500);
+        } else {
+          await saveKPIs();
+        }
+      } else {
+        await saveKPIs();
+      }
+      return;
+    }
+
+    // Handle numeric input fields
     const value = parseFloat(currentInput);
-    if (isNaN(value) || value <= 0) {
-      toast.error("Please enter a valid number");
+    if (isNaN(value) || value < 0) {
+      toast.error("Please enter a valid number (0 or greater)");
       return;
     }
 
@@ -133,7 +221,6 @@ const KPIInput = ({ restaurantId, restaurantName, onBack, onComplete }: KPIInput
       { role: "user", content: currentInput, type: "input" },
     ]);
 
-    const currentStepData = steps[currentStep];
     const updatedKPIData = { ...kpiData, [currentStepData.field]: value };
     setKPIData(updatedKPIData);
 
@@ -147,13 +234,23 @@ const KPIInput = ({ restaurantId, restaurantName, onBack, onComplete }: KPIInput
 
     // Move to next step or save
     if (currentStep < steps.length - 1) {
-      setTimeout(() => {
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: steps[currentStep + 1].question, type: "question" },
-        ]);
-        setCurrentStep(currentStep + 1);
-      }, 500);
+      // Check if we should skip the next step
+      let nextStep = currentStep + 1;
+      while (nextStep < steps.length && steps[nextStep].skip?.(updatedKPIData)) {
+        nextStep++;
+      }
+      
+      if (nextStep < steps.length) {
+        setTimeout(() => {
+          setMessages((prev) => [
+            ...prev,
+            { role: "assistant", content: steps[nextStep].question, type: "question" },
+          ]);
+          setCurrentStep(nextStep);
+        }, 500);
+      } else {
+        await saveKPIs();
+      }
     } else {
       await saveKPIs();
     }
