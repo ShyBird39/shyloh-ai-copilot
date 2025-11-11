@@ -2158,33 +2158,15 @@ What would you like to work on today?`
     // Check if message starts with a mention to someone other than Shyloh
     const startsWithUserMention = /^@(?!shyloh|ai)\w+/i.test(messageText.trim());
     
-    // Helper to check if conversation contains any user @mentions (excluding AI/Notion)
-    const hasUserMentionsInHistory = () => {
-      return messages.some(msg => 
-        /@(?!shyloh|ai|notion)\w+/i.test(msg.content)
-      );
-    };
-    
-    // Check if this is a private 1-on-1 conversation
+    // Check if this is a private 1-on-1 conversation (just user and Shyloh)
     const isPrivateOneOnOne = currentConversationVisibility === 'private' && 
                               currentParticipants.length === 1 && 
                               currentParticipants[0].user_id === user?.id;
     
-    // Check if this is a public 1-on-1 conversation (no other participants or mentions yet)
-    const isPublicOneOnOne = currentConversationVisibility === 'public' && 
-                             currentParticipants.length === 1 && 
-                             currentParticipants[0].user_id === user?.id &&
-                             !hasUserMentionsInHistory();
-    
     // Auto-route to Shyloh if:
     // 1. User explicitly mentions @shyloh, OR
-    // 2. It's a private 1-on-1 conversation, OR
-    // 3. It's a public conversation with only creator (no mentions/participants yet), OR
-    // 4. New conversation (no participants yet) AND doesn't start with a user mention
-    const shouldRouteToAI = mentionsAI || 
-                            isPrivateOneOnOne || 
-                            isPublicOneOnOne || 
-                            (!currentConversationId && !startsWithUserMention);
+    // 2. It's a private 1-on-1 conversation (just user and Shyloh - no others involved)
+    const shouldRouteToAI = mentionsAI || isPrivateOneOnOne;
     
     // Detect Notion mention and strip it from the message
     const mentionedNotion = /@notion|\/notion/i.test(messageText);
