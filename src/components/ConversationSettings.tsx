@@ -48,6 +48,7 @@ interface ConversationSettingsProps {
   restaurantId: string;
   currentVisibility: string;
   onVisibilityChange: (visibility: string) => void;
+  onParticipantsChange?: () => void;
 }
 
 export function ConversationSettings({
@@ -57,6 +58,7 @@ export function ConversationSettings({
   restaurantId,
   currentVisibility,
   onVisibilityChange,
+  onParticipantsChange,
 }: ConversationSettingsProps) {
   const { user } = useAuth();
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -239,6 +241,7 @@ export function ConversationSettings({
 
       toast.success("Participant added");
       loadParticipants();
+      onParticipantsChange?.();
       setSearchQuery("");
     } catch (error: any) {
       console.error("Error adding participant:", error);
@@ -264,6 +267,7 @@ export function ConversationSettings({
 
       toast.success("Participant removed");
       loadParticipants();
+      onParticipantsChange?.();
     } catch (error) {
       console.error("Error removing participant:", error);
       toast.error("Failed to remove participant");

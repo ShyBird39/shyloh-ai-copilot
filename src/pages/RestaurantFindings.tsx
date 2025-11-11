@@ -5508,6 +5508,7 @@ What would you like to work on today?`
         restaurantId={id || ""}
         currentVisibility={currentConversationVisibility}
         onVisibilityChange={setCurrentConversationVisibility}
+        onParticipantsChange={() => currentConversationId && loadCurrentConversationParticipants(currentConversationId)}
       />
       
       {/* Onboarding Tuning Flow */}
