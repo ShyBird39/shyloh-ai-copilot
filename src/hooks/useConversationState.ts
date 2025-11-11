@@ -147,9 +147,11 @@ export const useConversationState = ({
       });
 
       setCurrentParticipants(participantsWithProfiles);
+      return participantsWithProfiles;
     } catch (error) {
       console.error("Error loading participants:", error);
       setCurrentParticipants([]);
+      return [];
     }
   };
 

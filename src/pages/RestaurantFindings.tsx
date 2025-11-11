@@ -2158,10 +2158,15 @@ What would you like to work on today?`
     // Check if message starts with a mention to someone other than Shyloh
     const startsWithUserMention = /^@(?!shyloh|ai)\w+/i.test(messageText.trim());
     
+    // Get fresh participant data from database to avoid stale state
+    const freshParticipants = currentConversationId 
+      ? await loadCurrentConversationParticipants(currentConversationId)
+      : [];
+    
     // Check if this is a private 1-on-1 conversation (just user and Shyloh)
     const isPrivateOneOnOne = currentConversationVisibility === 'private' && 
-                              currentParticipants.length === 1 && 
-                              currentParticipants[0].user_id === user?.id;
+                              (freshParticipants || []).length === 1 && 
+                              (freshParticipants || [])[0]?.user_id === user?.id;
     
     // Auto-route to Shyloh if:
     // 1. User explicitly mentions @shyloh, OR
